@@ -820,20 +820,27 @@ function sortCharacters(missionNum, playerNum, playerColors)
     characterCards.locked = false
     if missionNum > 30 and missionNum ~= 58 then
         clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
-        clone.locked = false
-        clone.putObject(characterCards)
-    end 
-    characterCards.shuffle()
-    if missionNum == 44 or missionNum == 45 or missionNum == 47 or missionNum == 49 or missionNum == 51 or missionNum == 54 or missionNum == 59 or missionNum == 63 or mission == 65 then
-        for ix = 1, characterCards.getQuantity() do
-            card = characterCards.takeObject({position={-130.02, 2.17, 0.00}})
+        clone.locked = false   
+        for ix = 1, clone.getQuantity() do
+            card = clone.takeObject({position={43.33, 1.50, 12.65},rotation={0.00, 270.00, 0.00}})
             card.locked = false
-            if card.getName() == "X or Y ray" then
+            card.addTag("Destroy")
+            if card.getName() == "X or Y ray"
+            and (missionNum == 44
+            or missionNum == 45
+            or missionNum == 47
+            or missionNum == 49
+            or missionNum == 51
+            or missionNum == 54
+            or missionNum == 59
+            or missionNum == 63
+            or missionNum == 65) then
                 card.destruct()
                 return
             end
         end
-    end
+    end 
+    characterCards.shuffle()
     for ix = 1, characterCards.getQuantity() do
         if ix > playerNum - 1 then
             del = characterCards.takeObject({position={-130.02, 2.17, -20.00}, smooth=false})
