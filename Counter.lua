@@ -1181,31 +1181,42 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
     elseif missionNum == 31 then
         sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
         constraintCards = getObjectsWithTag("Constraint")[1]
-        cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
         isBlueGreen = 1
         cardsAreGood = false
         while cardsAreGood == false do
+            constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+            constraintDeck.locked = false
             cardsAreGood = true
-            dealtCards = {}
-            for i = 1, playerNum do
-                if playerColors[i] == "Blue" or playerColors[i] == "Green" then
-                    isBlueGreen = -1
+            cardsToDeal = {}
+            for i = 1, constraintDeck.getQuantity() do
+                card = constraintDeck.takeObject({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+                if (card.getName() == "A"
+                or card.getName() == "B"
+                or card.getName() == "C"
+                or card.getName() == "D"
+                or card.getName() == "E") then
+                    table.insert(cardsToDeal, card)
+                    card.addTag("Destroy")
+                else
+                    card.destruct()
                 end
-                card = cardsToDeal.takeObject({position={
-                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
-                    characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
-                card.locked = false
-                card.addTag("Destroy")
-                table.insert(dealtCards, card)
+            end
+            shuffleInPlace(cardsToDeal)
+            constraintCardPositions = {
+                {-42.32, 1.50, -11.87},
+                {-42.32, 1.50, -5.94},
+                {-42.32, 1.50, -0.01},
+                {-42.32, 1.50, 5.92},
+                {-42.32, 1.50, 11.85}
+            }
+            for i = 1, #cardsToDeal do
+                cardsToDeal[i].setPosition(constraintCardPositions[i])
+                cardsToDeal[i].setRotation({0.00, 90.00, 0.00})
             end
             if playerNum < 3 then
                 count = 0
-                for _, card in ipairs(dealtCards) do
-                    if card.getName() == "A" or card.getName() == "B" then
+                for i = 1, 5 do
+                    if cardsToDeal[i].getName() == "A" or cardsToDeal[i].getName() == "B" then
                         count = count + 1
                     end
                 end
@@ -1213,8 +1224,8 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
                     cardsAreGood = false
                 end
                 count = 0
-                for _, card in ipairs(dealtCards) do
-                    if card.getName() == "C" or card.getName() == "D" then
+                for i = 1, 5 do
+                    if cardsToDeal[i].getName() == "C" or cardsToDeal[i].getName() == "D" then
                         count = count + 1
                     end
                 end
@@ -1223,12 +1234,11 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
                 end
             end
             if cardsAreGood == false then
-                for _, card in ipairs(dealtCards) do
+                for _, card in ipairs(cardsToDeal) do
                     card.destruct()
                 end
             end
         end
-        cardsToDeal.destruct()
     elseif missionNum == 32 then
         if playerNum < 3 then
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
@@ -2423,7 +2433,7 @@ function sortEquipment(missionNum, playerNum, yellowNum)
     end
     for i = 1, equipNum do
         if equipmentToDeal[i].getDescription() == "0" then
-            spareEquipment[1].setPositionSmooth({-24.12, 1.50, 5.49})
+            spareEquipment[1].setPositionSmooth({24.35, 1.50, 5.49})
             spareEquipment[1].setRotationSmooth({0.00, 180.00, 180.00})
             spareEquipment[1].removeTag("Spare")
             if spareEquipment[1].getDescription() == "1" then
@@ -2437,7 +2447,7 @@ function sortEquipment(missionNum, playerNum, yellowNum)
                 clone.locked = false
                 clone.addTag("Destroy")
             end
-            spareEquipment[2].setPositionSmooth({-24.12, 1.50, 5.49})
+            spareEquipment[2].setPositionSmooth({24.35, 1.50, 5.49})
             spareEquipment[2].setRotationSmooth({0.00, 180.00, 180.00})
             spareEquipment[2].removeTag("Spare")
             if spareEquipment[2].getDescription() == "1" then
