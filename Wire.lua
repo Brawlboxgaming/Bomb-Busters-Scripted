@@ -24,6 +24,7 @@ function onDrop(playerColor)
                 if otherObj.hasTag("InfoTokens") then
                     otherObj.setPosition({infoTokenPositions[tonumber(otherObj.getName())][1], infoTokenPositions[tonumber(otherObj.getName())][2] + 0.1, infoTokenPositions[tonumber(otherObj.getName())][3]})
                     otherObj.setRotation({0.00, 180.00, 0.00})
+                    otherObj.setState(1)
                 elseif otherObj.hasTag("x1Tokens")
                 or otherObj.hasTag("x2Tokens")
                 or otherObj.hasTag("x3Tokens")
