@@ -963,7 +963,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             {-7.29, 1.57, 4.35},
             {0.04, 1.57, 4.11},
             {7.35, 1.57, 4.43},
-            {14.66, 1.57, 4.41}
+            {14.66, 1.57, 4.30}
         }
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
