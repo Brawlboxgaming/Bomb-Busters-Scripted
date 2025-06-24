@@ -1037,9 +1037,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 18 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
-        else
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+        else
+            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
