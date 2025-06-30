@@ -2515,6 +2515,11 @@ function moveTokens(missionNum)
             object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
             object.locked = false
             object.addTag("Destroy")
+            if object.getName() ~= "13" then
+                newObject = object.setState(2)
+                newObject.addTag("Destroy")
+                newObject.setState(1)
+            end
         end
     end
 end
