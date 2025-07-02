@@ -797,19 +797,23 @@ function sortPlayerColors(playerNum, playerColors)
 end
 
 function sortCharacters(missionNum, playerNum, playerColors)
+    returnPlayerColors = false
     if missionNum == 34 or missionNum == 65 then
-        return playerColors
+        returnPlayerColors = true
     end
     shuffledPlayers = shuffle(playerColors)
+    flipped = 0
+    if missionNum == 34 then
+        flipped = 180
+    end
     captainCard = getObjectsWithTag("Captain")[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     captainCard.locked = false
-    if missionNum == 34 then
-        captainCard.setPosition(playerHandPositions[shuffledPlayers[1]])
-        captainCard.setRotation(playerHandPositions[shuffledPlayers[1]])
-    else
-        captainCard.setPosition(characterPositions[shuffledPlayers[1]])
-        captainCard.setRotation(characterRotations[shuffledPlayers[1]])
-    end
+    captainCard.setPosition(characterPositions[shuffledPlayers[1]])
+    captainCard.setRotation({
+        characterRotations[shuffledPlayers[1]][1],
+        characterRotations[shuffledPlayers[1]][2],
+        characterRotations[shuffledPlayers[1]][3] + flipped
+    })
     captainCard.addTag("Destroy")
     if missionNum == 27 then
         captainCard.flip()
@@ -818,7 +822,7 @@ function sortCharacters(missionNum, playerNum, playerColors)
     end
     characterCards = getObjectsWithAllTags({"Character", "Pack0"})[2].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     characterCards.locked = false
-    if missionNum > 30 and missionNum ~= 58 then
+    if missionNum > 30 and missionNum ~= 34 and missionNum ~= 58 then
         clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
         clone.locked = false   
         for ix = 1, clone.getQuantity() do
@@ -846,18 +850,20 @@ function sortCharacters(missionNum, playerNum, playerColors)
             del = characterCards.takeObject({position={-130.02, 2.17, -20.00}, smooth=false})
             del.destruct()
         else
-            if missionNum == 34 then
-                card = characterCards.takeObject({position=playerHandPositions[shuffledPlayers[ix + 1]], rotation=characterRotations[shuffledPlayers[ix + 1]]})
-                card.locked = false
-            else
-                card = characterCards.takeObject({position=characterPositions[shuffledPlayers[ix + 1]], rotation=characterRotations[shuffledPlayers[ix + 1]]})
-                card.locked = false
-            end
+            card = characterCards.takeObject({position=characterPositions[shuffledPlayers[ix + 1]], rotation={
+                characterRotations[shuffledPlayers[ix + 1]][1],
+                characterRotations[shuffledPlayers[ix + 1]][2],
+                characterRotations[shuffledPlayers[ix + 1]][3] + flipped
+            }})
+            card.locked = false
             card.addTag("Destroy")
             if missionNum == 27 then
                 card.flip()
             end
         end
+    end
+    if returnPlayerColors then
+        return playerColors
     end
     return shuffledPlayers
 end
@@ -1287,8 +1293,12 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
         shuffleInPlace(cardsToDeal)
         for num, card in ipairs(cardsToDeal) do
-            card.setPosition(playerHandPositions[playerColors[num]])
-            card.setRotation(characterRotations[playerColors[num]])
+            if num > playerNum then
+                card.destruct()
+            else
+                card.setPosition(playerHandPositions[playerColors[num]])
+                card.setRotation(characterRotations[playerColors[num]])
+            end
         end
     elseif missionNum == 35 then
         if playerNum < 3 then
@@ -2039,7 +2049,13 @@ function sortWiresAndEquipment(piles, playerNum, blueHighest, yellowNum, yellowT
     end
     for num, pile in ipairs(piles) do
         if (missionNum == 20 or missionNum == 35 or missionNum == 38 or missionNum == 56) then
+            counter = 0
             wire = table.remove(pile)
+            while missionNum == 35 and tonumber(wire.getDescription()) % 10 ~= 0 do
+                table.insert(pile, wire)
+                counter = counter + 1
+                wire = table.remove(pile, #pile - counter)
+            end
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
             table.insert(pile, wire)
         elseif missionNum == 64 then
@@ -2323,7 +2339,7 @@ function dealWiresToHands(missionNum, playerNum, playerColors, piles)
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
             handsDoubled = handsDoubled + 1
             for j = 1, #piles[i + handsDoubled] do
-                if ((missionNum == 38 and i == 1) or missionNum == 56) and j == #piles[i + handsDoubled] then
+                if missionNum == 56 and j == #piles[i + handsDoubled] then
                     piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
                 elseif missionNum == 64 then
                     if j == #piles[i + handsDoubled] then
@@ -2436,41 +2452,9 @@ function sortEquipment(missionNum, playerNum, yellowNum)
             spareEquipment[1].setPositionSmooth({24.35, 1.50, 5.49})
             spareEquipment[1].setRotationSmooth({0.00, 180.00, 180.00})
             spareEquipment[1].removeTag("Spare")
-            if spareEquipment[1].getDescription() == "1" then
-                notEquals = getObjectsWithTag("NotEquals")[1]
-                clone = notEquals.clone({position={-9.18, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-                clone.locked = false
-                clone.addTag("Destroy")
-            elseif spareEquipment[1].getDescription() == "12" then
-                equals = getObjectsWithTag("Equals")[1]
-                clone = equals.clone({position={-4.59, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-                clone.locked = false
-                clone.addTag("Destroy")
-            end
             spareEquipment[2].setPositionSmooth({24.35, 1.50, 5.49})
             spareEquipment[2].setRotationSmooth({0.00, 180.00, 180.00})
             spareEquipment[2].removeTag("Spare")
-            if spareEquipment[2].getDescription() == "1" then
-                notEquals = getObjectsWithTag("NotEquals")[1]
-                clone = notEquals.clone({position={-9.18, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-                clone.locked = false
-                clone.addTag("Destroy")
-            elseif spareEquipment[2].getDescription() == "12" then
-                equals = getObjectsWithTag("Equals")[1]
-                clone = equals.clone({position={-4.59, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-                clone.locked = false
-                clone.addTag("Destroy")
-            end
-        elseif equipmentToDeal[i].getDescription() == "1" then
-            notEquals = getObjectsWithTag("NotEquals")[1]
-            clone = notEquals.clone({position={-9.18, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-            clone.addTag("Destroy")
-        elseif equipmentToDeal[i].getDescription() == "12" then
-            equals = getObjectsWithTag("Equals")[1]
-            clone = equals.clone({position={-4.59, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-            clone.addTag("Destroy")
         end
         equipmentToDeal[i].setPositionSmooth(equipPos[i])
         equipmentToDeal[i].setRotation(equipRot)
@@ -2522,6 +2506,14 @@ function moveTokens(missionNum)
             end
         end
     end
+    notEquals = getObjectsWithTag("NotEquals")[1]
+    clone = notEquals.clone({position={-9.18, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+    clone.locked = false
+    clone.addTag("Destroy")
+    equals = getObjectsWithTag("Equals")[1]
+    clone = equals.clone({position={-4.59, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+    clone.locked = false
+    clone.addTag("Destroy")
 end
 
 function moveMissionCard(missionNum)
