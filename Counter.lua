@@ -822,7 +822,7 @@ function sortCharacters(missionNum, playerNum, playerColors)
     end
     characterCards = getObjectsWithAllTags({"Character", "Pack0"})[2].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     characterCards.locked = false
-    if missionNum > 30 and missionNum ~= 34 and missionNum ~= 58 then
+    if missionNum > 30 and missionNum ~= 58 then
         clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
         clone.locked = false   
         for ix = 1, clone.getQuantity() do
@@ -2333,7 +2333,7 @@ function dealWiresToHands(missionNum, playerNum, playerColors, piles)
             end
         end
         if (playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
-        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green")) then
+        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green")) then    
             wirePositions1 = wireHandPositions1[playerColors[i]]
             outerWirePositions1 = wireOuterPositions1[playerColors[i]]
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
@@ -2470,25 +2470,20 @@ function moveTokens(missionNum)
     or missionNum == 33 then
         oddTokensBag = getObjectsWithTag("OddTokens")[1]
         clone = oddTokensBag.clone({position={-9.18, 1.49, -6.38}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
         clone.addTag("Destroy")
         evenTokensBag = getObjectsWithTag("EvenTokens")[1]
         clone = evenTokensBag.clone({position={-4.59, 1.49, -6.38}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
         clone.addTag("Destroy")
     elseif missionNum == 24
     or missionNum == 40 then
         x1TokensBag = getObjectsWithTag("x1Tokens")[1]
         clone = x1TokensBag.clone({position={-9.58, 1.49, -7.65}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
         clone.addTag("Destroy")
         x2TokensBag = getObjectsWithTag("x2Tokens")[1]
         clone = x2TokensBag.clone({position={-6.88, 1.49, -5.20}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
         clone.addTag("Destroy")
         x3TokensBag = getObjectsWithTag("x3Tokens")[1]
         clone = x3TokensBag.clone({position={-4.19, 1.49, -7.65}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
         clone.addTag("Destroy")
     elseif missionNum == 58 then
         return
