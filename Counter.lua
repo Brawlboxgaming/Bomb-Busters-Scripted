@@ -823,10 +823,10 @@ function sortCharacters(missionNum, playerNum, playerColors)
     characterCards = getObjectsWithAllTags({"Character", "Pack0"})[2].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     characterCards.locked = false
     if missionNum > 30 and missionNum ~= 58 then
-        clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
+        clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={24.35, 1.52, -7.00}, rotation={0.00, 180.00, 0.00}, smooth=false})
         clone.locked = false   
         for ix = 1, clone.getQuantity() do
-            card = clone.takeObject({position={43.33, 1.50, 12.65},rotation={0.00, 270.00, 0.00}})
+            card = clone.takeObject({position={24.35, 1.52, -7.00},rotation={0.00, 180.00, 0.00}})
             card.locked = false
             card.addTag("Destroy")
             if card.getName() == "X or Y ray"
