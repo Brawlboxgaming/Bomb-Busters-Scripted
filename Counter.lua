@@ -1376,7 +1376,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         if playerNum < 3 then
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
         end
         constraintCards = getObjectsWithTag("Constraint")[1]
         cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1392,9 +1392,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 38 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 39 then
         if playerNum < 3 then
