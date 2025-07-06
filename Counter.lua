@@ -860,9 +860,11 @@ function sortCharacters(missionNum, playerNum, playerColors)
     end
     characterCards = getObjectsWithAllTags({"Character", "Pack0"})[2].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     characterCards.locked = false
+    characterCards.addTag("Destroy")
     if missionNum > 30 and missionNum ~= 58 then
         clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={24.35, 1.52, -7.00}, rotation={0.00, 180.00, 0.00}, smooth=false})
-        clone.locked = false   
+        clone.locked = false
+        clone.addTag("Destroy")
         for ix = 1, clone.getQuantity() do
             card = clone.takeObject({position={24.35, 1.52, -7.00},rotation={0.00, 180.00, 0.00}})
             card.locked = false
@@ -878,10 +880,9 @@ function sortCharacters(missionNum, playerNum, playerColors)
             or missionNum == 63
             or missionNum == 65) then
                 card.destruct()
-                return
             end
         end
-    end 
+    end
     characterCards.shuffle()
     for ix = 1, characterCards.getQuantity() do
         if ix > playerNum - 1 then
@@ -900,10 +901,7 @@ function sortCharacters(missionNum, playerNum, playerColors)
             end
         end
     end
-    if returnPlayerColors then
-        return playerColors
-    end
-    return shuffledPlayers
+    return ret
 end
 
 function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
