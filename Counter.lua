@@ -183,19 +183,19 @@ dialRotations = {
 }
 
 infoTokenPositions = {
-    {-10.71, 1.61, -5.20},
-    {-9.18, 1.61, -5.20},
-    {-7.65, 1.61, -5.20},
-    {-6.12, 1.61, -5.20},
-    {-4.59, 1.61, -5.20},
-    {-3.06, 1.61, -5.20},
-    {-10.71, 1.61, -7.65},
-    {-9.18, 1.61, -7.65},
-    {-7.65, 1.61, -7.65},
-    {-6.12, 1.61, -7.65},
-    {-4.59, 1.61, -7.65},
-    {-3.06, 1.61, -7.65},
-    {-6.89, 1.61, -10.10}
+    {-10.65, 1.81, -5.20},
+    {-9.13, 1.81, -5.20},
+    {-7.61, 1.81, -5.20},
+    {-6.09, 1.81, -5.20},
+    {-4.57, 1.81, -5.20},
+    {-3.04, 1.81, -5.20},
+    {-10.65, 1.81, -7.65},
+    {-9.13, 1.81, -7.65},
+    {-7.61, 1.81, -7.65},
+    {-6.09, 1.81, -7.65},
+    {-4.57, 1.81, -7.65},
+    {-3.04, 1.81, -7.65},
+    {-6.85, 1.81, -10.10}
 }
 
 yellowMarkerPositions = {
@@ -718,6 +718,24 @@ function startMission()
     elseif missionNum > 66 then
         self.setValue(66)
         missionNum = 66
+    end
+    if missionNum > 54 then
+        infoTokenPositions = {
+            {-10.65, 1.81, -5.20},
+            {-9.13, 1.81, -5.20},
+            {-7.61, 1.81, -5.20},
+            {-6.09, 1.81, -5.20},
+            {-4.57, 1.81, -5.20},
+            {-3.04, 1.81, -5.20},
+            {-10.65, 1.81, -7.65},
+            {-9.13, 1.81, -7.65},
+            {-7.61, 1.81, -7.65},
+            {-6.09, 1.81, -7.65},
+            {-4.57, 1.81, -7.65},
+            {-3.04, 1.81, -7.65},
+            {-7.61, 1.81, -10.10},
+            {-6.09, 1.81, -10.10}
+        }
     end
     --playerColors is modified by these two functions
     doubleHandColors = {}
@@ -2470,51 +2488,71 @@ function moveTokens(missionNum)
     or missionNum == 33 then
         oddTokensBag = getObjectsWithTag("OddTokens")[1]
         clone = oddTokensBag.clone({position={-9.18, 1.49, -6.38}, rotation={0.00, 180.00, 0.00}})
+        clone.setPosition({-9.18, 1.49, -6.38})
         clone.addTag("Destroy")
         evenTokensBag = getObjectsWithTag("EvenTokens")[1]
         clone = evenTokensBag.clone({position={-4.59, 1.49, -6.38}, rotation={0.00, 180.00, 0.00}})
+        clone.setPosition({-4.59, 1.49, -6.38})
         clone.addTag("Destroy")
     elseif missionNum == 24
     or missionNum == 40 then
         x1TokensBag = getObjectsWithTag("x1Tokens")[1]
         clone = x1TokensBag.clone({position={-9.58, 1.49, -7.65}, rotation={0.00, 180.00, 0.00}})
+        clone.setPosition({-9.58, 1.49, -7.65})
         clone.addTag("Destroy")
         x2TokensBag = getObjectsWithTag("x2Tokens")[1]
         clone = x2TokensBag.clone({position={-6.88, 1.49, -5.20}, rotation={0.00, 180.00, 0.00}})
+        clone.setPosition({-6.88, 1.49, -5.20})
         clone.addTag("Destroy")
         x3TokensBag = getObjectsWithTag("x3Tokens")[1]
         clone = x3TokensBag.clone({position={-4.19, 1.49, -7.65}, rotation={0.00, 180.00, 0.00}})
+        clone.setPosition({-4.19, 1.49, -7.65})
         clone.addTag("Destroy")
     elseif missionNum == 58 then
-        return
-    else
         infoTokens = getObjectsWithTag("InfoTokens")
         table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
         for num, token in ipairs(infoTokens) do
-            object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
-            object.locked = false
-            object.addTag("Destroy")
-            if object.getName() ~= "13" then
+            if num > 26 then
+                object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
+                object.locked = false
+                object.addTag("Destroy")
                 newObject = object.setState(2)
                 newObject.addTag("Destroy")
                 newObject.setState(1)
             end
         end
+    else
+        infoTokens = getObjectsWithTag("InfoTokens")
+        table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+        for num, token in ipairs(infoTokens) do
+            if missionNum < 55 and num == 27 then
+                break
+            end
+            object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
+            object.locked = false
+            object.addTag("Destroy")
+            newObject = object.setState(2)
+            newObject.addTag("Destroy")
+            newObject.setState(1)
+        end
     end
-    notEquals = getObjectsWithTag("NotEquals")[1]
-    clone = notEquals.clone({position={-9.18, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-    clone.locked = false
-    clone.addTag("Destroy")
-    equals = getObjectsWithTag("Equals")[1]
-    clone = equals.clone({position={-4.59, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-    clone.locked = false
-    clone.addTag("Destroy")
+    if missionNum ~= 52 then
+        notEquals = getObjectsWithTag("NotEquals")[1]
+        clone = notEquals.clone({position={-9.86, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+        clone.locked = false
+        clone.addTag("Destroy")
+        equals = getObjectsWithTag("Equals")[1]
+        clone = equals.clone({position={-3.81, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+        clone.locked = false
+        clone.addTag("Destroy")
+    end
 end
 
 function moveMissionCard(missionNum)
     missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
     missionCard.locked = false
     missionCard.addTag("Destroy")
+    missionCard.setName(missionNum)
     params = {
         face = missionFaceUrls[missionNum],
         back = missionBackUrls[missionNum]
