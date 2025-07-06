@@ -1836,64 +1836,68 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             or card.getName() == "C"
             or card.getName() == "D"
             or card.getName() == "E") then
-                table.insert(cardsToDeal, card)
+                if playerNum < 5 and #cardsToDeal == 4 then
+                    card.destruct()
+                else
+                    table.insert(cardsToDeal, card)
+                end
             end
         end
         shuffleInPlace(cardsToDeal)
-        if playerNum ~= 5 then
-            card = table.remove(cardsToDeal)
-            card.destruct()
-        end
-        for i = 1, playerNum do
+        j = 0
+        for i = 1, #cardsToDeal do
+            j = j + 1
+            if j > #cardsToDeal then
+                break
+            end
+            isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
-            for j = 1, playerNum do
-                if i == 1 then
-                    if playerNum == 2 then
-                        cardsToDeal[j].setPosition({
-                            characterPositions[playerColors[i]][1],
-                            characterPositions[playerColors[i]][2] + 1,
-                            characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-                        })
-                        cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
-                        j = j + 1
-                        cardsToDeal[j].setPosition({
-                            characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                            characterPositions[playerColors[i]][2],
-                            characterPositions[playerColors[i]][3]
-                        })
-                        cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
-                        j = j + 1
-                        cardsToDeal[j].setPosition({
-                            characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
-                            characterPositions[playerColors[i]][2],
-                            characterPositions[playerColors[i]][3]
-                        })
-                        cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
-                    elseif playerNum == 3 then
-                        cardsToDeal[j].setPosition({
-                            characterPositions[playerColors[i]][1],
-                            characterPositions[playerColors[i]][2] + 1,
-                            characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-                        })
-                        cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
-                        j = j + 1
-                        cardsToDeal[j].setPosition({
-                            characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
-                            characterPositions[playerColors[i]][2],
-                            characterPositions[playerColors[i]][3]
-                        })
-                        cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
-                    end
-                else
+            if i == 1 and playerNum < 4 then
+                if playerNum == 2 then
                     cardsToDeal[j].setPosition({
                         characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 1,
+                        characterPositions[playerColors[i]][2] + 25,
                         characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
                     })
                     cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                    j = j + 1
+                    cardsToDeal[j].setPosition({
+                        characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                        characterPositions[playerColors[i]][2],
+                        characterPositions[playerColors[i]][3]
+                    })
+                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                    j = j + 1
+                    cardsToDeal[j].setPosition({
+                        characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
+                        characterPositions[playerColors[i]][2],
+                        characterPositions[playerColors[i]][3]
+                    })
+                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                elseif playerNum == 3 then
+                    cardsToDeal[j].setPosition({
+                        characterPositions[playerColors[i]][1],
+                        characterPositions[playerColors[i]][2] + 25,
+                        characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
+                    })
+                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                    j = j + 1
+                    cardsToDeal[j].setPosition({
+                        characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
+                        characterPositions[playerColors[i]][2],
+                        characterPositions[playerColors[i]][3]
+                    })
+                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
                 end
+            else
+                cardsToDeal[j].setPosition({
+                    characterPositions[playerColors[i]][1],
+                    characterPositions[playerColors[i]][2] + 25,
+                    characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
+                })
+                cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
             end
         end
     elseif missionNum == 62 then
