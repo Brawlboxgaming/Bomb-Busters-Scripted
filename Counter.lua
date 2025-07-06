@@ -1468,6 +1468,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 46 then
         sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 0, 0, 12)
+        bag = getObjectsWithTag("Warning")[1]
+        clone = bag.takeObject({position=numberTokenPositions[7], rotation={0.00, 180.00, 0.00}})
+        clone.locked = false
     elseif missionNum == 47 then
         if playerNum < 3 then
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
