@@ -1826,6 +1826,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         constraintCards = getObjectsWithTag("Constraint")[1]
         constraintDeck = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         constraintDeck.locked = false
+        constraintDeck.shuffle()
         cardsToDeal = {}
         for i = 1, constraintDeck.getQuantity() do
             card = constraintDeck.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -2083,7 +2084,7 @@ function sortWiresAndEquipment(piles, playerNum, blueHighest, yellowNum, yellowT
             (missionNum == 43) then
                 nano = getObjectsWithAllTags({"Nano", "Destroy"})[1]
                 nanoPos = nano.getPosition()
-                wire.setPosition({nanoPos[1] + 0.19, nanoPos[2] + 3.41, nanoPos[3] + 0.06})
+                wire.setPosition({nanoPos[1] + -5, nanoPos[2] + 3.41, nanoPos[3] + 0.06})
                 wire.setRotation({359.54, 180.20, 172.48})
             else
                 table.insert(piles[pileIx], wire)
@@ -2380,7 +2381,8 @@ function dealWiresToHands(missionNum, playerNum, playerColors, piles)
             end
         end
         if (playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
-        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green")) then    
+        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green"))
+        and noMoreDouble == false then
             wirePositions1 = wireHandPositions1[playerColors[i]]
             outerWirePositions1 = wireOuterPositions1[playerColors[i]]
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
@@ -2407,6 +2409,9 @@ function dealWiresToHands(missionNum, playerNum, playerColors, piles)
                     clone.locked = false
                     clone.addTag("Destroy")
                 end
+            end
+            if playerNum == 3 then
+                noMoreDouble = true
             end
         end
     end
