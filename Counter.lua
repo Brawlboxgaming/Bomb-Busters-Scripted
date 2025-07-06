@@ -787,39 +787,59 @@ function startMission()
 end
 
 function sortPlayerColors(playerNum, playerColors)
-    if (contains(playerColors, "Blue") or contains(playerColors, "Green") and playerNum == 3)
-    and (contains(playerColors, "Blue") and contains(playerColors, "Green") and playerNum == 2) then
-        return
-    else
-        players = {}
-        for _, p in ipairs(Player.getPlayers()) do
-            if p.color ~= "Black" then
-                table.insert(players, p)
-            end
+    players = {}
+    for _, p in ipairs(Player.getPlayers()) do
+        if p.color ~= "Black" then
+            table.insert(players, p)
         end
-        blueGreen = {"Blue", "Green"}
-        if playerColors[2] == "Blue" then
-            blueGreen = {"Green", "Blue"}
-        end
-        if playerNum < 4 then
+    end
+    blueGreen = {"Blue", "Green"}
+    if contains(playerColors, "Blue") then
+        blueGreen = {"Green", "Blue"}
+    end
+    if playerNum < 4 then
+        toInsert = nil
+        if playerColors[1] == blueGreen[1] then
+            toInsert = blueGreen[1]
+        elseif playerColors[1] == blueGreen[2] then
+            toInsert = blueGreen[2]
+        else
             playerColors[1] = blueGreen[1]
             players[1].changeColor(blueGreen[1])
-            table.insert(doubleHandColors, blueGreen[1])
+            toInsert = blueGreen[1]
         end
-        if playerNum == 2 then
+        table.insert(doubleHandColors, toInsert)
+    end
+    if playerNum == 2 then
+        toInsert = nil
+        if playerColors[2] == blueGreen[2] then
+            toInsert = blueGreen[2]
+        elseif playerColors[2] == blueGreen[1] then
+            toInsert = blueGreen[1]
+        else
             playerColors[2] = blueGreen[2]
             players[2].changeColor(blueGreen[2])
-            table.insert(doubleHandColors, blueGreen[2])
+            toInsert = blueGreen[2]
+        end
+        table.insert(doubleHandColors, toInsert)
+    end
+    if missionNum == 65 then
+        for i = 1, #players do
+            players[i].team = "Jokers"
+        end
+    else
+        for i = 1, #players do
+            players[i].team = "None"
         end
     end
 end
 
 function sortCharacters(missionNum, playerNum, playerColors)
-    returnPlayerColors = false
-    if missionNum == 34 or missionNum == 65 then
-        returnPlayerColors = true
-    end
     shuffledPlayers = shuffle(playerColors)
+    ret = shuffledPlayers
+    if missionNum == 34 or missionNum == 65 then
+        ret = playerColors
+    end
     flipped = 0
     if missionNum == 34 then
         flipped = 180
