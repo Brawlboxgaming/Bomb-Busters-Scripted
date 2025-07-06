@@ -1349,11 +1349,11 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 1, 3, 12)
         end
         numberCardPositions = {
-            {-35.47, 1.50, -12.44},
-            {-35.47, 1.50, -6.22},
-            {-35.46, 1.50, 0.00},
-            {-35.47, 1.50, 6.22},
-            {-35.47, 1.50, 12.44}
+            {-40.79, 1.50, -12.44},
+            {-40.79, 1.50, -6.22},
+            {-40.79, 1.50, 0.00},
+            {-40.79, 1.50, 6.22},
+            {-40.79, 1.50, 12.44}
         }
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
@@ -1639,11 +1639,11 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
         end
         challengePositions = {
-            {-39.31, 1.50, 0.00},
-            {-39.31, 1.50, -7.26},
-            {-39.31, 1.50, 7.26},
-            {-39.31, 1.50, -14.53},
-            {-39.31, 1.50, 14.53}
+            {-46.65, 1.50, 0.00},
+            {-46.65, 1.50, -7.26},
+            {-46.65, 1.50, 7.26},
+            {-46.65, 1.50, -14.53},
+            {-46.65, 1.50, 14.53}
         }
         
         challengeCards = getObjectsWithTag("Challenge")[1]
@@ -1782,11 +1782,11 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
         end
         challengePositions = {
-            {-39.31, 1.50, -14.53},
-            {-39.31, 1.50, -7.26},
-            {-39.31, 1.50, 0.00},
-            {-39.31, 1.50, 7.26},
-            {-39.31, 1.50, 14.53}
+            {-46.65, 1.50, -14.53},
+            {-46.65, 1.50, -7.26},
+            {-46.65, 1.50, 0.00},
+            {-46.65, 1.50, 7.26},
+            {-46.65, 1.50, 14.53}
         }
         
         challengeCards = getObjectsWithTag("Challenge")[1]
@@ -1908,11 +1908,11 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
         end
         numberPositions = {
-            {-37.95, 1.50, -11.89},
-            {-37.95, 1.50, -5.94},
-            {-37.95, 1.50, 0.00},
-            {-37.95, 1.50, 5.94},
-            {-37.95, 1.50, 11.89}
+            {-40.79, 1.50, -12.44},
+            {-40.79, 1.50, -6.22},
+            {-40.79, 1.50, 0.00},
+            {-40.79, 1.50, 6.22},
+            {-40.79, 1.50, 12.44}
         }
         
         numberCards = getObjectsWithTag("Numbers")[1]
