@@ -2091,7 +2091,7 @@ function sortWiresAndEquipment(piles, playerNum, blueHighest, yellowNum, yellowT
         end
     end
     for num, pile in ipairs(piles) do
-        if (missionNum == 20 or missionNum == 35 or missionNum == 38 or missionNum == 56) then
+        if (missionNum == 20 or missionNum == 35 or missionNum == 56) then
             counter = 0
             wire = table.remove(pile)
             while missionNum == 35 and tonumber(wire.getDescription()) % 10 ~= 0 do
@@ -2099,6 +2099,10 @@ function sortWiresAndEquipment(piles, playerNum, blueHighest, yellowNum, yellowT
                 counter = counter + 1
                 wire = table.remove(pile, #pile - counter)
             end
+            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+            table.insert(pile, wire)
+        elseif missionNum == 38 and num == 1 then
+            wire = table.remove(pile)
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
             table.insert(pile, wire)
         elseif missionNum == 64 then
