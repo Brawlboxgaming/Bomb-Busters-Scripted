@@ -829,7 +829,9 @@ function sortPlayerColors(playerNum, playerColors)
         end
     else
         for i = 1, #players do
-            players[i].team = "None"
+            if players[i].team != "None" then
+                players[i].team = "None"
+            end
         end
     end
 end
