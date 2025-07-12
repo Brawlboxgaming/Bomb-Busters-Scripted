@@ -702,6 +702,7 @@ function startMission()
         "Red",
         "Purple"
     }
+    playerNum = 0
     playerColors = {}
     for num, color in ipairs(allPlayerColors) do
         for _, player in ipairs(players) do
@@ -891,7 +892,7 @@ function startMission()
             })
             --Radar
             self.createButton({
-                click_function = "removeFromCharListR",
+                click_function = "removeFromCharListGR",
                 function_owner = self,
                 label          = "Remove",
                 scale          = { 0.5, 0.5, 0.5 },
@@ -1043,7 +1044,7 @@ function startMission()
             })
             --Radar
             self.createButton({
-                click_function = "removeFromCharListR",
+                click_function = "removeFromCharListGR",
                 function_owner = self,
                 label          = "Remove",
                 scale          = { 0.5, 0.5, 0.5 },
@@ -1090,8 +1091,9 @@ function addToCharList(selection)
     if #characterCardSelection == playerNum - 1 then
         printToAll("Character Selection List is now full. Please remove a card first to add a new one.")
         printToAll("Current selection:")
+        printToAll("1: Captain - Double Detector")
         for num, card in ipairs(characterCardSelection) do
-            printToAll(string.format("%d: %s", num, card))
+            printToAll(string.format("%d: %s", num + 1, card))
         end
         return
     elseif selection ~= "Double Detector" then
@@ -1099,8 +1101,9 @@ function addToCharList(selection)
             if card == selection then
                 printToAll("You can only have one of this character card.")
                 printToAll("Current selection:")
+                printToAll("1: Captain - Double Detector")
                 for num, card in ipairs(characterCardSelection) do
-                    printToAll(string.format("%d: %s", num, card))
+                    printToAll(string.format("%d: %s", num + 1, card))
                 end
                 return
             end
@@ -1109,15 +1112,17 @@ function addToCharList(selection)
     table.insert(characterCardSelection, selection)
     printToAll(string.format("%s has been added to the selection.", selection))
     printToAll("Current selection:")
+    printToAll("1: Captain - Double Detector")
     for num, card in ipairs(characterCardSelection) do
-        printToAll(string.format("%d: %s", num, card))
+        printToAll(string.format("%d: %s", num + 1, card))
     end
 end
 
 function removeFromCharList(selection)
     printToAll("----------------------------")
     if #characterCardSelection == 0 then
-        printToAll("Character Selection List is currently empty.")
+        printToAll("Current selection:")
+        printToAll("1: Captain - Double Detector")
         return
     else
         for num, card in ipairs(characterCardSelection) do
@@ -1125,17 +1130,19 @@ function removeFromCharList(selection)
                 table.remove(characterCardSelection, num)
                 printToAll(string.format("%s has been removed from the selection.", selection))
                 printToAll("Current selection:")
-            for num, card in ipairs(characterCardSelection) do
-                printToAll(string.format("%d: %s", num, card))
-            end
+                printToAll("1: Captain - Double Detector")
+                for num, card in ipairs(characterCardSelection) do
+                    printToAll(string.format("%d: %s", num + 1, card))
+                end
                 return
             end
         end
     end
     printToAll(string.format("%s was not found in the selection.", selection))
     printToAll("Current selection:")
+    printToAll("1: Captain - Double Detector")
     for num, card in ipairs(characterCardSelection) do
-        printToAll(string.format("%d: %s", num, card))
+        printToAll(string.format("%d: %s", num + 1, card))
     end
 end
 
@@ -1187,8 +1194,9 @@ function finishSetupAfterCharSel()
             printToAll("Character Selection List is currently empty.")
         else
             printToAll("Current selection:")
+            printToAll("1: Captain - Double Detector")
             for num, card in ipairs(characterCardSelection) do
-                printToAll(string.format("%d: %s", num, card))
+                printToAll(string.format("%d: %s", num + 1, card))
             end
         end
         return
