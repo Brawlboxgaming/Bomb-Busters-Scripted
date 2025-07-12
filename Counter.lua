@@ -640,6 +640,14 @@ equipmentPositions = {
     {14.66, 1.52, 5.45}
 }
 
+buttonHeight = 423
+
+characterCardSelection = {}
+
+playerNum = 0
+
+playerColors = {}
+
 function onLoad()
     self.createButton({
         click_function = "startMission",
@@ -649,7 +657,7 @@ function onLoad()
         position       = { 0, 0.21, 0.6 },
         rotation       = { 0, 180, 0 },
         width          = 2000,
-        height         = 423,
+        height         = buttonHeight,
         font_size      = 300
     })
 
@@ -684,6 +692,7 @@ end
 
 function startMission()
     MusicPlayer.pause()
+    characterCardSelection = {}
 
     players = Player.getPlayers()
     allPlayerColors = {
@@ -694,7 +703,6 @@ function startMission()
         "Purple"
     }
     playerColors = {}
-    playerNum = 0
     for num, color in ipairs(allPlayerColors) do
         for _, player in ipairs(players) do
             if player.color == color and player.seated then
@@ -710,6 +718,10 @@ function startMission()
     end
     for _, object in ipairs(getObjectsWithTag("Destroy")) do
         object.destruct()
+    end
+    buttons = self.getButtons()
+    for i = 3, #buttons - 1 do
+        self.removeButton(i)
     end
     missionNum = self.getValue()
     if missionNum < 1 then
@@ -737,13 +749,462 @@ function startMission()
             {-6.09, 1.81, -10.10}
         }
     end
-    --playerColors is modified by these two functions
     doubleHandColors = {}
-    sortPlayerColors(playerNum, playerColors) --changed for playerNum
-    shuffledPlayers = sortCharacters(missionNum, playerNum, playerColors) --shuffled
+    sortPlayerColors(playerNum) --changed for playerNum
+    moveMissionCard(missionNum)
+    adjustDial(missionNum)
+    if missionNum > 30 then
+        fontSize = 250
+        addWidth = 600
+        removeWidth = 1000
+        addZPosition = -2.2
+        removeZPosition = -2.7
+        if missionNum == 44
+            or missionNum == 45
+            or missionNum == 47
+            or missionNum == 49
+            or missionNum == 51
+            or missionNum == 54
+            or missionNum == 59
+            or missionNum == 63
+            or missionNum == 65 then
+            cardPositions = {
+                {-44.61, 1.50, -10.32},
+                {-44.61, 1.50, -3.44},
+                {-44.61, 1.50, 3.44},
+                {-44.61, 1.50, 10.32},
+            }
+            pack0Characters = getObjectsWithAllTags({"Character", "Pack0"})
+            shuffleInPlace(pack0Characters)
+            clone = nil
+            if pack0Characters[1].getName() == "Captain - Double Detector" then
+                clone = pack0Characters[2].clone({position=cardPositions[1]})
+            else
+                clone = pack0Characters[1].clone({position=cardPositions[1]})
+            end
+            clone.setPosition(cardPositions[1])
+            clone.setRotation({0.00, 90.00, 0.00})
+            clone.addTag("Destroy")
+            pack3Characters = getObjectsWithAllTags({"Character", "Pack3"})
+            for _, card in ipairs(pack3Characters) do
+                if card.getName() == "Walkie-Talkies" then
+                    clone = card.clone({position=cardPositions[2]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[2])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                elseif card.getName() == "Triple Detector" then
+                    clone = card.clone({position=cardPositions[3]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[3])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                elseif card.getName() == "General Radar" then
+                    clone = card.clone({position=cardPositions[4]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[4])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                end
+            end
+            
+            --Double Detector
+            self.createButton({
+                click_function = "addToCharListDD",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 1.736, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Walkie-Talkies
+            self.createButton({
+                click_function = "addToCharListWT",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 0.58, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Triple Detector
+            self.createButton({
+                click_function = "addToCharListTD",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -0.58, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Radar
+            self.createButton({
+                click_function = "addToCharListGR",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -1.73, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Double Detector
+            self.createButton({
+                click_function = "removeFromCharListDD",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 1.73, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Walkie-Talkies
+            self.createButton({
+                click_function = "removeFromCharListWT",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 0.58, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Triple Detector
+            self.createButton({
+                click_function = "removeFromCharListTD",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -0.58, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Radar
+            self.createButton({
+                click_function = "removeFromCharListR",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -1.73, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+        else
+            cardPositions = {
+                {-44.61, 1.50, -13.76},
+                {-44.61, 1.50, -6.88},
+                {-44.61, 1.50, 0.00},
+                {-44.61, 1.50, 6.88},
+                {-44.61, 1.50, 13.76}
+            }
+            pack0Characters = getObjectsWithAllTags({"Character", "Pack0"})
+            shuffleInPlace(pack0Characters)
+            clone = nil
+            if pack0Characters[1].getName() == "Captain - Double Detector" then
+                clone = pack0Characters[2].clone({position=cardPositions[1]})
+            else
+                clone = pack0Characters[1].clone({position=cardPositions[1]})
+            end
+            clone.setPosition(cardPositions[1])
+            clone.setRotation({0.00, 90.00, 0.00})
+            clone.addTag("Destroy")
+            pack3Characters = getObjectsWithAllTags({"Character", "Pack3"})
+            for _, card in ipairs(pack3Characters) do
+                if card.getName() == "Walkie-Talkies" then
+                    clone = card.clone({position=cardPositions[2]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[2])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                elseif card.getName() == "Triple Detector" then
+                    clone = card.clone({position=cardPositions[3]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[3])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                elseif card.getName() == "General Radar" then
+                    clone = card.clone({position=cardPositions[4]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[4])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                elseif card.getName() == "X or Y ray" then
+                    clone = card.clone({position=cardPositions[5]})
+                    clone.addTag("Destroy")
+                    clone.setPosition(cardPositions[5])
+                    clone.setRotation({0.00, 90.00, 0.00})
+                end
+            end
+
+            --Double Detector
+            self.createButton({
+                click_function = "addToCharListDD",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 2.30, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Walkie-Talkies
+            self.createButton({
+                click_function = "addToCharListWT",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 1.15, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Triple Detector
+            self.createButton({
+                click_function = "addToCharListTD",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 0, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Radar
+            self.createButton({
+                click_function = "addToCharListGR",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -1.15, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --X or Y ray
+            self.createButton({
+                click_function = "addToCharListXYR",
+                function_owner = self,
+                label          = "Add",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -2.30, 0.21, addZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = addWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Double Detector
+            self.createButton({
+                click_function = "removeFromCharListDD",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 2.30, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Walkie-Talkies
+            self.createButton({
+                click_function = "removeFromCharListWT",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 1.15, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Triple Detector
+            self.createButton({
+                click_function = "removeFromCharListTD",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { 0, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --Radar
+            self.createButton({
+                click_function = "removeFromCharListR",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -1.15, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+            --X or Y ray
+            self.createButton({
+                click_function = "removeFromCharListXYR",
+                function_owner = self,
+                label          = "Remove",
+                scale          = { 0.5, 0.5, 0.5 },
+                position       = { -2.30, 0.21, removeZPosition },
+                rotation       = { 0, 180, 0 },
+                width          = removeWidth,
+                height         = buttonHeight,
+                font_size      = fontSize
+            })
+        end
+        self.createButton({
+            click_function = "finishSetupAfterCharSel",
+            function_owner = self,
+            label          = "Finish Setup",
+            scale          = { 0.5, 0.5, 0.5 },
+            position       = { 0, 0.21, -3.2 },
+            rotation       = { 0, 180, 0 },
+            width          = 1700,
+            height         = buttonHeight,
+            font_size      = fontSize
+        })
+    else
+        for i = 1, playerNum - 1 do
+            table.insert(characterCardSelection, "Double Detector")
+        end
+        finishSetupAfterCharSel()
+    end
+end
+
+function addToCharList(selection)
+    printToAll("----------------------------")
+    if #characterCardSelection == playerNum - 1 then
+        printToAll("Character Selection List is now full. Please remove a card first to add a new one.")
+        printToAll("Current selection:")
+        for num, card in ipairs(characterCardSelection) do
+            printToAll(string.format("%d: %s", num, card))
+        end
+        return
+    elseif selection ~= "Double Detector" then
+        for _, card in ipairs(characterCardSelection) do
+            if card == selection then
+                printToAll("You can only have one of this character card.")
+                printToAll("Current selection:")
+                for num, card in ipairs(characterCardSelection) do
+                    printToAll(string.format("%d: %s", num, card))
+                end
+                return
+            end
+        end
+    end
+    table.insert(characterCardSelection, selection)
+    printToAll(string.format("%s has been added to the selection.", selection))
+    printToAll("Current selection:")
+    for num, card in ipairs(characterCardSelection) do
+        printToAll(string.format("%d: %s", num, card))
+    end
+end
+
+function removeFromCharList(selection)
+    printToAll("----------------------------")
+    if #characterCardSelection == 0 then
+        printToAll("Character Selection List is currently empty.")
+        return
+    else
+        for num, card in ipairs(characterCardSelection) do
+            if card == selection then
+                table.remove(characterCardSelection, num)
+                printToAll(string.format("%s has been removed from the selection.", selection))
+                printToAll("Current selection:")
+            for num, card in ipairs(characterCardSelection) do
+                printToAll(string.format("%d: %s", num, card))
+            end
+                return
+            end
+        end
+    end
+    printToAll(string.format("%s was not found in the selection.", selection))
+    printToAll("Current selection:")
+    for num, card in ipairs(characterCardSelection) do
+        printToAll(string.format("%d: %s", num, card))
+    end
+end
+
+function addToCharListDD()
+    addToCharList("Double Detector")
+end
+
+function addToCharListGR()
+    addToCharList("General Radar")
+end
+
+function addToCharListTD()
+    addToCharList("Triple Detector")
+end
+
+function addToCharListWT()
+    addToCharList("Walkie-Talkies")
+end
+
+function addToCharListXYR()
+    addToCharList("X or Y ray")
+end
+
+function removeFromCharListDD()
+    removeFromCharList("Double Detector")
+end
+
+function removeFromCharListGR()
+    removeFromCharList("General Radar")
+end
+
+function removeFromCharListTD()
+    removeFromCharList("Triple Detector")
+end
+
+function removeFromCharListWT()
+    removeFromCharList("Walkie-Talkies")
+end
+
+function removeFromCharListXYR()
+    removeFromCharList("X or Y ray")
+end
+
+function finishSetupAfterCharSel()
+    if #characterCardSelection ~= playerNum - 1 then
+        printToAll("----------------------------")
+        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum - 1))
+        if #characterCardSelection == 0 then
+            printToAll("Character Selection List is currently empty.")
+        else
+            printToAll("Current selection:")
+            for num, card in ipairs(characterCardSelection) do
+                printToAll(string.format("%d: %s", num, card))
+            end
+        end
+        return
+    end
+    for _, object in ipairs(getObjectsWithAllTags({"Character", "Destroy"})) do
+        object.destruct()
+    end
+    missionNum = tonumber(getObjectsWithAllTags({"Mission", "Destroy"})[1].getName())
+    buttons = self.getButtons()
+    for i = 3, #buttons - 1 do
+        self.removeButton(i)
+    end
+    shuffledPlayers = sortCharacters(missionNum)
     captainColor = shuffledPlayers[1]
     if missionNum == 34 then
-        captainColor = playerColors[math.random(1, playerNum)]
+        captainColor = playerColors[math.random(1)]
         printToAll(string.format("The captain of this mission is %s!", captainColor))
     end
     while playerColors[1] ~= captainColor do
@@ -779,14 +1240,11 @@ function startMission()
         ruleCard = getObjectsWithTag("RuleC")[1]
         ruleCard.setRotation({0.00, 270.00, 0.00})
     end
-
-    moveMissionCard(missionNum)
     moveTokens(missionNum)
-    adjustDial(missionNum, playerNum)
-    prepareWiresAndMarkers(missionNum, playerNum, playerColors)
+    prepareWiresAndMarkers(missionNum)
 end
 
-function sortPlayerColors(playerNum, playerColors)
+function sortPlayerColors(playerNum)
     players = {}
     for _, p in ipairs(Player.getPlayers()) do
         if p.color ~= "Black" then
@@ -836,135 +1294,126 @@ function sortPlayerColors(playerNum, playerColors)
     end
 end
 
-function sortCharacters(missionNum, playerNum, playerColors)
+function sortCharacters(missionNum)
     shuffledPlayers = shuffle(playerColors)
     ret = shuffledPlayers
     if missionNum == 34 or missionNum == 65 then
         ret = playerColors
     end
     flipped = 0
-    if missionNum == 34 then
+    if missionNum == 27 or missionNum == 34 then
         flipped = 180
     end
     captainCard = getObjectsWithTag("Captain")[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     captainCard.locked = false
-    captainCard.setPosition(characterPositions[shuffledPlayers[1]])
+    captainCard.setPositionSmooth(characterPositions[shuffledPlayers[1]])
     captainCard.setRotation({
         characterRotations[shuffledPlayers[1]][1],
         characterRotations[shuffledPlayers[1]][2],
         characterRotations[shuffledPlayers[1]][3] + flipped
     })
-    captainCard.addTag("Destroy")
-    if missionNum == 27 then
-        captainCard.flip()
-    elseif missionNum == 28 then
+    if missionNum == 28 then
         captainCard.destruct()
     end
-    characterCards = getObjectsWithAllTags({"Character", "Pack0"})[2].clone({position={-130.02, 2.17, 0.00}, smooth=false})
-    characterCards.locked = false
-    characterCards.addTag("Destroy")
-    if missionNum > 30 and missionNum ~= 58 then
-        clone = getObjectsWithAllTags({"Character", "Pack3"})[1].clone({position={24.35, 1.52, -7.00}, rotation={0.00, 180.00, 0.00}, smooth=false})
-        clone.locked = false
-        clone.addTag("Destroy")
-        for ix = 1, clone.getQuantity() do
-            card = clone.takeObject({position={24.35, 1.52, -7.00},rotation={0.00, 180.00, 0.00}})
-            card.locked = false
-            card.addTag("Destroy")
-            if card.getName() == "X or Y ray"
-            and (missionNum == 44
-            or missionNum == 45
-            or missionNum == 47
-            or missionNum == 49
-            or missionNum == 51
-            or missionNum == 54
-            or missionNum == 59
-            or missionNum == 63
-            or missionNum == 65) then
-                card.destruct()
+    captainCard.addTag("Destroy")
+    otherCards = {}
+    doubleDetectorCount = 0
+    doubleDetectorTotal = 0
+    for _, selection in ipairs(characterCardSelection) do
+        if selection == "Double Detector" then
+            doubleDetectorTotal = doubleDetectorTotal + 1
+        end
+    end
+    log(doubleDetectorTotal)
+    characterCards = getObjectsWithTag("Character")
+    for num, card in ipairs(characterCards) do
+        if card.hasTag("Destroy") == false and card.hasTag("Captain") == false then
+            for _, selection in ipairs(characterCardSelection) do
+                if card.getName() == selection then
+                    if doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector" then
+                        clone = card.clone({position={-82.13, 2.14, -6.47}})
+                        clone.locked = false
+                        clone.addTag("Destroy")
+                        table.insert(otherCards, clone)
+                        if selection == "Double Detector" then
+                            doubleDetectorCount = doubleDetectorCount + 1
+                        end
+                        break
+                    end
+                end
             end
         end
     end
-    characterCards.shuffle()
-    for ix = 1, characterCards.getQuantity() do
-        if ix > playerNum - 1 then
-            del = characterCards.takeObject({position={-130.02, 2.17, -20.00}, smooth=false})
-            del.destruct()
-        else
-            card = characterCards.takeObject({position=characterPositions[shuffledPlayers[ix + 1]], rotation={
-                characterRotations[shuffledPlayers[ix + 1]][1],
-                characterRotations[shuffledPlayers[ix + 1]][2],
-                characterRotations[shuffledPlayers[ix + 1]][3] + flipped
-            }})
-            card.locked = false
-            card.addTag("Destroy")
-            if missionNum == 27 then
-                card.flip()
-            end
+    shuffleInPlace(otherCards)
+    for i = 1, #otherCards do
+        otherCards[i].setPositionSmooth(characterPositions[shuffledPlayers[i + 1]])
+        otherCards[i].setRotation({characterRotations[shuffledPlayers[i + 1]][1], characterRotations[shuffledPlayers[i + 1]][2], characterRotations[shuffledPlayers[i + 1]][3] + flipped})
+        if missionNum == 27 then
+            otherCards[i].destruct()
         end
     end
     return ret
 end
 
-function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
+function prepareWiresAndMarkers(missionNum)
     piles = {}
     if missionNum == 1 then
-        sortWiresAndEquipment(piles, playerNum, 6, 0, 0, 0, 0, 0, 0)
+        sortWiresAndEquipment(piles, 6, 0, 0, 0, 0, 0, 0)
         bag = getObjectsWithTag("Validation")[1]
         for i = 7, 12 do
             clone = bag.takeObject({position=numberTokenPositions[i], rotation={0.00, 180.00, 0.00}})
         end
     elseif missionNum == 2 then
-        sortWiresAndEquipment(piles, playerNum, 8, 2, 2, 8, 0, 0, 8)
+        sortWiresAndEquipment(piles, 8, 2, 2, 8, 0, 0, 8)
         bag = getObjectsWithTag("Validation")[1]
         for i = 9, 12 do
             clone = bag.takeObject({position=numberTokenPositions[i], rotation={0.00, 180.00, 0.00}})
         end
     elseif missionNum == 3 then
-        sortWiresAndEquipment(piles, playerNum, 10, 0, 0, 10, 1, 1, 10)
+        sortWiresAndEquipment(piles, 10, 0, 0, 10, 1, 1, 10)
         bag = getObjectsWithTag("Validation")[1]
         for i = 11, 12 do
             clone = bag.takeObject({position=numberTokenPositions[i], rotation={0.00, 180.00, 0.00}})
         end
     elseif missionNum == 4 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 1, 12)
         end
     elseif missionNum == 5 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 2, 3, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
         end
     elseif missionNum == 6 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
         end
     elseif missionNum == 7 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 2, 12)
         end
     elseif missionNum == 8 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 1, 2, 12)
+            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 2, 12)
         end
     elseif missionNum == 9 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 1, 12)
         end
         setupSequence(0)
     elseif missionNum == 10 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
         timer = spawnObject({
             type = "Digital Clock",
             position = {-36.69, -0.28, 0.00},
@@ -992,15 +1441,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         clone.locked = false
         cardsToDeal.destruct()
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 0, 0, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 0, 0, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 0, 0, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 0, 0, 12)
         end
     elseif missionNum == 12 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
         end
         numberCardPositions = {
             {-14.58, 1.57, 4.10},
@@ -1019,7 +1468,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
         cardsToDeal.destruct()
     elseif missionNum == 13 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 0, 0, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 0, 0, 12)
         
         redWireDeck = getObjectsWithAllTags({"Wires", "Red"})[1]
         redCopy = redWireDeck.clone({position={-92.12, 2.38, -6.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
@@ -1041,18 +1490,18 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         for _, pile in ipairs(piles) do
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
         end
-        chooseRandomInfo(playerColors, false)
+        chooseRandomInfo(false)
     elseif missionNum == 14 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 2, 3, 12, 2, 2, 12)
         end
     elseif missionNum == 15 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1068,22 +1517,22 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 16 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
         end
         setupSequence(1)
     elseif missionNum == 17 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
     elseif missionNum == 18 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1095,7 +1544,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             card.addTag("Destroy")
         end
     elseif missionNum == 19 then
-        sortWiresAndEquipment(piles, playerNum, 12, 2, 3, 12, 1, 1, 12)
+        sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
         MusicPlayer.setCurrentAudioclip({
             url = "https://pegasusna.com/media/music/ff/cf/6a/BB-Final_Mission-19.mp3",
             title = "Mission 19"
@@ -1104,23 +1553,23 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
     elseif missionNum == 20 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
         end
     elseif missionNum == 21 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 2, 12)
         end
     elseif missionNum == 22 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
     elseif missionNum == 23 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
@@ -1132,12 +1581,12 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         cardsToDeal.destruct()
     elseif missionNum == 24 or missionNum == 25 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 26 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         cardPositions = {
             {-44.08, 1.50, 8.31},
             {-38.14, 1.50, 8.31},
@@ -1168,21 +1617,29 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             numberCards[i].setRotation({0.00, 180.00, 0.00})
         end
     elseif missionNum == 27 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 1, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
     elseif missionNum == 28 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
         end
     elseif missionNum == 29 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         cardsToDeal.locked = false
+        cardsToDeal.addTag("Destroy")
         cardsToDeal.shuffle()
-        isBlueGreen = 1
+        cardsTable = {}
+        for i = 1, cardsToDeal.getQuantity() do
+            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+            card.locked = false
+            card.addTag("Destroy")
+            table.insert(cardsTable, card)
+        end
         for i = 1, playerNum do
+            isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
@@ -1191,22 +1648,13 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
                 cardCount = 3
             end
             for j = 1, cardCount do
-                card = cardsToDeal.takeObject({position={
-                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
-                    characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 180.00}})
-                card.locked = false
-                card.addTag("Destroy")
+                cardsTable[1].setPositionSmooth({characterPositions[playerColors[i]][1] + (7 * isBlueGreen), characterPositions[playerColors[i]][2], characterPositions[playerColors[i]][3]})
+                cardsTable[1].setRotation({0.00, characterRotations[playerColors[i]][2], 180.00})
+                table.remove(cardsTable, 1)
             end
         end
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
     elseif missionNum == 30 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 2, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 2, 12)
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         cardsToDeal.locked = false
@@ -1223,7 +1671,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         MusicPlayer.play()
         printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
     elseif missionNum == 31 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         constraintCards = getObjectsWithTag("Constraint")[1]
         isBlueGreen = 1
         cardsAreGood = false
@@ -1285,9 +1733,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 32 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         constraintCards = getObjectsWithTag("Constraint")[1]
         cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1300,16 +1748,16 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 33 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
     elseif missionNum == 34 then
         if playerNum < 3 then
             printToAll("Mission cannot be played with only 2 players.")
             return
         end
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 1, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
         constraintCards = getObjectsWithTag("Constraint")[1]
         constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
         constraintDeck.locked = false
@@ -1340,15 +1788,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 35 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
         end
     elseif missionNum == 36 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 3, 12)
         end
         numberCardPositions = {
             {-40.79, 1.50, -12.44},
@@ -1360,6 +1808,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
         cardsToDeal.locked = false
+        cardsToDeal.shuffle()
         for i = 1, 5 do
             number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
             number.locked = false
@@ -1376,9 +1825,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         sequenceCard.addTag("Destroy")
     elseif missionNum == 37 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         constraintCards = getObjectsWithTag("Constraint")[1]
         cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1394,15 +1843,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 38 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 39 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
         end
         
         numberCards = getObjectsWithTag("Numbers")[1]
@@ -1418,18 +1867,19 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             card.addTag("Destroy")
         end
         cardsToDeal.destruct()
-        chooseRandomInfo(playerColors, false)
+        chooseRandomInfo(false)
     elseif missionNum == 40 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
     elseif missionNum == 41 then
+        adjustDial(missionNum, 1)
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
         end
-        chooseRandomInfo(playerColors, true)
+        chooseRandomInfo(true)
     elseif missionNum == 42 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 1, 3, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 3, 12)
 
         MusicPlayer.setCurrentAudioclip({
             url = "https://pegasusna.com/media/music/17/f4/b8/BB-Final_Mission-42.mp3",
@@ -1439,9 +1889,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
     elseif missionNum == 43 then
         setupNano(numberTokenPositions[1], 1)
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
     elseif missionNum == 44 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
 
         oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
         cardsToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
@@ -1455,9 +1905,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         cardsToDeal.destruct()
     elseif missionNum == 45 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1469,15 +1919,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             card.addTag("Destroy")
         end
     elseif missionNum == 46 then
-        sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 0, 0, 12)
+        sortWiresAndEquipment(piles, 12, 4, 4, 12, 0, 0, 12)
         bag = getObjectsWithTag("Warning")[1]
         clone = bag.takeObject({position=numberTokenPositions[7], rotation={0.00, 180.00, 0.00}})
         clone.locked = false
     elseif missionNum == 47 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
         cardPositions = {
             {-44.08, 1.50, 8.31},
@@ -1510,15 +1960,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 48 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 49 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
         tokensToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
@@ -1550,15 +2000,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         tokensToDeal.destruct()
     elseif missionNum == 50 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
         end
     elseif missionNum == 51 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
         end
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1571,19 +2021,19 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 52 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 4, 4, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         end
     elseif missionNum == 53 then
         setupNano({-20.22, 2.02, -1.16}, 1)
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 54 then
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 0, 0, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 0, 0, 12)
         redWireDeck = getObjectsWithAllTags({"Wires", "Red"})[1]
         wires = redWireDeck.clone({position={-16.78, 1.59, -14.52}, rotation={0.00, 90.00, 0.00}})
         wires.locked = false
@@ -1636,9 +2086,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
     elseif missionNum == 55 then
         adjustDial(missionNum, 1)
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         challengePositions = {
             {-46.65, 1.50, 0.00},
@@ -1678,15 +2128,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         cardsToDeal.destruct()
     elseif missionNum == 56 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
     elseif missionNum == 57 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
         end
         cardPositions = {
             {-44.08, 1.50, 8.31},
@@ -1734,15 +2184,15 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         end
     elseif missionNum == 58 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
     elseif missionNum == 59 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
         cardPositions = {
             {-44.08, 1.50, 8.31},
@@ -1779,9 +2229,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
     elseif missionNum == 60 then
         adjustDial(missionNum, 1)
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
         end
         challengePositions = {
             {-46.65, 1.50, -14.53},
@@ -1821,9 +2271,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         cardsToDeal.destruct()
     elseif missionNum == 61 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
         end
         constraintCards = getObjectsWithTag("Constraint")[1]
         constraintDeck = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
@@ -1906,9 +2356,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
     elseif missionNum == 62 then
         adjustDial(missionNum, 1)
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         numberPositions = {
             {-40.79, 1.50, -12.44},
@@ -1937,9 +2387,9 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         cardsToDeal.destruct()
     elseif missionNum == 63 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         end
         tokenCount = 14
         if playerNum == 3 then
@@ -1968,16 +2418,16 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         tokensToDeal.destruct()
     elseif missionNum == 64 then
         if playerNum < 3 then
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 2, 2, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
         else
-            sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 1, 1, 12)
+            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
         end
     elseif missionNum == 65 then
         if playerNum < 3 then
             printToAll("Mission cannot be played with only 2 players.")
             return
         end
-        sortWiresAndEquipment(piles, playerNum, 12, 0, 0, 12, 3, 3, 12)
+        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
         numberCards = getObjectsWithTag("Numbers")[1]
         cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
         cardsToDeal.locked = false
@@ -2005,7 +2455,7 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
             end
         end
     elseif missionNum == 66 then
-        sortWiresAndEquipment(piles, playerNum, 12, 2, 2, 12, 2, 2, 12)
+        sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
         bunkerCard = getObjectsWithTag("Bunker")[1]
         card = bunkerCard.clone({position={-37.83, 1.50, 0.00}})
         card.addTag("Destroy")
@@ -2054,12 +2504,12 @@ function prepareWiresAndMarkers(missionNum, playerNum, playerColors)
         MusicPlayer.play()
         printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
     end
-    dealWiresToHands(missionNum, playerNum, playerColors, piles)
+    dealWiresToHands(missionNum, piles)
 end
 
 -- blueHighest is the highest value of a blue wire, and in terms of the card, yellowNum of yellowTotal and redNum of redTotal
-function sortWiresAndEquipment(piles, playerNum, blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
-    sortEquipment(missionNum, playerNum, yellowNum)
+function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
+    sortEquipment(missionNum, yellowNum)
 
     blueWireDeck = getObjectsWithAllTags({"Wires", "Blue"})[1]
     mainCopy = blueWireDeck.clone({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
@@ -2295,7 +2745,7 @@ function setupRedMarkers(redsRevealed, redNum, redTotal)
     end
 end
 
-function dealWiresToHands(missionNum, playerNum, playerColors, piles)
+function dealWiresToHands(missionNum, piles)
     if missionNum == 41 then
         yellowNum = playerNum
         if yellowNum == 5 then
@@ -2419,7 +2869,7 @@ function dealWiresToHands(missionNum, playerNum, playerColors, piles)
     end
 end
 
-function sortEquipment(missionNum, playerNum, yellowNum)
+function sortEquipment(missionNum, yellowNum)
     if missionNum < 3
     or missionNum == 39 then return end
     equipmentCards = getObjectsWithTag("Equipment")
@@ -2597,7 +3047,7 @@ function moveMissionCard(missionNum)
     missionCard.reload()
 end
 
-function adjustDial(missionNum, playerNum)
+function adjustDial(missionNum)
     dial = getObjectsWithTag("Dial")[1]
     dial.setPosition({14.78, 1.61, -8.51})
     if missionNum == 51 then
@@ -2687,10 +3137,12 @@ function setupNano(startPos, direction) -- 0 is left and 1 is right, wires are s
     clone.addTag("Destroy")
 end
 
-function chooseRandomInfo(playerColors, includeYellow)
+function chooseRandomInfo(includeYellow)
+    virtualBag = {"1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9", "10", "10", "11", "11", "12", "12", "Yellow", "Yellow"}
     for _, color in ipairs(playerColors) do
-        randomToken = math.random(1, 12 + (includeYellow and 1 or 0))
-        printToAll(string.format("%s will take the %d token.", color, randomToken))
+        randomToken = math.random(1, #virtualBag - 2 + (includeYellow and 2 or 0))
+        printToAll(string.format("%s will take the %d token.", color, virtualBag[randomToken]))
+        table.remove(virtualBag, randomToken)
     end
 end
 
