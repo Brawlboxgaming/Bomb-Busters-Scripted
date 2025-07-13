@@ -754,6 +754,35 @@ function startMission()
     sortPlayerColors(playerNum) --changed for playerNum
     moveMissionCard(missionNum)
     adjustDial(missionNum)
+    if missionNum < 9 then
+        ruleCard = getObjectsWithTag("RuleA")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+        ruleCard = getObjectsWithTag("RuleB")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+        ruleCard = getObjectsWithTag("RuleC")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+    elseif missionNum < 31 then
+        ruleCard = getObjectsWithTag("RuleA")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+        ruleCard = getObjectsWithTag("RuleB")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+        ruleCard = getObjectsWithTag("RuleC")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+    elseif missionNum < 55 then
+        ruleCard = getObjectsWithTag("RuleA")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+        ruleCard = getObjectsWithTag("RuleB")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+        ruleCard = getObjectsWithTag("RuleC")[1]
+        ruleCard.setRotation({0.00, 270.00, 180.00})
+    else
+        ruleCard = getObjectsWithTag("RuleA")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+        ruleCard = getObjectsWithTag("RuleB")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+        ruleCard = getObjectsWithTag("RuleC")[1]
+        ruleCard.setRotation({0.00, 270.00, 0.00})
+    end
     if missionNum > 30 then
         printToAll("----------------------------")
         printToAll("Please select which character cards you would like to use for this mission.")
@@ -1219,36 +1248,6 @@ function finishSetupAfterCharSel()
     end
     while playerColors[1] ~= captainColor do
         wrap(playerColors, 1)
-    end
-
-    if missionNum < 9 then
-        ruleCard = getObjectsWithTag("RuleA")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-        ruleCard = getObjectsWithTag("RuleB")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-        ruleCard = getObjectsWithTag("RuleC")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-    elseif missionNum < 31 then
-        ruleCard = getObjectsWithTag("RuleA")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
-        ruleCard = getObjectsWithTag("RuleB")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-        ruleCard = getObjectsWithTag("RuleC")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-    elseif missionNum < 55 then
-        ruleCard = getObjectsWithTag("RuleA")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
-        ruleCard = getObjectsWithTag("RuleB")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
-        ruleCard = getObjectsWithTag("RuleC")[1]
-        ruleCard.setRotation({0.00, 270.00, 180.00})
-    else
-        ruleCard = getObjectsWithTag("RuleA")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
-        ruleCard = getObjectsWithTag("RuleB")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
-        ruleCard = getObjectsWithTag("RuleC")[1]
-        ruleCard.setRotation({0.00, 270.00, 0.00})
     end
     moveTokens(missionNum)
     prepareWiresAndMarkers(missionNum)
