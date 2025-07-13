@@ -755,6 +755,8 @@ function startMission()
     moveMissionCard(missionNum)
     adjustDial(missionNum)
     if missionNum > 30 then
+        printToAll("----------------------------")
+        printToAll("Please select which character cards you would like to use for this mission.")
         fontSize = 250
         addWidth = 600
         removeWidth = 1000
@@ -1189,7 +1191,7 @@ end
 function finishSetupAfterCharSel()
     if #characterCardSelection ~= playerNum - 1 then
         printToAll("----------------------------")
-        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum - 1))
+        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum))
         if #characterCardSelection == 0 then
             printToAll("Character Selection List is currently empty.")
         else
