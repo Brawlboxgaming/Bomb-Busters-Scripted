@@ -753,7 +753,7 @@ function startMission()
     doubleHandColors = {}
     sortPlayerColors(playerNum) --changed for playerNum
     moveMissionCard(missionNum)
-    adjustDial(missionNum)
+    adjustDial(missionNum, playerNum)
     if missionNum < 9 then
         ruleCard = getObjectsWithTag("RuleA")[1]
         ruleCard.setRotation({0.00, 270.00, 180.00})
@@ -1120,7 +1120,7 @@ end
 function addToCharList(selection)
     printToAll("----------------------------")
     if #characterCardSelection == playerNum - 1 then
-        printToAll("Character Selection List is now full. Please remove a card first to add a new one.")
+        printToAll("Character Selection List is now full. Please remove a card first to add a new one.", {r=1,g=0,b=0})
         printToAll("Current selection:")
         printToAll("1: Captain - Double Detector")
         for num, card in ipairs(characterCardSelection) do
@@ -1130,7 +1130,7 @@ function addToCharList(selection)
     elseif selection ~= "Double Detector" then
         for _, card in ipairs(characterCardSelection) do
             if card == selection then
-                printToAll("You can only have one of this character card.")
+                printToAll("You can only have one of this character card.", {r=1,g=0,b=0})
                 printToAll("Current selection:")
                 printToAll("1: Captain - Double Detector")
                 for num, card in ipairs(characterCardSelection) do
@@ -1152,8 +1152,12 @@ end
 function removeFromCharList(selection)
     printToAll("----------------------------")
     if #characterCardSelection == 0 then
+        printToAll(string.format("%s was not found in the selection.", selection), {r=1,g=0,b=0})
         printToAll("Current selection:")
         printToAll("1: Captain - Double Detector")
+        for num, card in ipairs(characterCardSelection) do
+            printToAll(string.format("%d: %s", num + 1, card))
+        end
         return
     else
         for num, card in ipairs(characterCardSelection) do
@@ -1169,7 +1173,7 @@ function removeFromCharList(selection)
             end
         end
     end
-    printToAll(string.format("%s was not found in the selection.", selection))
+    printToAll(string.format("%s was not found in the selection.", selection), {r=1,g=0,b=0})
     printToAll("Current selection:")
     printToAll("1: Captain - Double Detector")
     for num, card in ipairs(characterCardSelection) do
@@ -1220,7 +1224,7 @@ end
 function finishSetupAfterCharSel()
     if #characterCardSelection ~= playerNum - 1 then
         printToAll("----------------------------")
-        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum))
+        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum), {r=1,g=0,b=0})
         if #characterCardSelection == 0 then
             printToAll("Character Selection List is currently empty.")
         else
@@ -1555,7 +1559,7 @@ function prepareWiresAndMarkers(missionNum)
     elseif missionNum == 19 then
         sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
         MusicPlayer.setCurrentAudioclip({
-            url = "https://pegasusna.com/media/music/ff/cf/6a/BB-Final_Mission-19.mp3",
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
             title = "Mission 19"
         })
         MusicPlayer.play()
@@ -1674,7 +1678,7 @@ function prepareWiresAndMarkers(missionNum)
             card.addTag("Destroy")
         end
         MusicPlayer.setCurrentAudioclip({
-            url = "https://pegasusna.com/media/music/47/95/46/BB-Final_Mission-30.mp3",
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-30.mp3",
             title = "Mission 30"
         })
         MusicPlayer.play()
@@ -1891,12 +1895,12 @@ function prepareWiresAndMarkers(missionNum)
         sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 3, 12)
 
         MusicPlayer.setCurrentAudioclip({
-            url = "https://pegasusna.com/media/music/17/f4/b8/BB-Final_Mission-42.mp3",
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
             title = "Mission 42"
         })
         MusicPlayer.play()
         printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
-    elseif missionNum == 43 then
+    elseif missionNum == 43 then    
         setupNano(numberTokenPositions[1], 1)
         sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
     elseif missionNum == 44 then
@@ -2087,7 +2091,7 @@ function prepareWiresAndMarkers(missionNum)
         tokensToDeal.destruct()
 
         MusicPlayer.setCurrentAudioclip({
-            url = "https://pegasusna.com/media/music/a2/35/47/BB-Final_Mission-54ZXt2xCw76gcEn.mp3",
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-54.mp3",
             title = "Mission 54"
         })
         MusicPlayer.play()
@@ -2507,7 +2511,7 @@ function prepareWiresAndMarkers(missionNum)
         end
 
         MusicPlayer.setCurrentAudioclip({
-            url = "https://pegasusna.com/media/music/7a/66/cf/BB-Final_Mission-66.mp3",
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-66.mp3",
             title = "Mission 66"
         })
         MusicPlayer.play()
@@ -2532,8 +2536,9 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
     sortYellows(mainCopy, yellowNum, yellowTotal, yellowHighest)
     sortReds(mainCopy, redNum, redTotal, redHighest)
     destroyed = 0
+    nanoCounter = 0
     for i = 1, mainCopy.getQuantity() do
-        pileIx = ((i + handCount - destroyed - 1) % handCount) + 1
+        pileIx = ((i + handCount - destroyed - 1 - nanoCounter) % handCount) + 1
         wire = mainCopy.takeObject({position={-82.12 + pileIx, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
         wire.locked = false
         if tonumber(wire.getDescription()) > blueHighest * 10 then
@@ -2547,6 +2552,7 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
                 nanoPos = nano.getPosition()
                 wire.setPosition({nanoPos[1] + -5, nanoPos[2] + 3.41, nanoPos[3] + 0.06})
                 wire.setRotation({359.54, 180.20, 172.48})
+                nanoCounter = nanoCounter + 1
             else
                 table.insert(piles[pileIx], wire)
             end
@@ -3056,15 +3062,15 @@ function moveMissionCard(missionNum)
     missionCard.reload()
 end
 
-function adjustDial(missionNum)
+function adjustDial(missionNum, position)
     dial = getObjectsWithTag("Dial")[1]
     dial.setPosition({14.78, 1.61, -8.51})
     if missionNum == 51 then
         dial.setRotationSmooth({0.00, 0.00, 0.00})
         currentDialNum = 6
     else
-        dial.setRotationSmooth(dialRotations[playerNum])
-        currentDialNum = playerNum
+        dial.setRotationSmooth(dialRotations[position])
+        currentDialNum = position
     end
 end
 
