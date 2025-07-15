@@ -564,13 +564,8 @@ function startMission()
         "Red",
         "Purple"
     }
-    playerNum = 5
-    playerColors = {
-        "Blue",
-        "Green",
-        "White",
-        "Red",
-        "Purple"}
+    playerNum = 0
+    playerColors = {}
     for num, color in ipairs(allPlayerColors) do
         for _, player in ipairs(players) do
             if player.color == color and player.seated then
