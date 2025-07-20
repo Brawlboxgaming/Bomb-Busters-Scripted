@@ -535,6 +535,12 @@ function onLoad()
     })
 end
 
+DEBUG = false -- Set to true to allow emulation of the game with a full setup without needing extra players (set yourself to Black to test).
+
+DEBUG_PLAYER_COUNT = 5 -- This is used to determine how many players are in the game when debugging. Set to 5 for a full game.
+
+DEBUG_PLAYER_COLORS = {"Blue", "Green", "Purple", "Red", "White"} -- This is used to determine the player colours when debugging.
+
 -----------------
 --- UTILITIES ---
 -----------------
@@ -767,19 +773,20 @@ function startMission()
         "Red",
         "Purple"
     }
-    playerNum = 5
-    playerColors = {
-        "Blue",
-        "Green",
-        "White",
-        "Red",
-        "Purple"}
-    for num, color in ipairs(allPlayerColors) do
-        for _, player in ipairs(players) do
-            if player.color == color and player.seated then
-                playerNum = playerNum + 1
-                table.insert(playerColors, color)
-                break
+    playerNum = 0
+    playerColors = {}
+    if DEBUG then
+        playerNum = DEBUG_PLAYER_COUNT
+        playerColors = DEBUG_PLAYER_COLORS
+    else
+        -- Count players and assign colors based on seating
+        for num, color in ipairs(allPlayerColors) do
+            for _, player in ipairs(players) do
+                if player.color == color and player.seated then
+                    playerNum = playerNum + 1
+                    table.insert(playerColors, color)
+                    break
+                end
             end
         end
     end
@@ -821,6 +828,22 @@ function startMission()
             {-3.04, 1.81, -7.65},
             {-7.61, 1.81, -10.10},
             {-6.09, 1.81, -10.10}
+        }
+    else
+        infoTokenPositions = { -- These are the standard positions of the info tokens..
+            {-10.65, 1.81, -5.20},
+            {-9.13, 1.81, -5.20},
+            {-7.61, 1.81, -5.20},
+            {-6.09, 1.81, -5.20},
+            {-4.57, 1.81, -5.20},
+            {-3.04, 1.81, -5.20},
+            {-10.65, 1.81, -7.65},
+            {-9.13, 1.81, -7.65},
+            {-7.61, 1.81, -7.65},
+            {-6.09, 1.81, -7.65},
+            {-4.57, 1.81, -7.65},
+            {-3.04, 1.81, -7.65},
+            {-6.85, 1.81, -10.10}
         }
     end
     doubleHandColors = {}
