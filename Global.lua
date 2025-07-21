@@ -25,20 +25,18 @@ function onLoad()
         -- If the request is successful, the text is not empty.
         elseif e.text ~= "" then
             allWireDecks = {
-                "4794d6", -- Blue Wires
-                "47fcdf", -- Yellow Wires
-                "d850b2"  -- Red Wires
+                "e19471", -- Blue Wires
+                "100a8d", -- Yellow Wires
+                "9ef350"  -- Red Wires
             }
             for _, guid in ipairs(allWireDecks) do
                 local wireDeck = getObjectFromGUID(guid)
                 for _, wire in ipairs(wireDeck.getObjects()) do
                     -- Set the fetched script to each wire object.
-                    takenObj = wireDeck.takeObject()
-                    takenObj.setLuaScript(e.text)
-                    -- Reload the object's script to apply the changes.
-                    takenObj.reload()
-                    wireDeck.putObject(takenObj)
+                    wire.lua_script = e.text
                 end
+                -- Reload the wire deck's script to apply the changes.
+                wireDeck.reload()
             end
         end
     end)
