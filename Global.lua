@@ -72,8 +72,9 @@ function onLoad()
             zone = getObjectFromGUID("f55aed") -- Source Objects Zone
             -- Set the fetched script to the object.
             zone.setLuaScript(e.text)
-            -- Reload the object's script to apply the changes.
-            zone.reload()
+            for _, object in ipairs(zone.getObjects()) do
+                object.setInvisibleTo({"Blue", "Green", "Purple", "Red", "White", "Grey"})
+            end
         end
     end)
     -- For the wire zones, set the Lua script to the one fetched from the web.
@@ -94,9 +95,38 @@ function onLoad()
                 local wireZone = getObjectFromGUID(guid)
                 -- Set the fetched script to each wire zone object.
                 wireZone.setLuaScript(e.text)
-                -- Reload the object's script to apply the changes.
-                wireZone.reload()
+                colors = {
+                    "Blue",
+                    "Green",
+                    "Purple",
+                    "Red",
+                    "White",
+                    "Grey"
+                }
+                colorIx = indexOf(allWireZones, guid)
+                zoneColor = colors[colorIx]
+                table.remove(colors, colorIx)
+                for _, object in ipairs(wireZone.getObjects()) do
+                    if object.hasTag("Outer") then
+                        object.setHiddenFrom({zoneColor})
+                    else
+                        object.setHiddenFrom(colors)
+                    end
+                end
             end
         end
     end)
+end
+
+-----------------
+--- UTILITIES ---
+-----------------
+
+function indexOf(array, value)
+    for i, v in ipairs(array) do
+        if v == value then
+            return i
+        end
+    end
+    return nil
 end
