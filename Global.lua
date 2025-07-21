@@ -33,7 +33,11 @@ function onLoad()
                 local wireDeck = getObjectFromGUID(guid)
                 for _, wire in ipairs(wireDeck.getObjects()) do
                     -- Set the fetched script to each wire object.
-                    wire.lua_script = e.text
+                    takenObj = wireDeck.takeObject()
+                    takenObj.setLuaScript(e.text)
+                    -- Reload the object's script to apply the changes.
+                    takenObj.reload()
+                    wireDeck.putObject(takenObj)
                 end
             end
         end
