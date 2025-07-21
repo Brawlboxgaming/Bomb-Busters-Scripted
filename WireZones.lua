@@ -1,16 +1,23 @@
 function onLoad()
+    guids = {
+        "735b22", -- Blue
+        "144eda", -- Green
+        "b45794", -- Purple
+        "cca9b9", -- Red
+        "3604a7", -- White
+        "000000"  -- Grey
+    }
     colors = {
-        ["735b22"] = "Blue",
-        ["144eda"] = "Green",
-        ["b45794"] = "Purple",
-        ["cca9b9"] = "Red",
-        ["3604a7"] = "White",
-        ["Grey"] = "Grey"
+        "Blue",
+        "Green",
+        "Purple",
+        "Red",
+        "White",
+        "Grey"
     }
     if #self.getTags() > 0 then
         zoneColor = colors[self.getGUID()]
-        table.remove(colors, self.getGUID())
-        log(colors)
+        table.remove(colors, indexOf(guids, self.getGUID()))
         for _, object in ipairs(self.getObjects()) do
             if object.hasTag("Outer") then
                 object.setHiddenFrom({zoneColor})
@@ -23,17 +30,24 @@ end
 
 function onObjectEnterScriptingZone(zone, object)
     if zone.getGUID() == self.getGUID() then
+        guids = {
+            "735b22", -- Blue
+            "144eda", -- Green
+            "b45794", -- Purple
+            "cca9b9", -- Red
+            "3604a7", -- White
+            "000000"  -- Grey
+        }
         colors = {
-            ["735b22"] = "Blue",
-            ["144eda"] = "Green",
-            ["b45794"] = "Purple",
-            ["cca9b9"] = "Red",
-            ["3604a7"] = "White",
-            ["Grey"] = "Grey"
+            "Blue",
+            "Green",
+            "Purple",
+            "Red",
+            "White",
+            "Grey"
         }
         zoneColor = colors[self.getGUID()]
-        log(table.remove(colors, self.getGUID()))
-        log(colors)
+        table.remove(colors, indexOf(guids, self.getGUID()))
         if object.hasTag("Outer") then
             object.setHiddenFrom({zoneColor})
         else
