@@ -776,8 +776,10 @@ function startMission()
     playerNum = 0
     playerColors = {}
     if DEBUG then
-        playerNum = DEBUG_PLAYER_COUNT
-        playerColors = DEBUG_PLAYER_COLORS
+        for i = 1, DEBUG_PLAYER_COUNT do
+            table.insert(playerColors, DEBUG_PLAYER_COLORS[i])
+            playerNum = playerNum + 1
+        end
     else
         -- Count players and assign colors based on seating
         for num, color in ipairs(allPlayerColors) do
@@ -2838,4 +2840,12 @@ function wrap( t, l )
         table.insert( t, 1, t[#t] )
         table.remove( t, #t )
     end
+end
+
+function table.shallow_copy(t)
+  local t2 = {}
+  for k,v in pairs(t) do
+    t2[k] = v
+  end
+  return t2
 end
