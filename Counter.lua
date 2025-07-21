@@ -535,11 +535,11 @@ function onLoad()
     })
 end
 
-DEBUG = false -- Set to true to allow emulation of the game with a full setup without needing extra players (set yourself to Black to test).
+DEBUG = Global.getVar("DEBUG") -- Set to true to allow emulation of the game with a full setup without needing extra players (set yourself to Black to test).
 
-DEBUG_PLAYER_COUNT = 5 -- This is used to determine how many players are in the game when debugging. Set to 5 for a full game.
+DEBUG_PLAYER_COUNT = Global.getVar("DEBUG_PLAYER_COUNT") -- This is used to determine how many players are in the game when debugging. Set to 5 for a full game.
 
-DEBUG_PLAYER_COLORS = {"Blue", "Green", "Purple", "Red", "White"} -- This is used to determine the player colours when debugging.
+DEBUG_PLAYER_COLORS = Global.getVar("DEBUG_PLAYER_COLORS") -- This is used to determine the player colours when debugging.
 
 -----------------
 --- UTILITIES ---
@@ -1130,7 +1130,6 @@ function sortCharacters(missionNum)
             doubleDetectorTotal = doubleDetectorTotal + 1
         end
     end
-    log(doubleDetectorTotal)
     characterCards = getObjectsWithTag("Character")
     for num, card in ipairs(characterCards) do
         if card.hasTag("Destroy") == false and card.hasTag("Captain") == false then
@@ -2572,11 +2571,14 @@ function dealWiresToHands(missionNum, piles)
         for j = 1, #piles[i + handsDoubled] do
             if ((missionNum == 38 and i == 1) or missionNum == 56) and j == #piles[i + handsDoubled] then
                 piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
+                piles[i + handsDoubled][j].addTag("Outer")
             elseif missionNum == 64 then
                 if j == #piles[i + handsDoubled] then
                     piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
+                    piles[i + handsDoubled][j].addTag("Outer")
                 elseif j == #piles[i + handsDoubled] - 1 then
                     piles[i + handsDoubled][j].setPosition(outerWirePositions0[2])
+                    piles[i + handsDoubled][j].addTag("Outer")
                 else
                     piles[i + handsDoubled][j].setPosition(wirePositions0[j])
                 end
@@ -2602,11 +2604,14 @@ function dealWiresToHands(missionNum, piles)
             for j = 1, #piles[i + handsDoubled] do
                 if missionNum == 56 and j == #piles[i + handsDoubled] then
                     piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
+                    piles[i + handsDoubled][j].addTag("Outer")
                 elseif missionNum == 64 then
                     if j == #piles[i + handsDoubled] then
                         piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
+                        piles[i + handsDoubled][j].addTag("Outer")
                     elseif j == #piles[i + handsDoubled] - 1 then
                         piles[i + handsDoubled][j].setPosition(outerWirePositions1[2])
+                        piles[i + handsDoubled][j].addTag("Outer")
                     else
                         piles[i + handsDoubled][j].setPosition(wirePositions1[j])
                     end
