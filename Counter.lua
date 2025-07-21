@@ -555,6 +555,14 @@ end
 
 -- Moves the detonator dial and announces the movement
 function moveDial(newDialNum, playerColor, direction)
+    colors = {
+        Blue    = {0.118, 0.53, 1},
+        Green   = {0.192, 0.701, 0.168},
+        Purple  = {0.627, 0.125, 0.941},
+        Red     = {0.856, 0.1, 0.094},
+        White   = {1, 1, 1}
+    }
+
     local dial = getObjectsWithTag("Dial")[1]
     dial.setPosition({14.78, 1.61, -8.51})
     dial.setRotationSmooth(dialRotations[newDialNum])
@@ -564,7 +572,7 @@ function moveDial(newDialNum, playerColor, direction)
         zeroText = " KABOOM!"
     end
     
-    printToAll(string.format("%s has moved the dial %s to position %d.%s", playerColor, direction, newDialNum, zeroText))
+    printToAll(string.format("%s moved the dial %s to %d.%s", playerColor, direction, newDialNum, zeroText), colors[playerColor])
 end
 
 -- Sets up spare equipment with position, rotation, and tag removal
