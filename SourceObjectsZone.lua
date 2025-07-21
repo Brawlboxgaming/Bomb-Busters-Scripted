@@ -1,5 +1,4 @@
 function onLoad()
-    log(self.getObjects())
     for _, object in ipairs(self.getObjects()) do
         object.setInvisibleTo({"Blue", "Green", "Purple", "Red", "White", "Grey"})
     end
@@ -12,6 +11,7 @@ function onObjectEnterScriptingZone(zone, object)
 end
 
 function onObjectLeaveScriptingZone(zone, object)
+    log("onObjectLeaveScriptingZone called")
     if zone.getGUID() == self.getGUID() then
         object.setInvisibleTo({})
     end
