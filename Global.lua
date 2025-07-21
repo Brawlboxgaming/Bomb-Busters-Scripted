@@ -21,18 +21,18 @@ function onLoad()
     end)
     -- For the wire objects, set the Lua script to the one fetched from the web.
     WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/Wire.lua", function(e)
-        allWireDecks = {
-            "4794d6", -- Blue Wires
-            "47fcdf", -- Yellow Wires
-            "d850b2"  -- Red Wires
-        }
-        for _, guid in ipairs(allWireDecks) do
-            local wireDeck = getObjectFromGUID(guid)
-            -- If there's an error during the web request, log it.
-            if e.is_error then
-                log(e.error)
-            -- If the request is successful, the text is not empty.
-            elseif e.text ~= "" then
+        -- If there's an error during the web request, log it.
+        if e.is_error then
+            log(e.error)
+        -- If the request is successful, the text is not empty.
+        elseif e.text ~= "" then
+            allWireDecks = {
+                "4794d6", -- Blue Wires
+                "47fcdf", -- Yellow Wires
+                "d850b2"  -- Red Wires
+            }
+            for _, guid in ipairs(allWireDecks) do
+                local wireDeck = getObjectFromGUID(guid)
                 for _, wire in ipairs(wireDeck.getObjects()) do
                     -- Set the fetched script to each wire object.
                     wire.lua_script = e.text
@@ -42,18 +42,18 @@ function onLoad()
     end)
     -- For the token objects, set the Lua script to the one fetched from the web.
     WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/ColouredTokens.lua", function(e)
-        allTokenBags = {
-            "6ae025", -- Validation Tokens
-            "1e89b5", -- Attention Tokens
-            "eda3e6"  -- Warning Tokens
-        }
-        for _, guid in ipairs(allTokenBags) do
-            local tokenBag = getObjectFromGUID(guid)
-            -- If there's an error during the web request, log it.
-            if e.is_error then
-                log(e.error)
-            -- If the request is successful, the text is not empty.
-            elseif e.text ~= "" then
+        -- If there's an error during the web request, log it.
+        if e.is_error then
+            log(e.error)
+        -- If the request is successful, the text is not empty.
+        elseif e.text ~= "" then
+            allTokenBags = {
+                "6ae025", -- Validation Tokens
+                "1e89b5", -- Attention Tokens
+                "eda3e6"  -- Warning Tokens
+            }
+            for _, guid in ipairs(allTokenBags) do
+                local tokenBag = getObjectFromGUID(guid)
                 token = tokenBag.takeObject()
                 -- Set the fetched script to the token bag object.
                 token.setLuaScript(e.text)
@@ -61,6 +61,43 @@ function onLoad()
                 token.reload()
                 tokenBag.reset()
                 tokenBag.putObject(token)
+            end
+        end
+    end)
+    -- For the scripting zones, set the Lua script to the one fetched from the web.
+    WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/SourceObjectsZone.lua", function(e)
+        -- If there's an error during the web request, log it.
+        if e.is_error then
+            log(e.error)
+        -- If the request is successful, the text is not empty.
+        elseif e.text ~= "" then
+            zone = getObjectFromGUID("f55aed") -- Source Objects Zone
+            -- Set the fetched script to the object.
+            zone.setLuaScript(e.text)
+            -- Reload the object's script to apply the changes.
+            zone.reload()
+        end
+    end)
+    -- For the wire zones, set the Lua script to the one fetched from the web.
+    WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/WireZones.lua", function(e)
+        -- If there's an error during the web request, log it.
+        if e.is_error then
+            log(e.error)
+        -- If the request is successful, the text is not empty.
+        elseif e.text ~= "" then
+            allWireZones = {
+                "735b22", -- Blue
+                "144eda", -- Green
+                "b45794", -- Purple
+                "cca9b9", -- Red
+                "3604a7" -- White
+            }
+            for _, guid in ipairs(allWireZones) do
+                local wireZone = getObjectFromGUID(guid)
+                -- Set the fetched script to each wire zone object.
+                wireZone.setLuaScript(e.text)
+                -- Reload the object's script to apply the changes.
+                wireZone.reload()
             end
         end
     end)
