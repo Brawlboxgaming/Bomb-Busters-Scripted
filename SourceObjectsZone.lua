@@ -1,4 +1,5 @@
 function onLoad()
+    log(self.getObjects())
     for _, object in ipairs(self.getObjects()) do
         object.setInvisibleTo({"Blue", "Green", "Purple", "Red", "White", "Grey"})
     end
