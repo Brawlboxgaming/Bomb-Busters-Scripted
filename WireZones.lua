@@ -18,9 +18,9 @@ function onObjectEnterScriptingZone(zone, object)
         }
         zoneColor = colors[self.getGUID()]
         table.remove(colors, indexOf(guids, self.getGUID()))
+        log(zoneColor)
         if object.hasTag("Outer") then
             object.setHiddenFrom({zoneColor})
-            log(zoneColor)
         else
             object.setHiddenFrom(colors)
         end
