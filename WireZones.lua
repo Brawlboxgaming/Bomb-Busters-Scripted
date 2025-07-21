@@ -32,7 +32,7 @@ function onObjectEnterScriptingZone(zone, object)
             ["Grey"] = "Grey"
         }
         zoneColor = colors[self.getGUID()]
-        table.remove(colors, self.getGUID())
+        log(table.remove(colors, self.getGUID()))
         log(colors)
         if object.hasTag("Outer") then
             object.setHiddenFrom({zoneColor})
@@ -46,4 +46,17 @@ function onObjectLeaveScriptingZone(zone, object)
     if zone.getGUID() == self.getGUID() then
         object.setHiddenFrom({})
     end
+end
+
+-----------------
+--- UTILITIES ---
+-----------------
+
+function indexOf(array, value)
+    for i, v in ipairs(array) do
+        if v == value then
+            return i
+        end
+    end
+    return nil
 end
