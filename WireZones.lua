@@ -15,16 +15,14 @@ function onLoad()
         "White",
         "Grey"
     }
-    if #self.getTags() > 0 then
-        zoneColor = colors[self.getGUID()]
-        log(indexOf(guids, self.getGUID()))
-        table.remove(colors, indexOf(guids, self.getGUID()))
-        for _, object in ipairs(self.getObjects()) do
-            if object.hasTag("Outer") then
-                object.setHiddenFrom({zoneColor})
-            else
-                object.setHiddenFrom(colors)
-            end
+    zoneColor = colors[self.getGUID()]
+    log(indexOf(guids, self.getGUID()))
+    table.remove(colors, indexOf(guids, self.getGUID()))
+    for _, object in ipairs(self.getObjects()) do
+        if object.hasTag("Outer") then
+            object.setHiddenFrom({zoneColor})
+        else
+            object.setHiddenFrom(colors)
         end
     end
 end
