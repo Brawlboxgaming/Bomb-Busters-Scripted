@@ -1388,6 +1388,8 @@ function prepareWiresAndMarkers(missionNum)
         number = cardsToDeal.takeObject({position={-24.18, 1.58, 0.00}, rotation={0.00, 180.00, 0.00}})
         number.locked = false
         number.addTag("Destroy")
+        bag = getObjectsWithTag("Warning")[1]
+        clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
         cardsToDeal.destruct()
     elseif missionNum == 24 or missionNum == 25 then
         if playerNum < 3 then
