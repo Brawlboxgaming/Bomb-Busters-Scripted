@@ -539,7 +539,7 @@ DEBUG = Global.getVar("DEBUG") -- Set to true to allow emulation of the game wit
 
 DEBUG_PLAYER_COUNT = Global.getVar("DEBUG_PLAYER_COUNT") -- This is used to determine how many players are in the game when debugging. Set to 5 for a full game.
 
-DEBUG_PLAYER_COLORS = Global.getVar("DEBUG_PLAYER_COLORS") -- This is used to determine the player colours when debugging.
+DEBUG_PLAYER_COLORS = {"Blue", "Green", "Purple", "Red", "White"} -- This is used to determine the player colours when debugging.
 
 -----------------
 --- UTILITIES ---
