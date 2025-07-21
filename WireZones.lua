@@ -16,6 +16,7 @@ function onLoad()
         "Grey"
     }
     zoneColor = colors[self.getGUID()]
+    log(zoneColor)
     table.remove(colors, indexOf(guids, self.getGUID()))
     for _, object in ipairs(self.getObjects()) do
         if object.hasTag("Outer") then
