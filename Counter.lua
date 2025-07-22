@@ -750,16 +750,97 @@ function createStandardButton(clickFunction, label, position, width, fontSize, s
 end
 
 -- Character card data for dynamic function generation
-local characterCardSuffixes = {
-    {name = "Double Detector", suffix = "DD"},
-    {name = "General Radar", suffix = "GR"},
-    {name = "Triple Detector", suffix = "TD"},
-    {name = "Walkie-Talkies", suffix = "WT"},
-    {name = "X or Y ray", suffix = "XYR"}
+local characterCards = {
+    {name = "Double Detector", suffix = "DD", pack = 0, position = 1, always = true},
+    {name = "Walkie-Talkies", suffix = "WT", pack = 3, position = 2, bannedMissions = {35}},
+    {name = "Triple Detector", suffix = "TD", pack = 3, position = 3, always = true},
+    {name = "General Radar", suffix = "GR", pack = 3, position = 4, always = true},
+    {name = "X or Y ray", suffix = "XYR", pack = 3, position = 5, bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}}
 }
 
+-- Position arrays for different numbers of character cards
+local positionLayouts = {
+    [2] = {
+        cards = {{-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}},
+        buttons = {0.58, -0.58}
+    },
+    [3] = {
+        cards = {{-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}},
+        buttons = {1.15, 0.00, -1.15}
+    },
+    [4] = {
+        cards = {{-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}},
+        buttons = {1.73, 0.58, -0.58, -1.73}
+    },
+    [5] = {
+        cards = {{-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}},
+        buttons = {2.30, 1.15, 0.00, -1.15, -2.30}
+    }
+}
+
+-- Determines which character cards are available for a given mission
+function getAvailableCharacterCards(missionNum)
+    local available = {}
+    for _, card in ipairs(characterCards) do
+        local isBanned = false
+        if card.bannedMissions then
+            for _, bannedMission in ipairs(card.bannedMissions) do
+                if missionNum == bannedMission then
+                    isBanned = true
+                    break
+                end
+            end
+        end
+        if not isBanned then
+            table.insert(available, card)
+        end
+    end
+    return available
+end
+
+-- Sets up character card display and buttons based on available cards
+function setupCharacterCardSelection(missionNum, availableCards)
+    local numCards = #availableCards
+    local layout = positionLayouts[numCards]
+    
+    if not layout then
+        printToAll("Error: No layout defined for " .. numCards .. " character cards.", {r=1,g=0,b=0})
+        return
+    end
+    
+    local cardPositions = layout.cards
+    local buttonPositions = layout.buttons
+    
+    -- Clone and position character cards
+    for i, card in ipairs(availableCards) do
+        local sourceCards
+        if card.pack == 0 then
+            sourceCards = getObjectsWithAllTags({"Character", "Pack0"})
+            shuffleInPlace(sourceCards)
+            -- Handle Captain - Double Detector special case
+            if sourceCards[1].getName() == "Captain - Double Detector" then
+                cloneWithStandardProps(sourceCards[2], cardPositions[i], {0.00, 90.00, 0.00}, true)
+            else
+                cloneWithStandardProps(sourceCards[1], cardPositions[i], {0.00, 90.00, 0.00}, true)
+            end
+        else
+            sourceCards = getObjectsWithAllTags({"Character", "Pack" .. card.pack})
+            for _, sourceCard in ipairs(sourceCards) do
+                if sourceCard.getName() == card.name then
+                    cloneWithStandardProps(sourceCard, cardPositions[i], {0.00, 90.00, 0.00}, true)
+                    break
+                end
+            end
+        end
+        
+        -- Create Add and Remove buttons for this card
+        createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i], addZPosition}, addWidth, fontSize)
+        createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i], removeZPosition}, removeWidth, fontSize)
+    end
+end
+
 -- Generate character card wrapper functions dynamically
-for _, card in ipairs(characterCardSuffixes) do
+for _, card in ipairs(characterCards) do
     _G["addToCharList" .. card.suffix] = function() addToCharList(card.name) end
     _G["removeFromCharList" .. card.suffix] = function() removeFromCharList(card.name) end
 end
@@ -881,80 +962,12 @@ function startMission()
         removeWidth = 1000
         addZPosition = -2.2
         removeZPosition = -2.7
-        -- This check is needed because the X or Y ray is not available as personal equipment when setting up these missions.
-        xyBanned = missionNum == 44 or missionNum == 45 or missionNum == 47 or missionNum == 49 or missionNum == 51 or missionNum == 54 or missionNum == 59 or missionNum == 63 or missionNum == 65
-        wtBanned = missionNum == 35
-        cardPositions = {
-            {-44.61, 1.50, -10.32},
-            {-44.61, 1.50, -3.44},
-            {-44.61, 1.50, 3.44},
-            {-44.61, 1.50, 10.32},
-        }
-        buttonPositions = {
-            1.73,
-            0.58,
-            -0.58,
-            -1.73
-        }
-        if xyBanned == false and wtBanned == false then
-            cardPositions = {
-                {-44.61, 1.50, -13.76},
-                {-44.61, 1.50, -6.88},
-                {-44.61, 1.50, 0.00},
-                {-44.61, 1.50, 6.88},
-                {-44.61, 1.50, 13.76}
-            }
-            buttonPositions = {
-                2.30,
-                1.15,
-                0.00,
-                -1.15,
-                -2.30
-            }
-        end
-        pack0Characters = getObjectsWithAllTags({"Character", "Pack0"})
-        shuffleInPlace(pack0Characters)
-        clone = nil
-        if pack0Characters[1].getName() == "Captain - Double Detector" then
-            clone = cloneWithStandardProps(pack0Characters[2], cardPositions[1], {0.00, 90.00, 0.00}, true)
-        else
-            clone = cloneWithStandardProps(pack0Characters[1], cardPositions[1], {0.00, 90.00, 0.00}, true)
-        end
-        pack3Characters = getObjectsWithAllTags({"Character", "Pack3"})
-        pos = 2
-        for _, card in ipairs(pack3Characters) do
-            if card.getName() == "Walkie-Talkies" and wtBanned == false then
-                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
-                pos = pos + 1
-            elseif card.getName() == "Triple Detector" then
-                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
-                pos = pos + 1
-            elseif card.getName() == "General Radar" then
-                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
-                pos = pos + 1
-            elseif card.getName() == "X or Y ray" and xyBanned == false then
-                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
-                pos = pos + 1
-            end
-        end
         
-        -- Create character card buttons dynamically
-        skipped = 0
-        for i = 1, 4 do
-            if wtBanned and i == 2 then
-                skipped = 1 -- Skip Walkie-Talkies if banned
-            else
-                local card = characterCardSuffixes[i]
-                createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i - skipped], addZPosition}, addWidth, fontSize)
-                createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i - skipped], removeZPosition}, removeWidth, fontSize)
-            end
-        end
+        -- Get available character cards for this mission
+        local availableCards = getAvailableCharacterCards(missionNum)
         
-        -- Special case: X or Y ray is conditionally created
-        if xyBanned == false then
-            createStandardButton("addToCharListXYR", "Add", {buttonPositions[5 - skipped], addZPosition}, addWidth, fontSize)
-            createStandardButton("removeFromCharListXYR", "Remove", {buttonPositions[5 - skipped], removeZPosition}, removeWidth, fontSize)
-        end
+        -- Setup character card selection interface
+        setupCharacterCardSelection(missionNum, availableCards)
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
     else
