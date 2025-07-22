@@ -539,7 +539,7 @@ DEBUG = Global.getVar("DEBUG") -- Set to true to allow emulation of the game wit
 
 DEBUG_PLAYER_COUNT = Global.getVar("DEBUG_PLAYER_COUNT") -- This is used to determine how many players are in the game when debugging. Set to 5 for a full game.
 
-DEBUG_PLAYER_COLORS = {"Blue", "Green", "Purple", "Red", "White"} -- This is used to determine the player colours when debugging.
+DEBUG_PLAYER_COLORS = {"Blue", "Green", "White", "Red", "Purple"} -- This is used to determine the player colours when debugging.
 
 -----------------
 --- UTILITIES ---
@@ -679,51 +679,6 @@ function cloneWithStandardProps(object, position, rotation, shouldLock)
     return clone
 end
 
--- Sets up sequence cards for missions with numbered sequences (side A or B)
-function setupSequence(sequenceSide) -- 0 being side A and 1 being side B
-    sequenceRotation = {0.00, 270.00, 0.00}
-    if sequenceSide == 1 then
-        sequenceRotation = {0.00, 270.00, 180.00}
-    end
-    numberCardPositions = {
-        {-35.47, 1.50, -6.22},
-        {-35.46, 1.50, 0.00},
-        {-35.47, 1.50, 6.22}
-    }
-    numberCards = getObjectsWithTag("Numbers")[1]
-    cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
-    for i = 1, 3 do
-        number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
-        if i ~= 1 then
-            bag = getObjectsWithTag("Warning")[1]
-            token = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-            token.locked = false
-        end
-    end
-    cardsToDeal.destruct()
-
-    sourceSequenceCard = getObjectsWithTag("Sequence")[1]
-    sequenceCard = sourceSequenceCard.clone({position={-44.19, 1.50, -6.22}, rotation=sequenceRotation})
-    sequenceCard.locked = false
-    sequenceCard.addTag("Destroy")
-end
-
--- Sets up nano components with specified position and direction
-function setupNano(startPos, direction) -- 0 is left and 1 is right, wires are sorted in sortWiresAndEquipment
-    nanoRotation = {0.00, 0.00, 0.00}
-    if direction == 1 then
-        nanoRotation = {0.00, 180.00, 0.00}
-    end
-    nano = getObjectsWithTag("Nano")[1]
-    clone = nano.clone({position = startPos, rotation = nanoRotation})
-    clone.locked = false
-    clone.addTag("Destroy")
-end
-
 -- Randomly distributes info tokens to players from a virtual bag
 function chooseRandomInfo(includeYellow)
     virtualBag = {"1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9", "10", "10", "11", "11", "12", "12", "Yellow", "Yellow"}
@@ -751,10 +706,10 @@ end
 
 -- Character card data for dynamic function generation
 local characterCards = {
-    {name = "Double Detector", suffix = "DD", pack = 0, position = 1, always = true},
+    {name = "Double Detector", suffix = "DD", pack = 0, position = 1, bannedMissions = {}},
     {name = "Walkie-Talkies", suffix = "WT", pack = 3, position = 2, bannedMissions = {35}},
-    {name = "Triple Detector", suffix = "TD", pack = 3, position = 3, always = true},
-    {name = "General Radar", suffix = "GR", pack = 3, position = 4, always = true},
+    {name = "Triple Detector", suffix = "TD", pack = 3, position = 3, bannedMissions = {}},
+    {name = "General Radar", suffix = "GR", pack = 3, position = 4, bannedMissions = {}},
     {name = "X or Y ray", suffix = "XYR", pack = 3, position = 5, bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}}
 }
 
@@ -846,6 +801,432 @@ for _, card in ipairs(characterCards) do
 end
 
 -----------------------
+--- MISSION CONFIGS ---
+-----------------------
+
+-- Mission configuration data structure containing all mission-specific parameters
+local missionConfigs = {
+    [1] = {
+        wires = {6, 0, 0, 0, 0, 0, 0},
+        validationTokens = {7, 12}
+    },
+    [2] = {
+        wires = {8, 2, 2, 8, 0, 0, 8},
+        validationTokens = {9, 12}
+    },
+    [3] = {
+        wires = {10, 0, 0, 10, 1, 1, 10},
+        validationTokens = {11, 12}
+    },
+    [4] = {
+        wires = {12, 4, 4, 12, 1, 1, 12},
+        wiresAlt = {12, 2, 2, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [5] = {
+        wires = {12, 2, 3, 12, 2, 2, 12},
+        wiresAlt = {12, 2, 3, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [6] = {
+        wires = {12, 4, 4, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [7] = {
+        wires = {12, 0, 0, 12, 1, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [8] = {
+        wires = {12, 4, 4, 12, 1, 3, 12},
+        wiresAlt = {12, 2, 3, 12, 1, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [9] = {
+        wires = {12, 4, 4, 12, 2, 2, 12},
+        wiresAlt = {12, 2, 2, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        sequence = 0
+    },
+    [10] = {
+        wires = {12, 4, 4, 12, 1, 1, 12},
+        timer = {
+            position = {-36.69, -0.28, 0.00},
+            rotation = {90.00, 270.00, 0.00},
+            scale = {2.55, 2.55, 2.55},
+            value2Player = 720,
+            value3Plus = 900
+        }
+    },
+    [11] = {
+        wires = {12, 4, 4, 12, 0, 0, 12},
+        wiresAlt = {12, 2, 2, 12, 0, 0, 12},
+        playerCheck = true,
+        threshold = 3,
+        numberCard = {
+            position = {-16.79, 1.53, -14.36},
+            rotation = {0.45, 180.00, 0.00}
+        }
+    },
+    [12] = {
+        wires = {12, 4, 4, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        equipmentNumberCards = true
+    },
+    [13] = {
+        wires = {12, 0, 0, 12, 0, 0, 12},
+        redWires = 3,
+        randomInfo = true
+    },
+    [14] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 2, 3, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [15] = {
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        numberCardSpecial = "faceUpAndShuffle"
+    },
+    [16] = {
+        wires = {12, 4, 4, 12, 2, 2, 12},
+        wiresAlt = {12, 2, 3, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        sequence = 1
+    },
+    [17] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [18] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        shuffleNumbers = true
+    },
+    [19] = {
+        wires = {12, 2, 3, 12, 1, 1, 12},
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
+            title = "Mission 19"
+        }
+    },
+    [20] = {
+        wires = {12, 4, 4, 12, 2, 3, 12},
+        wiresAlt = {12, 2, 2, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [21] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [22] = {
+        wires = {12, 4, 4, 12, 1, 1, 12}
+    },
+    [23] = {
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        numberCardWithWarning = {
+            position = {-24.18, 1.58, 0.00},
+            rotation = {0.00, 180.00, 0.00}
+        }
+    },
+    [24] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [25] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [26] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        gridNumbers = true
+    },
+    [27] = {
+        wires = {12, 4, 4, 12, 1, 1, 12}
+    },
+    [28] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [29] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        customDistribution = "mission29"
+    },
+    [30] = {
+        wires = {12, 4, 4, 12, 1, 2, 12},
+        shuffleNumbers = true,
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-30.mp3",
+            title = "Mission 30"
+        }
+    },
+    [31] = {
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        constraintCards = "special31"
+    },
+    [32] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        constraintCardSpecial = "faceUpAndShuffle"
+    },
+    [33] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [34] = {
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        minPlayers = 3,
+        constraintCards = "handDistribution"
+    },
+    [35] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [36] = {
+        wires = {12, 4, 4, 12, 2, 3, 12},
+        wiresAlt = {12, 2, 2, 12, 1, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        numberCards5 = true,
+        sequenceCard = true
+    },
+    [37] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        constraintCard = {
+            position = {-24.35, 1.50, -4.60},
+            rotation = {0.00, 180.00, 0.00}
+        }
+    },
+    [38] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [39] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        shuffleNumbers = true,
+        randomInfo = true
+    },
+    [40] = {
+        wires = {12, 0, 0, 12, 3, 3, 12}
+    },
+    [41] = {
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        randomInfo = true
+    },
+    [42] = {
+        wires = {12, 4, 4, 12, 1, 3, 12},
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
+            title = "Mission 42"
+        }
+    },
+    [43] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        nano = {numberTokenPositions[1], 1}
+    },
+    [44] = {
+        wires = {12, 0, 0, 12, 1, 3, 12},
+        oxygenTokens = "perPlayer2"
+    },
+    [45] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        shuffleNumbers = true
+    },
+    [46] = {
+        wires = {12, 4, 4, 12, 0, 0, 12},
+        warningToken = 7
+    },
+    [47] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        gridNumbers = true
+    },
+    [48] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [49] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        oxygenTokens = "playerBased"
+    },
+    [50] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 2, 2, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [51] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        shuffleNumbers = true
+    },
+    [52] = {
+        wires = {12, 4, 4, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [53] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        nano = {{-20.22, 2.02, -1.16}, 1}
+    },
+    [54] = {
+        wires = {12, 0, 0, 12, 0, 0, 12},
+        redWires = "all",
+        oxygenTokens = "playerBasedSpecial",
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-54.mp3",
+            title = "Mission 54"
+        }
+    },
+    [55] = {
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        challengeCards = true
+    },
+    [56] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [57] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        gridNumbers = true,
+        gridConstraints = true
+    },
+    [58] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+    },
+    [59] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        gridNumbers = true,
+        nanoOnSeven = true
+    },
+    [60] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        playerCheck = true,
+        threshold = 3,
+        challengeCards = true
+    },
+    [61] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3,
+        constraintCards = "complexDistribution"
+    },
+    [62] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        numberCards5 = true
+    },
+    [63] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        playerCheck = true,
+        threshold = 3,
+        oxygenTokens = "scalingToLeader"
+    },
+    [64] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
+        playerCheck = true,
+        threshold = 3
+    },
+    [65] = {
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        minPlayers = 3,
+        customDistribution = "mission65"
+    },
+    [66] = {
+        wires = {12, 2, 2, 12, 2, 2, 12},
+        bunkerCard = true,
+        standee = true,
+        constraintCards5 = true,
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-66.mp3",
+            title = "Mission 66"
+        }
+    }
+}
+
+-----------------------
 --- SETUP FUNCTIONS ---
 -----------------------
 
@@ -882,7 +1263,7 @@ function startMission()
         end
     end
     if playerNum < 2 then
-        printToAll("Not enough players", {r=1,g=0,b=0})
+        printToAll("Error: Not enough players", {r=1,g=0,b=0})
         return
     end
     for _, object in ipairs(getObjectsWithTag("Destroy")) do
@@ -897,9 +1278,9 @@ function startMission()
     if missionNum < 1 then
         self.setValue(1)
         missionNum = 1
-    elseif missionNum > 66 then
-        self.setValue(66)
-        missionNum = 66
+    elseif missionNum > #missionConfigs then
+        self.setValue(#missionConfigs)
+        missionNum = #missionConfigs
     end
 
     -- Pack 5 missions (55+): Use extended info token positions for additional content
@@ -1070,8 +1451,15 @@ function finishSetupAfterCharSel()
     captainColor = shuffledPlayers[1]
     -- Mission 34: Captain is chosen randomly instead of by character order
     if missionNum == 34 then
-        captainColor = playerColors[math.random(1)]
-        printToAll(string.format("The captain of this mission is %s!", captainColor))
+        captainColor = playerColors[math.random(playerNum)]
+        colors = {
+            Blue    = {0.118, 0.53, 1},
+            Green   = {0.192, 0.701, 0.168},
+            Purple  = {0.627, 0.125, 0.941},
+            Red     = {0.856, 0.1, 0.094},
+            White   = {1, 1, 1}
+        }
+        printToAll(string.format("The captain of this mission is %s!", captainColor), colors[captainColor])
     end
     while playerColors[1] ~= captainColor do
         wrap(playerColors, 1)
@@ -1164,8 +1552,8 @@ function sortCharacters(missionNum)
             doubleDetectorTotal = doubleDetectorTotal + 1
         end
     end
-    characterCards = getObjectsWithTag("Character")
-    for num, card in ipairs(characterCards) do
+    characterCardObjs = getObjectsWithTag("Character")
+    for num, card in ipairs(characterCardObjs) do
         if card.hasTag("Destroy") == false and card.hasTag("Captain") == false then
             for _, selection in ipairs(characterCardSelection) do
                 if card.getName() == selection then
@@ -1203,119 +1591,243 @@ end
 -- Sets up wires, markers, and tokens based on mission-specific requirements
 function prepareWiresAndMarkers(missionNum)
     piles = {}
-    if missionNum == 1 then
-        sortWiresAndEquipment(piles, 6, 0, 0, 0, 0, 0, 0)
-        placeValidationTokens(7, 12)
-    elseif missionNum == 2 then
-        sortWiresAndEquipment(piles, 8, 2, 2, 8, 0, 0, 8)
-        placeValidationTokens(9, 12)
-    elseif missionNum == 3 then
-        sortWiresAndEquipment(piles, 10, 0, 0, 10, 1, 1, 10)
-        placeValidationTokens(11, 12)
-    elseif missionNum == 4 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 1, 12)
-        end
-    elseif missionNum == 5 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 2, 3, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
-        end
-    elseif missionNum == 6 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
-        end
-    elseif missionNum == 7 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 2, 12)
-        end
-    elseif missionNum == 8 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 2, 12)
-        end
-    elseif missionNum == 9 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 1, 12)
-        end
-        setupSequence(0)
-    elseif missionNum == 10 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
+    local config = missionConfigs[missionNum]
+    
+    if not config then
+        printToAll("Error: No configuration found for mission " .. missionNum, {r=1, g=0, b=0})
+        return
+    end
+    
+    -- Check minimum player requirements
+    if config.minPlayers and playerNum < config.minPlayers then
+        printToAll("Error: Mission cannot be played with only " .. playerNum .. " players.", {r=1, g=0, b=0})
+        return
+    end
+    
+    -- Determine wire configuration based on player count
+    local wires = config.wires
+    if config.playerCheck and config.wiresAlt and playerNum >= config.threshold then
+        wires = config.wiresAlt
+    end
+    
+    -- Handle special configurations
+    handleMissionSpecialConfig(missionNum, config)
+    
+    -- Apply wire and equipment configuration
+    if wires then
+        sortWiresAndEquipment(piles, wires[1], wires[2], wires[3], wires[4], wires[5], wires[6], wires[7])
+    end
+    
+    dealWiresToHands(missionNum, piles)
+end
+
+-- Handles special mission configurations that don't fit the standard pattern
+function handleMissionSpecialConfig(missionNum, config)
+    -- Validation tokens
+    if config.validationTokens then
+        placeValidationTokens(config.validationTokens[1], config.validationTokens[2])
+    end
+    
+    -- Timer setup
+    if config.timer then
+        local t = config.timer
         timer = spawnObject({
             type = "Digital Clock",
-            position = {-36.69, -0.28, 0.00},
-            rotation = {90.00, 270.00, 0.00},
-            scale = {2.55, 2.55, 2.55}
+            position = t.position,
+            rotation = t.rotation,
+            scale = t.scale
         })
         timer.locked = true
         timer.setColorTint({r=0, g=0, b=0})
-        if playerNum < 3 then
-            timer.setValue(720)
-        else
-            timer.setValue(900)
-        end
+        timer.setValue(playerNum < 3 and t.value2Player or t.value3Plus)
         timer.addTag("Destroy")
-    elseif missionNum == 11 then
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        number = cardsToDeal.takeObject({position={-16.79, 1.53, -14.36}, rotation={0.45, 180.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
-        bag = getObjectsWithTag("Warning")[1]
-        clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
-        cardsToDeal.destruct()
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 0, 0, 12)
+    end
+    
+    -- Sequence setup
+    if config.sequence ~= nil then
+        handleSequenceNumbers(config.sequence)
+    end
+    
+    -- Music setup
+    if config.music then
+        MusicPlayer.setCurrentAudioclip({
+            url = config.music.url,
+            title = config.music.title
+        })
+        MusicPlayer.play()
+        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
+    end
+    
+    -- Random info selection
+    if config.randomInfo then
+        chooseRandomInfo(false)
+    end
+    
+    -- Red wires setup
+    if config.redWires then
+        handleRedWires(config.redWires)
+    end
+    
+    -- Number card handling
+    if config.numberCard then
+        handleSingleNumberCard(config.numberCard)
+    elseif config.equipmentNumberCards then
+        handleEquipmentNumberCards()
+    elseif config.shuffleNumbers then
+        handleShuffleNumbers()
+    elseif config.gridNumbers then
+        handleGridNumbers()
+    elseif config.numberCards5 then
+        handleNumberCards5(missionNum)
+    elseif config.numberCardSpecial then
+        handleNumberCardSpecial(config.numberCardSpecial)
+    elseif config.numberCardWithWarning then
+        handleNumberCardWithWarning(config.numberCardWithWarning)
+    end
+    
+    -- Warning tokens
+    if config.warningToken then
+        if type(config.warningToken) == "number" then
+            local bag = getObjectsWithTag("Warning")[1]
+            local clone = bag.takeObject({position=numberTokenPositions[config.warningToken], rotation={0.00, 180.00, 0.00}})
+            clone.locked = false
         else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 0, 0, 12)
-        end
-    elseif missionNum == 12 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
-        end
-        numberCardPositions = {
-            {-14.58, 1.57, 4.10},
-            {-7.29, 1.57, 4.35},
-            {0.04, 1.57, 4.11},
-            {7.35, 1.57, 4.43},
-            {14.66, 1.57, 4.30}
-        }
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        for i = 1, playerNum do
-            number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 180.00, 0.00}})
+            -- Handle numberCard warning token (mission 23)
+            local numberCards = getObjectsWithTag("Numbers")[1]
+            local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+            cardsToDeal.locked = false
+            cardsToDeal.shuffle()
+            local number = cardsToDeal.takeObject({position=config.numberCard.position, rotation=config.numberCard.rotation})
             number.locked = false
             number.addTag("Destroy")
+            local bag = getObjectsWithTag("Warning")[1]
+            local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
+            clone.locked = false
+            cardsToDeal.destruct()
         end
-        cardsToDeal.destruct()
-    elseif missionNum == 13 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 0, 0, 12)
-        
-        redCopy = cloneAndPrepareDeck({"Wires", "Red"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        count = 0
+    end
+    
+    -- Constraint cards
+    if config.constraintCards then
+        handleConstraintCards(config.constraintCards, missionNum)
+    elseif config.shuffleConstraints then
+        handleShuffleConstraints()
+    elseif config.constraintCard then
+        handleSingleConstraintCard(config.constraintCard)
+    elseif config.constraintCards5 then
+        handleConstraintCards5()
+    elseif config.gridConstraints then
+        handleGridConstraints()
+    elseif config.constraintCardSpecial then
+        handleConstraintCardSpecial(config.constraintCardSpecial)
+    end
+    
+    -- Oxygen tokens
+    if config.oxygenTokens then
+        handleOxygenTokens(config.oxygenTokens)
+    end
+    
+    -- Challenge cards
+    if config.challengeCards then
+        handleChallengeCards(missionNum)
+    end
+    
+    -- Nano setup
+    if config.nano then
+        handleNano(config.nano[1], config.nano[2])
+    end
+    
+    -- Special grid handling with nano
+    if config.nanoOnSeven then
+        handleNanoOnSeven()
+    end
+    
+    -- Custom distributions
+    if config.customDistribution then
+        handleCustomDistribution(config.customDistribution)
+    end
+    
+    -- Sequence card
+    if config.sequenceCard then
+        handleSequenceCard()
+    end
+    
+    -- Bunker card and standee
+    if config.bunkerCard then
+        local bunkerCard = getObjectsWithTag("Bunker")[1]
+        local card = bunkerCard.clone({position={-37.83, 1.50, 0.00}})
+        card.addTag("Destroy")
+        card.locked = false
+    end
+    
+    if config.standee then
+        local standee = getObjectsWithTag("Standee")[1]
+        local clone = standee.clone({position={-39.73, 3.12, -3.28}})
+        clone.addTag("Destroy")
+        clone.locked = false
+    end
+end
+
+-- Helper functions for mission-specific configurations
+
+-- Sets up sequence cards for missions with numbered sequences (side A or B)
+function handleSequenceNumbers(sequenceSide) -- 0 being side A and 1 being side B
+    sequenceRotation = {0.00, 270.00, 0.00}
+    if sequenceSide == 1 then
+        sequenceRotation = {0.00, 270.00, 180.00}
+    end
+    numberCardPositions = {
+        {-35.47, 1.50, -6.22},
+        {-35.46, 1.50, 0.00},
+        {-35.47, 1.50, 6.22}
+    }
+    numberCards = getObjectsWithTag("Numbers")[1]
+    cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    for i = 1, 3 do
+        number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
+        number.locked = false
+        number.addTag("Destroy")
+        if i ~= 1 then
+            bag = getObjectsWithTag("Warning")[1]
+            token = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
+            token.locked = false
+        end
+    end
+    cardsToDeal.destruct()
+
+    sourceSequenceCard = getObjectsWithTag("Sequence")[1]
+    sequenceCard = sourceSequenceCard.clone({position={-44.19, 1.50, -6.22}, rotation=sequenceRotation})
+    sequenceCard.locked = false
+    sequenceCard.addTag("Destroy")
+end
+
+-- Sets up nano components with specified position and direction
+function handleNano(startPos, direction) -- 0 is left and 1 is right, wires are sorted in sortWiresAndEquipment
+    nanoRotation = {0.00, 0.00, 0.00}
+    if direction == 1 then
+        nanoRotation = {0.00, 180.00, 0.00}
+    end
+    nano = getObjectsWithTag("Nano")[1]
+    clone = nano.clone({position = startPos, rotation = nanoRotation})
+    clone.locked = false
+    clone.addTag("Destroy")
+end
+
+-- Handles red wire special setups
+function handleRedWires(redWiresConfig)
+    if redWiresConfig == 3 then
+        -- Mission 13: Deal 3 red wires and setup markers
+        local redCopy = cloneAndPrepareDeck({"Wires", "Red"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
+        local count = 0
         redsRevealed = {}
         while count ~= 3 do
-            ix = count
-            wire = redCopy.takeObject({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
+            local ix = count + 1
+            local wire = redCopy.takeObject({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
             wire.locked = false
             wire.addTag("Destroy")
-            table.insert(piles[ix + 1], wire)
+            table.insert(piles[ix], wire)
             table.insert(redsRevealed, wire)
             count = count + 1
         end
@@ -1324,205 +1836,182 @@ function prepareWiresAndMarkers(missionNum)
         for _, pile in ipairs(piles) do
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
         end
-        chooseRandomInfo(false)
-    elseif missionNum == 14 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 3, 12, 2, 2, 12)
+    elseif redWiresConfig == "all" then
+        -- Mission 54: Deal all red wires
+        local wires = cloneAndPrepareDeck({"Wires", "Red"}, {-16.78, 1.59, -14.52}, {0.00, 90.00, 180.00}, true)
+        for i = 1, wires.getQuantity() do
+            local wire = wires.takeObject({position={-16.78, 1.59, -14.52}, rotation={0.00, 90.00, 180.00}})
+            wire.locked = false
+            wire.addTag("Destroy")
         end
-    elseif missionNum == 15 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
-        end
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        number = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
+    end
+end
+
+-- Handles single number card setup
+function handleSingleNumberCard(cardConfig)
+    local numberCards = getObjectsWithTag("Numbers")[1]
+    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    local number = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
+    number.locked = false
+    number.addTag("Destroy")
+    cardsToDeal.destruct()
+end
+
+-- Handles player-based number card distribution
+function handleEquipmentNumberCards()
+    local numberCardPositions = {
+        {-14.58, 1.57, 4.10},
+        {-7.29, 1.57, 4.35},
+        {0.04, 1.57, 4.11},
+        {7.35, 1.57, 4.43},
+        {14.66, 1.57, 4.30}
+    }
+    local numberCards = getObjectsWithTag("Numbers")[1]
+    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    for i = 1, playerNum do
+        local number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 180.00, 0.00}})
         number.locked = false
         number.addTag("Destroy")
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
+    end
+    cardsToDeal.destruct()
+end
+
+-- Handles shuffling all number cards
+function handleShuffleNumbers()
+    local numberCards = getObjectsWithTag("Numbers")[1]
+    local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    for i = 1, cardsToDeal.getQuantity() do
+        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+        card.locked = false
+        card.addTag("Destroy")
+    end
+end
+
+-- Handles 12-number grid layout
+function handleGridNumbers()
+    local cardPositions = {
+        {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
+        {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
+        {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
+    }
+    local numberCards = {}
+    local sourceDeck = getObjectsWithTag("Numbers")[1]
+    local numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
+    numberCardDeck.locked = false
+    for i = 1, 12 do
+        local card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
+        card.locked = false
+        card.addTag("Destroy")
+        table.insert(numberCards, card)
+    end
+    table.sort(numberCards, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+    for i = 1, 12 do
+        numberCards[i].setPositionSmooth(cardPositions[i])
+        numberCards[i].setRotation({0.00, 180.00, 0.00})
+    end
+end
+
+-- Handles 5 number cards setup
+function handleNumberCards5(missionNum)
+    local numberCardPositions = {
+        {-40.79, 1.50, -12.44}, {-40.79, 1.50, -6.22}, {-40.79, 1.50, 0.00}, 
+        {-40.79, 1.50, 6.22}, {-40.79, 1.50, 12.44}
+    }
+    local numberCards = getObjectsWithTag("Numbers")[1]
+    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    
+    if missionNum == 36 then
+        -- Mission 36: 5 cards with warning tokens
+        for i = 1, 5 do
+            local number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
+            number.locked = false
+            number.addTag("Destroy")
+            local bag = getObjectsWithTag("Warning")[1]
+            local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
         end
-    elseif missionNum == 16 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
-        end
-        setupSequence(1)
-    elseif missionNum == 17 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-    elseif missionNum == 18 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-    elseif missionNum == 19 then
-        sortWiresAndEquipment(piles, 12, 2, 3, 12, 1, 1, 12)
-        MusicPlayer.setCurrentAudioclip({
-            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
-            title = "Mission 19"
-        })
-        MusicPlayer.play()
-        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
-    elseif missionNum == 20 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
-        end
-    elseif missionNum == 21 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 2, 12)
-        end
-    elseif missionNum == 22 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
-    elseif missionNum == 23 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
-        end
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        number = cardsToDeal.takeObject({position={-24.18, 1.58, 0.00}, rotation={0.00, 180.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
-        bag = getObjectsWithTag("Warning")[1]
-        clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-        cardsToDeal.destruct()
-    elseif missionNum == 24 or missionNum == 25 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-    elseif missionNum == 26 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        cardPositions = {
-            {-44.08, 1.50, 8.31},
-            {-38.14, 1.50, 8.31},
-            {-32.19, 1.50, 8.31},
-            {-26.24, 1.50, 8.31},
-            {-44.08, 1.50, 0.00},
-            {-38.14, 1.50, 0.00},
-            {-32.19, 1.50, 0.00},
-            {-26.24, 1.50, 0.00},
-            {-44.08, 1.50, -8.32},
-            {-38.14, 1.50, -8.32},
-            {-32.19, 1.50, -8.32},
-            {-26.24, 1.50, -8.32}
-        }
-        numberCards = {}
-        sourceDeck = getObjectsWithTag("Numbers")[1]
-        numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-        numberCardDeck.locked = false
-        for i = 1, 12 do
-            card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(numberCards, card)
-        end
-        table.sort(numberCards, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, 12 do
-            numberCards[i].setPositionSmooth(cardPositions[i])
-            numberCards[i].setRotation({0.00, 180.00, 0.00})
-        end
-    elseif missionNum == 27 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 1, 12)
-    elseif missionNum == 28 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 2, 12)
-        end
-    elseif missionNum == 29 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.addTag("Destroy")
-        cardsToDeal.shuffle()
-        cardsTable = {}
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(cardsTable, card)
-        end
+    elseif missionNum == 62 then
+        -- Mission 62: Player-based number distribution
+        local numbers = {}
         for i = 1, playerNum do
-            isBlueGreen = 1
-            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
-                isBlueGreen = -1
-            end
-            cardCount = 2
-            if i == playerNum then
-                cardCount = 3
-            end
-            for j = 1, cardCount do
-                cardsTable[1].setPositionSmooth({characterPositions[playerColors[i]][1] + (7 * isBlueGreen), characterPositions[playerColors[i]][2], characterPositions[playerColors[i]][3]})
-                cardsTable[1].setRotation({0.00, characterRotations[playerColors[i]][2], 180.00})
-                table.remove(cardsTable, 1)
-            end
+            local number = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
+            number.locked = false
+            table.insert(numbers, number)
         end
-    elseif missionNum == 30 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 2, 12)
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+        table.sort(numbers, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+        for i = 1, playerNum do
+            numbers[i].setPosition(numberCardPositions[i])
+            numbers[i].setRotation({0.00, 90.00, 0.00})
+            numbers[i].addTag("Destroy")
+        end
+    end
+    cardsToDeal.destruct()
+end
+
+-- Handles special number card configurations
+function handleNumberCardSpecial(specialType)
+    if specialType == "faceUpAndShuffle" then
+        -- Mission 15: One card face-up, rest shuffled face-down
+        local numberCards = getObjectsWithTag("Numbers")[1]
+        local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         cardsToDeal.locked = false
         cardsToDeal.shuffle()
+        
+        -- Take one card and place it face-up
+        local number = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
+        number.locked = false
+        number.addTag("Destroy")
+        
+        -- Shuffle and place all remaining cards face-down
         for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
             card.locked = false
             card.addTag("Destroy")
         end
-        MusicPlayer.setCurrentAudioclip({
-            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-30.mp3",
-            title = "Mission 30"
-        })
-        MusicPlayer.play()
-        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
-    elseif missionNum == 31 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        isBlueGreen = 1
-        cardsAreGood = false
-        while cardsAreGood == false do
-            constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+    end
+end
+
+-- Handles number card with warning token (Mission 23)
+function handleNumberCardWithWarning(cardConfig)
+    local numberCards = getObjectsWithTag("Numbers")[1]
+    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    
+    -- Place one number card
+    local number = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
+    number.locked = false
+    number.addTag("Destroy")
+    
+    -- Place warning token based on the number card
+    local bag = getObjectsWithTag("Warning")[1]
+    local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
+    clone.locked = false
+    
+    cardsToDeal.destruct()
+end
+
+-- Handles various constraint card configurations
+function handleConstraintCards(constraintType, missionNum)
+    if constraintType == "special31" then
+        -- Mission 31: Complex constraint validation logic
+        local constraintCards = getObjectsWithTag("Constraint")[1]
+        local cardsAreGood = false
+        while not cardsAreGood do
+            local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
             constraintDeck.locked = false
             cardsAreGood = true
-            cardsToDeal = {}
+            local cardsToDeal = {}
             for i = 1, constraintDeck.getQuantity() do
-                card = constraintDeck.takeObject({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-                if (card.getName() == "A"
-                or card.getName() == "B"
-                or card.getName() == "C"
-                or card.getName() == "D"
-                or card.getName() == "E") then
+                local card = constraintDeck.takeObject({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+                if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
+                    card.getName() == "D" or card.getName() == "E") then
                     table.insert(cardsToDeal, card)
                     card.addTag("Destroy")
                 else
@@ -1530,83 +2019,48 @@ function prepareWiresAndMarkers(missionNum)
                 end
             end
             shuffleInPlace(cardsToDeal)
-            constraintCardPositions = {
-                {-42.32, 1.50, -11.87},
-                {-42.32, 1.50, -5.94},
-                {-42.32, 1.50, -0.01},
-                {-42.32, 1.50, 5.92},
-                {-42.32, 1.50, 11.85}
+            local constraintCardPositions = {
+                {-42.32, 1.50, -11.87}, {-42.32, 1.50, -5.94}, {-42.32, 1.50, -0.01},
+                {-42.32, 1.50, 5.92}, {-42.32, 1.50, 11.85}
             }
             for i = 1, #cardsToDeal do
                 cardsToDeal[i].setPosition(constraintCardPositions[i])
                 cardsToDeal[i].setRotation({0.00, 90.00, 0.00})
             end
             if playerNum < 3 then
-                count = 0
+                local count = 0
                 for i = 1, 5 do
                     if cardsToDeal[i].getName() == "A" or cardsToDeal[i].getName() == "B" then
                         count = count + 1
                     end
                 end
-                if count == 2 then
-                    cardsAreGood = false
-                end
+                if count == 2 then cardsAreGood = false end
                 count = 0
                 for i = 1, 5 do
                     if cardsToDeal[i].getName() == "C" or cardsToDeal[i].getName() == "D" then
                         count = count + 1
                     end
                 end
-                if count == 2 then
-                    cardsAreGood = false
-                end
+                if count == 2 then cardsAreGood = false end
             end
-            if cardsAreGood == false then
+            if not cardsAreGood then
                 for _, card in ipairs(cardsToDeal) do
                     card.destruct()
                 end
             end
         end
-    elseif missionNum == 32 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-    elseif missionNum == 33 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-    elseif missionNum == 34 then
-        if playerNum < 3 then
-            printToAll("Mission cannot be played with only 2 players.")
-            return
-        end
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+    elseif constraintType == "handDistribution" then
+        -- Mission 34: Distribute constraint cards to player hands
+        local constraintCards = getObjectsWithTag("Constraint")[1]
+        local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
         constraintDeck.locked = false
         constraintDeck.shuffle()
-        cardsToDeal = {}
+        local cardsToDeal = {}
         for i = 1, constraintDeck.getQuantity() do
-            card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+            local card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
             card.locked = false
-            if (card.getName() == "A"
-            or card.getName() == "B"
-            or card.getName() == "C"
-            or card.getName() == "D"
-            or card.getName() == "E") then
+            if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
+                card.getName() == "D" or card.getName() == "E") then
                 table.insert(cardsToDeal, card)
                 card.addTag("Destroy")
             else
@@ -1622,507 +2076,19 @@ function prepareWiresAndMarkers(missionNum)
                 card.setRotation(characterRotations[playerColors[num]])
             end
         end
-    elseif missionNum == 35 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
-        end
-    elseif missionNum == 36 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 1, 3, 12)
-        end
-        numberCardPositions = {
-            {-40.79, 1.50, -12.44},
-            {-40.79, 1.50, -6.22},
-            {-40.79, 1.50, 0.00},
-            {-40.79, 1.50, 6.22},
-            {-40.79, 1.50, 12.44}
-        }
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, 5 do
-            number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
-            number.locked = false
-            number.addTag("Destroy")
-            bag = getObjectsWithTag("Warning")[1]
-            clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-        end
-        cardsToDeal.destruct()
-
-        sourceSequenceCard = getObjectsWithTag("Sequence")[1]
-        sequenceRotation = {0.00, 180.00, 0.00}
-        sequenceCard = sourceSequenceCard.clone({position=playerHandPositions[playerColors[1]], rotation=sequenceRotation})
-        sequenceCard.locked = false
-        sequenceCard.addTag("Destroy")
-    elseif missionNum == 37 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        constraint = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
-        constraint.locked = false
-        constraint.addTag("Destroy")
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-    elseif missionNum == 38 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-    elseif missionNum == 39 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 2, 3, 12)
-        end
-        
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        number = cardsToDeal.takeObject({position=equipmentPositions[1], rotation={0.00, 180.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
-        for i = 1, 8 do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-        cardsToDeal.destruct()
-        chooseRandomInfo(false)
-    elseif missionNum == 40 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-    elseif missionNum == 41 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
-        end
-        chooseRandomInfo(false)
-    elseif missionNum == 42 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 1, 3, 12)
-
-        MusicPlayer.setCurrentAudioclip({
-            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
-            title = "Mission 42"
-        })
-        MusicPlayer.play()
-        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
-    elseif missionNum == 43 then    
-        setupNano(numberTokenPositions[1], 1)
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-    elseif missionNum == 44 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 3, 12)
-
-        oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
-        cardsToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, playerNum * 2 do
-            card = cardsToDeal.takeObject({position={-16.65, 1.57, -14.39}, rotation={0.00, 180.00, 0.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-        cardsToDeal.destruct()
-    elseif missionNum == 45 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-    elseif missionNum == 46 then
-        sortWiresAndEquipment(piles, 12, 4, 4, 12, 0, 0, 12)
-        bag = getObjectsWithTag("Warning")[1]
-        clone = bag.takeObject({position=numberTokenPositions[7], rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
-    elseif missionNum == 47 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-        cardPositions = {
-            {-44.08, 1.50, 8.31},
-            {-38.14, 1.50, 8.31},
-            {-32.19, 1.50, 8.31},
-            {-26.24, 1.50, 8.31},
-            {-44.08, 1.50, 0.00},
-            {-38.14, 1.50, 0.00},
-            {-32.19, 1.50, 0.00},
-            {-26.24, 1.50, 0.00},
-            {-44.08, 1.50, -8.32},
-            {-38.14, 1.50, -8.32},
-            {-32.19, 1.50, -8.32},
-            {-26.24, 1.50, -8.32}
-        }
-        numberCards = {}
-        sourceDeck = getObjectsWithTag("Numbers")[1]
-        numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-        numberCardDeck.locked = false
-        for i = 1, 12 do
-            card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(numberCards, card)
-        end
-        table.sort(numberCards, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, 12 do
-            numberCards[i].setPositionSmooth(cardPositions[i])
-            numberCards[i].setRotation({0.00, 180.00, 0.00})
-        end
-    elseif missionNum == 48 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-    elseif missionNum == 49 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
-        tokensToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        tokensToDeal.locked = false
-        tokensToDeal.shuffle()
-        isBlueGreen = 1
-        for i = 1, playerNum do
-            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
-                isBlueGreen = -1
-            end
-            tokenCount = 7
-            if playerNum == 3 then
-                tokenCount = 6
-            elseif playerNum == 4 then
-                tokenCount = 5
-            elseif playerNum == 5 then
-                tokenCount = 4
-            end
-            for j = 1, tokenCount do
-                token = tokensToDeal.takeObject({position={
-                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
-                    characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 180.00}})
-                token.locked = false
-                token.addTag("Destroy")
-            end
-        end
-        tokensToDeal.destruct()
-    elseif missionNum == 50 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
-        end
-    elseif missionNum == 51 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
-        end
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        for i = 1, cardsToDeal.getQuantity() do
-            card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-        end
-    elseif missionNum == 52 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 4, 4, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        end
-    elseif missionNum == 53 then
-        setupNano({-20.22, 2.02, -1.16}, 1)
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-    elseif missionNum == 54 then
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 0, 0, 12)
-        wires = cloneAndPrepareDeck({"Wires", "Red"}, {-16.78, 1.59, -14.52}, {0.00, 90.00, 0.00}, true)
-        for i = 1, wires.getQuantity() do
-            wire = wires.takeObject({position={-16.78, 1.59, -14.52}, rotation={0.00, 90.00, 0.00}})
-            wire.locked = false
-            wire.addTag("Destroy")
-        end
-        oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
-        tokensToDeal = oxygenTokens.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        tokensToDeal.locked = false
-        tokensToDeal.shuffle()
-        isBlueGreen = 1
-        for i = 1, playerNum do
-            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
-                isBlueGreen = -1
-            end
-            tokenCount = 9
-            if playerNum == 3 then
-                tokenCount = 6
-            elseif playerNum == 4 then
-                tokenCount = 3
-            elseif playerNum == 5 then
-                tokenCount = 2
-            end
-            for j = 1, tokenCount do
-                token = tokensToDeal.takeObject({position={
-                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
-                    characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 180.00}})
-                token.locked = false
-                token.addTag("Destroy")
-            end
-        end
-        for i = 1, tokensToDeal.getQuantity() do
-            token = tokensToDeal.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 180.00}})
-            token.locked = false
-            token.addTag("Destroy")
-        end
-        tokensToDeal.destruct()
-
-        MusicPlayer.setCurrentAudioclip({
-            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-54.mp3",
-            title = "Mission 54"
-        })
-        MusicPlayer.play()
-        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
-    elseif missionNum == 55 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        challengePositions = {
-            {-46.65, 1.50, 0.00},
-            {-46.65, 1.50, -7.26},
-            {-46.65, 1.50, 7.26},
-            {-46.65, 1.50, -14.53},
-            {-46.65, 1.50, 14.53}
-        }
-        
-        challengeCards = getObjectsWithTag("Challenge")[1]
-        cardsToDeal = challengeCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        challenges = {}
-        for i = 1, playerNum do
-            challenge = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
-            challenge.locked = false
-            challenge.addTag("Destroy")
-            table.insert(challenges, challenge)
-        end
-        table.sort(challenges, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, playerNum do
-            challenges[i].setPosition(challengePositions[i])
-            challenges[i].setRotation({0.00, 180.00, 0.00})
-            if challenges[i].getName() == "8" then
-                numberCards = getObjectsWithTag("Numbers")[1]
-                numbersToDeal = numberCards.clone({position={-92.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-                numbersToDeal.locked = false
-                numbersToDeal.shuffle()
-                card = numbersToDeal.takeObject({position={challengePositions[i][1] + 3.89, challengePositions[i][2] + 0.02, challengePositions[i][3] - 5.04}, rotation={0.27, 105.00, 0.00}})
-                card.addTag("Destroy")
-                card = numbersToDeal.takeObject({position={challengePositions[i][1] + 3.84, challengePositions[i][2] + 0.02, challengePositions[i][3] + 5.04}, rotation={0.15, 75.00, 0.17}})
-                card.addTag("Destroy")
-                numbersToDeal.destruct()
-            end
-        end
-        cardsToDeal.destruct()
-    elseif missionNum == 56 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-    elseif missionNum == 57 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
-        end
-        cardPositions = {
-            {-44.08, 1.50, 8.31},
-            {-38.14, 1.50, 8.31},
-            {-32.19, 1.50, 8.31},
-            {-26.24, 1.50, 8.31},
-            {-44.08, 1.50, 0.00},
-            {-38.14, 1.50, 0.00},
-            {-32.19, 1.50, 0.00},
-            {-26.24, 1.50, 0.00},
-            {-44.08, 1.50, -8.32},
-            {-38.14, 1.50, -8.32},
-            {-32.19, 1.50, -8.32},
-            {-26.24, 1.50, -8.32}
-        }
-        numberCards = {}
-        sourceDeck = getObjectsWithTag("Numbers")[1]
-        numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-        numberCardDeck.locked = false
-        for i = 1, 12 do
-            card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(numberCards, card)
-        end
-        table.sort(numberCards, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, 12 do
-            numberCards[i].setPositionSmooth(cardPositions[i])
-            numberCards[i].setRotation({0.00, 180.00, 0.00})
-        end
-        constraintCards = {}
-        sourceDeck = getObjectsWithTag("Constraint")[1]
-        constraintCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}, scale={2.00, 1.00, 2.00}})
-        constraintCardDeck.locked = false
-        constraintCardDeck.shuffle()
-        for i = 1, 12 do
-            card = constraintCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(constraintCards, card)
-        end
-        for i = 1, 12 do
-            constraintCards[i].setPositionSmooth({cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]})
-            constraintCards[i].setRotation({0.00, 180.00, 0.00})
-        end
-    elseif missionNum == 58 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-    elseif missionNum == 59 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-        cardPositions = {
-            {-44.08, 1.50, 8.31},
-            {-38.14, 1.50, 8.31},
-            {-32.19, 1.50, 8.31},
-            {-26.24, 1.50, 8.31},
-            {-44.08, 1.50, 0.00},
-            {-38.14, 1.50, 0.00},
-            {-32.19, 1.50, 0.00},
-            {-26.24, 1.50, 0.00},
-            {-44.08, 1.50, -8.32},
-            {-38.14, 1.50, -8.32},
-            {-32.19, 1.50, -8.32},
-            {-26.24, 1.50, -8.32}
-        }
-        numberCards = {}
-        sourceDeck = getObjectsWithTag("Numbers")[1]
-        numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-        numberCardDeck.locked = false
-        numberCardDeck.shuffle()
-        for i = 1, 12 do
-            card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(numberCards, card)
-        end
-        for i = 1, 12 do
-            if numberCards[i].getName() == "7" then
-                local direction = 1
-                if i == 12 then
-                    direction = 0
-                end
-                setupNano(cardPositions[i], direction)
-            end
-            numberCards[i].setPositionSmooth(cardPositions[i])
-            numberCards[i].setRotation({0.00, 180.00, 0.00})
-        end
-    elseif missionNum == 60 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 3, 12)
-        end
-        challengePositions = {
-            {-46.65, 1.50, -14.53},
-            {-46.65, 1.50, -7.26},
-            {-46.65, 1.50, 0.00},
-            {-46.65, 1.50, 7.26},
-            {-46.65, 1.50, 14.53}
-        }
-        
-        challengeCards = getObjectsWithTag("Challenge")[1]
-        cardsToDeal = challengeCards.clone({position={-82.10, 2.20, -24.63}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        challenges = {}
-        for i = 1, playerNum do
-            challenge = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
-            challenge.locked = false
-            challenge.addTag("Destroy")
-            table.insert(challenges, challenge)
-        end
-        table.sort(challenges, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, playerNum do
-            challenges[i].setPosition(challengePositions[i])
-            challenges[i].setRotation({0.00, 180.00, 0.00})
-            if challenges[i].getName() == "8" then
-                numberCards = getObjectsWithTag("Numbers")[1]
-                numbersToDeal = numberCards.clone({position={-92.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-                numbersToDeal.locked = false
-                numbersToDeal.shuffle()
-                card = numbersToDeal.takeObject({position={challengePositions[i][1] + 3.89, challengePositions[i][2] + 0.02, challengePositions[i][3] - 5.04}, rotation={0.27, 105.00, 0.00}})
-                card.addTag("Destroy")
-                card = numbersToDeal.takeObject({position={challengePositions[i][1] + 3.84, challengePositions[i][2] + 0.02, challengePositions[i][3] + 5.04}, rotation={0.15, 75.00, 0.17}})
-                card.addTag("Destroy")
-                numbersToDeal.destruct()
-            end
-        end
-        cardsToDeal.destruct()
-    elseif missionNum == 61 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
-        end
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        constraintDeck = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+    elseif constraintType == "complexDistribution" then
+        -- Mission 61: Complex constraint distribution logic
+        local constraintCards = getObjectsWithTag("Constraint")[1]
+        local constraintDeck = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         constraintDeck.locked = false
         constraintDeck.shuffle()
-        cardsToDeal = {}
+        local cardsToDeal = {}
         for i = 1, constraintDeck.getQuantity() do
-            card = constraintDeck.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+            local card = constraintDeck.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
             card.locked = false
             card.addTag("Destroy")
-            if (card.getName() == "A"
-            or card.getName() == "B"
-            or card.getName() == "C"
-            or card.getName() == "D"
-            or card.getName() == "E") then
+            if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
+                card.getName() == "D" or card.getName() == "E") then
                 if playerNum < 5 and #cardsToDeal == 4 then
                     card.destruct()
                 else
@@ -2131,13 +2097,11 @@ function prepareWiresAndMarkers(missionNum)
             end
         end
         shuffleInPlace(cardsToDeal)
-        j = 0
+        local j = 0
         for i = 1, #cardsToDeal do
             j = j + 1
-            if j > #cardsToDeal then
-                break
-            end
-            isBlueGreen = 1
+            if j > #cardsToDeal then break end
+            local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
@@ -2187,98 +2151,327 @@ function prepareWiresAndMarkers(missionNum)
                 cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
             end
         end
-    elseif missionNum == 62 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        end
-        numberPositions = {
-            {-40.79, 1.50, -12.44},
-            {-40.79, 1.50, -6.22},
-            {-40.79, 1.50, 0.00},
-            {-40.79, 1.50, 6.22},
-            {-40.79, 1.50, 12.44}
-        }
-        
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
+    end
+end
+
+-- Handles simple constraint card shuffling
+function handleShuffleConstraints()
+    local constraintCards = getObjectsWithTag("Constraint")[1]
+    local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    for i = 1, cardsToDeal.getQuantity() do
+        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+        card.locked = false
+        card.addTag("Destroy")
+    end
+end
+
+-- Handles single constraint card
+function handleSingleConstraintCard(cardConfig)
+    local constraintCards = getObjectsWithTag("Constraint")[1]
+    local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    local constraint = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
+    constraint.locked = false
+    constraint.addTag("Destroy")
+    for i = 1, cardsToDeal.getQuantity() do
+        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+        card.locked = false
+        card.addTag("Destroy")
+    end
+end
+
+-- Handles special constraint card configurations
+function handleConstraintCardSpecial(specialType)
+    if specialType == "faceUpAndShuffle" then
+        -- Mission 32: One card face-up, rest shuffled face-down
+        local constraintCards = getObjectsWithTag("Constraint")[1]
+        local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
         cardsToDeal.locked = false
         cardsToDeal.shuffle()
-        numbers = {}
-        for i = 1, playerNum do
-            number = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
-            number.locked = false
-            table.insert(numbers, number)
+        
+        -- Take one card and place it face-up
+        local constraint = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
+        constraint.locked = false
+        constraint.addTag("Destroy")
+        
+        -- Shuffle and place all remaining cards face-down
+        for i = 1, cardsToDeal.getQuantity() do
+            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+            card.locked = false
+            card.addTag("Destroy")
         end
-        table.sort(numbers, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, playerNum do
-            numbers[i].setPosition(numberPositions[i])
-            numbers[i].setRotation({0.00, 90.00, 0.00})
-            numbers[i].addTag("Destroy")
-        end
-        cardsToDeal.destruct()
-    elseif missionNum == 63 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
+    end
+end
+
+-- Handles 5 constraint cards setup
+function handleConstraintCards5()
+    local constraintPositions = {
+        {-43.80, 1.50, 0.00}, {-37.83, 1.50, 8.42}, {-31.86, 1.50, 0.00}, 
+        {-37.83, 1.50, -8.41}, {-24.36, 1.50, 0.00}
+    }
+    local constraintCards = getObjectsWithTag("Constraint")[1]
+    local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+    constraintDeck.locked = false
+    local cardsToDeal = {}
+    for i = 1, constraintDeck.getQuantity() do
+        local card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+        card.locked = false
+        if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
+            card.getName() == "D" or card.getName() == "E") then
+            table.insert(cardsToDeal, card)
+            card.addTag("Destroy")
         else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
+            card.destruct()
         end
-        tokenCount = 14
-        if playerNum == 3 then
-            tokenCount = 18
-        elseif playerNum == 4 then
-            tokenCount = 24
-        elseif playerNum == 5 then
-            tokenCount = 30
-        end
-        oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
-        tokensToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        tokensToDeal.locked = false
-        tokensToDeal.shuffle()
-        isBlueGreen = 1
-        if playerColors[1] == "Blue" or playerColors[1] == "Green" then
-            isBlueGreen = -1
-        end
-        for i = 1, tokenCount do
-            token = tokensToDeal.takeObject({position=
-                            {characterPositions[playerColors[1]][1] + (7 * isBlueGreen),
-                            characterPositions[playerColors[1]][2],
-                            characterPositions[playerColors[1]][3]}, rotation=characterRotations[playerColors[1]]})
-            token.locked = false
-            token.addTag("Destroy")
+    end
+    shuffleInPlace(cardsToDeal)
+    for num, card in ipairs(cardsToDeal) do
+        card.setPosition(constraintPositions[num])
+        card.setRotation({0.00, 180.00, 0.00})
+    end
+end
+
+-- Handles grid constraint cards setup
+function handleGridConstraints()
+    local cardPositions = {
+        {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
+        {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
+        {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
+    }
+    local constraintCards = {}
+    local sourceDeck = getObjectsWithTag("Constraint")[1]
+    local constraintCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}, scale={2.00, 1.00, 2.00}})
+    constraintCardDeck.locked = false
+    constraintCardDeck.shuffle()
+    for i = 1, 12 do
+        local card = constraintCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
+        card.locked = false
+        card.addTag("Destroy")
+        table.insert(constraintCards, card)
+    end
+    for i = 1, 12 do
+        constraintCards[i].setPositionSmooth({cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]})
+        constraintCards[i].setRotation({0.00, 180.00, 0.00})
+    end
+end
+
+-- Handles various oxygen token configurations
+function handleOxygenTokens(tokenType)
+    local oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
+    local tokensToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+    tokensToDeal.locked = false
+    tokensToDeal.shuffle()
+    
+    if tokenType == "perPlayer2" then
+        -- Mission 44: 2 tokens per player
+        for i = 1, playerNum * 2 do
+            local card = tokensToDeal.takeObject({position={-16.65, 1.57, -14.39}, rotation={0.00, 180.00, 0.00}})
+            card.locked = false
+            card.addTag("Destroy")
         end
         tokensToDeal.destruct()
-    elseif missionNum == 64 then
-        if playerNum < 3 then
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 2, 2, 12)
-        else
-            sortWiresAndEquipment(piles, 12, 0, 0, 12, 1, 1, 12)
+    elseif tokenType == "playerBased" then
+        -- Mission 49: Variable tokens based on player count
+        for i = 1, playerNum do
+            local isBlueGreen = 1
+            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
+                isBlueGreen = -1
+            end
+            local tokenCount = 7
+            if playerNum == 3 then tokenCount = 6
+            elseif playerNum == 4 then tokenCount = 5
+            elseif playerNum == 5 then tokenCount = 4 end
+            for j = 1, tokenCount do
+                local token = tokensToDeal.takeObject({position={
+                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                    characterPositions[playerColors[i]][2],
+                    characterPositions[playerColors[i]][3]
+                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
+                token.locked = false
+                token.addTag("Destroy")
+            end
         end
-    elseif missionNum == 65 then
-        if playerNum < 3 then
-            printToAll("Mission cannot be played with only 2 players.")
-            return
-        end
-        sortWiresAndEquipment(piles, 12, 0, 0, 12, 3, 3, 12)
-        numberCards = getObjectsWithTag("Numbers")[1]
-        cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        isBlueGreen = 1
+        tokensToDeal.destruct()
+    elseif tokenType == "playerBasedSpecial" then
+        -- Mission 54: Special distribution
+        local isBlueGreen = 1
         for i = 1, playerNum do
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
-            cardCount = 3
-            if playerNum == 3 then
-                cardCount = 4
-            elseif playerNum == 5 and i > 2 then
-                cardCount = 2
+            local tokenCount = 9
+            if playerNum == 3 then tokenCount = 6
+            elseif playerNum == 4 then tokenCount = 3
+            elseif playerNum == 5 then tokenCount = 2 end
+            for j = 1, tokenCount do
+                local token = tokensToDeal.takeObject({position={
+                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                    characterPositions[playerColors[i]][2],
+                    characterPositions[playerColors[i]][3]
+                }, rotation={0.00, characterRotations[playerColors[i]][2], 180.00}})
+                token.locked = false
+                token.addTag("Destroy")
             end
+        end
+        for i = 1, tokensToDeal.getQuantity() do
+            local token = tokensToDeal.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 180.00}})
+            token.locked = false
+            token.addTag("Destroy")
+        end
+        tokensToDeal.destruct()
+    elseif tokenType == "scalingToLeader" then
+        -- Mission 63: Scaling tokens to leader
+        local tokenCount = 14
+        if playerNum == 3 then tokenCount = 18
+        elseif playerNum == 4 then tokenCount = 24
+        elseif playerNum == 5 then tokenCount = 30 end
+        local isBlueGreen = 1
+        if playerColors[1] == "Blue" or playerColors[1] == "Green" then
+            isBlueGreen = -1
+        end
+        for i = 1, tokenCount do
+            local token = tokensToDeal.takeObject({position={
+                characterPositions[playerColors[1]][1] + (7 * isBlueGreen),
+                characterPositions[playerColors[1]][2],
+                characterPositions[playerColors[1]][3]
+            }, rotation=characterRotations[playerColors[1]]})
+            token.locked = false
+            token.addTag("Destroy")
+        end
+        tokensToDeal.destruct()
+    end
+end
 
+-- Handles challenge cards setup
+function handleChallengeCards(missionNum)
+    local challengePositions = {
+        {-46.65, 1.50, 0.00}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 7.26}, 
+        {-46.65, 1.50, -14.53}, {-46.65, 1.50, 14.53}
+    }
+    if missionNum == 60 then
+        challengePositions = {
+            {-46.65, 1.50, -14.53}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 0.00}, 
+            {-46.65, 1.50, 7.26}, {-46.65, 1.50, 14.53}
+        }
+    end
+    
+    local challengeCards = getObjectsWithTag("Challenge")[1]
+    local cardsToDeal = challengeCards.clone({position={-82.10, 2.20, -24.63}})
+    cardsToDeal.locked = false
+    cardsToDeal.shuffle()
+    local challenges = {}
+    for i = 1, playerNum do
+        local challenge = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
+        challenge.locked = false
+        challenge.addTag("Destroy")
+        table.insert(challenges, challenge)
+    end
+    table.sort(challenges, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+    for i = 1, playerNum do
+        challenges[i].setPosition(challengePositions[i])
+        challenges[i].setRotation({0.00, 180.00, 0.00})
+        if challenges[i].getName() == "8" then
+            local numberCards = getObjectsWithTag("Numbers")[1]
+            local numbersToDeal = numberCards.clone({position={-92.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+            numbersToDeal.locked = false
+            numbersToDeal.shuffle()
+            local card = numbersToDeal.takeObject({
+                position={challengePositions[i][1] + 3.89, challengePositions[i][2] + 0.02, challengePositions[i][3] - 5.04}, 
+                rotation={0.27, 105.00, 0.00}
+            })
+            card.addTag("Destroy")
+            card = numbersToDeal.takeObject({
+                position={challengePositions[i][1] + 3.84, challengePositions[i][2] + 0.02, challengePositions[i][3] + 5.04}, 
+                rotation={0.15, 75.00, 0.17}
+            })
+            card.addTag("Destroy")
+            numbersToDeal.destruct()
+        end
+    end
+    cardsToDeal.destruct()
+end
+
+-- Handles nano setup with number 7 detection
+function handleNanoOnSeven()
+    local cardPositions = {
+        {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
+        {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
+        {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
+    }
+    local numberCards = {}
+    local sourceDeck = getObjectsWithTag("Numbers")[1]
+    local numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
+    numberCardDeck.locked = false
+    numberCardDeck.shuffle()
+    for i = 1, 12 do
+        local card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
+        card.locked = false
+        card.addTag("Destroy")
+        table.insert(numberCards, card)
+    end
+    for i = 1, 12 do
+        if numberCards[i].getName() == "7" then
+            local direction = 1
+            if i == 12 then direction = 0 end
+            handleNano(cardPositions[i], direction)
+        end
+        numberCards[i].setPositionSmooth(cardPositions[i])
+        numberCards[i].setRotation({0.00, 180.00, 0.00})
+    end
+end
+
+-- Handles custom distributions for specific missions
+function handleCustomDistribution(distributionType)
+    if distributionType == "mission29" then
+        -- Mission 29: Custom number card distribution
+        local numberCards = getObjectsWithTag("Numbers")[1]
+        local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+        cardsToDeal.locked = false
+        cardsToDeal.addTag("Destroy")
+        cardsToDeal.shuffle()
+        local cardsTable = {}
+        for i = 1, cardsToDeal.getQuantity() do
+            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
+            card.locked = false
+            card.addTag("Destroy")
+            table.insert(cardsTable, card)
+        end
+        for i = 1, playerNum do
+            local isBlueGreen = 1
+            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
+                isBlueGreen = -1
+            end
+            local cardCount = 2
+            if i == playerNum then cardCount = 3 end
             for j = 1, cardCount do
-                card = cardsToDeal.takeObject({position={
+                cardsTable[1].setPositionSmooth({
+                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen), 
+                    characterPositions[playerColors[i]][2], 
+                    characterPositions[playerColors[i]][3]
+                })
+                cardsTable[1].setRotation({0.00, characterRotations[playerColors[i]][2], 180.00})
+                table.remove(cardsTable, 1)
+            end
+        end
+    elseif distributionType == "mission65" then
+        -- Mission 65: Custom number card distribution
+        local numberCards = getObjectsWithTag("Numbers")[1]
+        local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
+        cardsToDeal.locked = false
+        cardsToDeal.shuffle()
+        local isBlueGreen = 1
+        for i = 1, playerNum do
+            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
+                isBlueGreen = -1
+            end
+            local cardCount = 3
+            if playerNum == 3 then cardCount = 4
+            elseif playerNum == 5 and i > 2 then cardCount = 2 end
+            for j = 1, cardCount do
+                local card = cardsToDeal.takeObject({position={
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                     characterPositions[playerColors[i]][2],
                     characterPositions[playerColors[i]][3]
@@ -2287,57 +2480,16 @@ function prepareWiresAndMarkers(missionNum)
                 card.addTag("Destroy")
             end
         end
-    elseif missionNum == 66 then
-        sortWiresAndEquipment(piles, 12, 2, 2, 12, 2, 2, 12)
-        bunkerCard = getObjectsWithTag("Bunker")[1]
-        card = bunkerCard.clone({position={-37.83, 1.50, 0.00}})
-        card.addTag("Destroy")
-        card.locked = false
-        standee = getObjectsWithTag("Standee")[1]
-        clone = standee.clone({position={-39.73, 3.12, -3.28}})
-        clone.addTag("Destroy")
-        clone.locked = false
-
-        constraintPositions = {
-            {-43.80, 1.50, 0.00},
-            {-37.83, 1.50, 8.42},
-            {-31.86, 1.50, 0.00},
-            {-37.83, 1.50, -8.41},
-            {-24.36, 1.50, 0.00}
-        }
-
-        constraintCards = getObjectsWithTag("Constraint")[1]
-        constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        constraintDeck.locked = false
-        cardsToDeal = {}
-        for i = 1, constraintDeck.getQuantity() do
-            card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            if (card.getName() == "A"
-            or card.getName() == "B"
-            or card.getName() == "C"
-            or card.getName() == "D"
-            or card.getName() == "E") then
-                table.insert(cardsToDeal, card)
-                card.addTag("Destroy")
-            else
-                card.destruct()
-            end
-        end
-        shuffleInPlace(cardsToDeal)
-        for num, card in ipairs(cardsToDeal) do
-            card.setPosition(constraintPositions[num])
-            card.setRotation({0.00, 180.00, 0.00})
-        end
-
-        MusicPlayer.setCurrentAudioclip({
-            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-66.mp3",
-            title = "Mission 66"
-        })
-        MusicPlayer.play()
-        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
     end
-    dealWiresToHands(missionNum, piles)
+end
+
+-- Handles sequence card setup
+function handleSequenceCard()
+    local sourceSequenceCard = getObjectsWithTag("Sequence")[1]
+    local sequenceRotation = {0.00, 180.00, 0.00}
+    local sequenceCard = sourceSequenceCard.clone({position=playerHandPositions[playerColors[1]], rotation=sequenceRotation})
+    sequenceCard.locked = false
+    sequenceCard.addTag("Destroy")
 end
 
 -- blueHighest is the highest value of a blue wire, and in terms of the card, yellowNum of yellowTotal and redNum of redTotal

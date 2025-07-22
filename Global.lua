@@ -3,6 +3,7 @@ DEBUG = false
 DEBUG_PLAYER_COUNT = 5
 
 function onLoad()
+    if DEBUG then return end
     -- For the counter object, set the Lua script to the one fetched from the web.
     WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/Counter.lua", function(e)
         counter = getObjectFromGUID("151b73")
