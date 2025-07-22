@@ -952,8 +952,8 @@ function startMission()
         
         -- Special case: X or Y ray is conditionally created
         if xyBanned == false then
-            createStandardButton("addToCharListXYR", "Add", {buttonPositions[5], addZPosition}, addWidth, fontSize)
-            createStandardButton("removeFromCharListXYR", "Remove", {buttonPositions[5], removeZPosition}, removeWidth, fontSize)
+            createStandardButton("addToCharListXYR", "Add", {buttonPositions[5 - skipped], addZPosition}, addWidth, fontSize)
+            createStandardButton("removeFromCharListXYR", "Remove", {buttonPositions[5 - skipped], removeZPosition}, removeWidth, fontSize)
         end
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
