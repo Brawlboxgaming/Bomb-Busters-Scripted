@@ -943,10 +943,11 @@ function startMission()
         for i = 1, 4 do
             if wtBanned and i == 2 then
                 skipped = 1 -- Skip Walkie-Talkies if banned
+            else
+                local card = characterCardSuffixes[i]
+                createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i - skipped], addZPosition}, addWidth, fontSize)
+                createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i - skipped], removeZPosition}, removeWidth, fontSize)
             end
-            local card = characterCardSuffixes[i]
-            createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i - skipped], addZPosition}, addWidth, fontSize)
-            createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i - skipped], removeZPosition}, removeWidth, fontSize)
         end
         
         -- Special case: X or Y ray is conditionally created
