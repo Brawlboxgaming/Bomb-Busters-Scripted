@@ -924,16 +924,16 @@ function startMission()
         pos = 2
         for _, card in ipairs(pack3Characters) do
             if card.getName() == "Walkie-Talkies" and wtBanned == false then
-                clone = cloneWithStandardProps(card, cardPositions[2], {0.00, 90.00, 0.00}, true)
+                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
                 pos = pos + 1
             elseif card.getName() == "Triple Detector" then
-                clone = cloneWithStandardProps(card, cardPositions[3], {0.00, 90.00, 0.00}, true)
+                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
                 pos = pos + 1
             elseif card.getName() == "General Radar" then
-                clone = cloneWithStandardProps(card, cardPositions[4], {0.00, 90.00, 0.00}, true)
+                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
                 pos = pos + 1
             elseif card.getName() == "X or Y ray" and xyBanned == false then
-                clone = cloneWithStandardProps(card, cardPositions[5], {0.00, 90.00, 0.00}, true)
+                clone = cloneWithStandardProps(card, cardPositions[pos], {0.00, 90.00, 0.00}, true)
                 pos = pos + 1
             end
         end
