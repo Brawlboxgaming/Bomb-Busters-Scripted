@@ -896,7 +896,7 @@ function startMission()
             -0.58,
             -1.73
         }
-        if xyBanned == false or wtBanned == false then
+        if xyBanned == false and wtBanned == false then
             cardPositions = {
                 {-44.61, 1.50, -13.76},
                 {-44.61, 1.50, -6.88},
