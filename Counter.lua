@@ -883,6 +883,7 @@ function startMission()
         removeZPosition = -2.7
         -- This check is needed because the X or Y ray is not available as personal equipment when setting up these missions.
         xyBanned = missionNum == 44 or missionNum == 45 or missionNum == 47 or missionNum == 49 or missionNum == 51 or missionNum == 54 or missionNum == 59 or missionNum == 63 or missionNum == 65
+        wtBanned = missionNum == 35
         cardPositions = {
             {-44.61, 1.50, -10.32},
             {-44.61, 1.50, -3.44},
@@ -895,7 +896,7 @@ function startMission()
             -0.58,
             -1.73
         }
-        if xyBanned == false then
+        if xyBanned == false or wtBanned == false then
             cardPositions = {
                 {-44.61, 1.50, -13.76},
                 {-44.61, 1.50, -6.88},
@@ -920,23 +921,32 @@ function startMission()
             clone = cloneWithStandardProps(pack0Characters[1], cardPositions[1], {0.00, 90.00, 0.00}, true)
         end
         pack3Characters = getObjectsWithAllTags({"Character", "Pack3"})
+        pos = 2
         for _, card in ipairs(pack3Characters) do
-            if card.getName() == "Walkie-Talkies" then
+            if card.getName() == "Walkie-Talkies" and wtBanned == false then
                 clone = cloneWithStandardProps(card, cardPositions[2], {0.00, 90.00, 0.00}, true)
+                pos = pos + 1
             elseif card.getName() == "Triple Detector" then
                 clone = cloneWithStandardProps(card, cardPositions[3], {0.00, 90.00, 0.00}, true)
+                pos = pos + 1
             elseif card.getName() == "General Radar" then
                 clone = cloneWithStandardProps(card, cardPositions[4], {0.00, 90.00, 0.00}, true)
+                pos = pos + 1
             elseif card.getName() == "X or Y ray" and xyBanned == false then
                 clone = cloneWithStandardProps(card, cardPositions[5], {0.00, 90.00, 0.00}, true)
+                pos = pos + 1
             end
         end
         
-        -- Create character card buttons dynamically (first 4 cards are always available)
+        -- Create character card buttons dynamically
+        skipped = 0
         for i = 1, 4 do
+            if wtBanned and i == 2 then
+                skipped = 1 -- Skip Walkie-Talkies if banned
+            end
             local card = characterCardSuffixes[i]
-            createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i], addZPosition}, addWidth, fontSize)
-            createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i], removeZPosition}, removeWidth, fontSize)
+            createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i - skipped], addZPosition}, addWidth, fontSize)
+            createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i - skipped], removeZPosition}, removeWidth, fontSize)
         end
         
         -- Special case: X or Y ray is conditionally created
