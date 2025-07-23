@@ -606,30 +606,11 @@ end
 -- Determines if equipment should be excluded based on mission and pack rules
 function shouldExcludeEquipment(clone, missionNum, yellowNum)
     local desc = clone.getDescription()
+    local equipmentName = clone.getName()
     
-    -- Pack-based exclusions
-    if clone.hasTag("Pack1") and (missionNum < 9 or yellowNum == 0) then
+    -- Check new configuration structure first
+    if shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowNum) then
         return true
-    end
-    if clone.hasTag("Pack5") and missionNum < 55 then
-        return true
-    end
-    
-    -- Mission-specific equipment exclusions
-    local exclusions = {
-        [3] = {"2", "11", "12"}, [10] = {"11"}, [20] = {"2"}, [26] = {"10"},
-        [27] = {"7"}, [35] = {"2"}, [44] = {"10"}, [45] = {"10", "11"},
-        [46] = {"7"}, [47] = {"10"}, [49] = {"10"}, [51] = {"10"},
-        [52] = {"1", "12"}, [53] = {"6", "9"}, [54] = {"10"}, [57] = {"1010"},
-        [58] = {"4", "7"}, [59] = {"10"}, [63] = {"10"}, [65] = {"10"}
-    }
-    
-    if exclusions[missionNum] then
-        for _, excludedDesc in ipairs(exclusions[missionNum]) do
-            if desc == excludedDesc then
-                return true
-            end
-        end
     end
     
     -- Special case for mission 11
@@ -704,42 +685,481 @@ function createStandardButton(clickFunction, label, position, width, fontSize, s
     })
 end
 
--- Character card data for dynamic function generation
-local characterCards = {
-    {name = "Double Detector", suffix = "DD", pack = 0, position = 1, bannedMissions = {}},
-    {name = "Walkie-Talkies", suffix = "WT", pack = 3, position = 2, bannedMissions = {35}},
-    {name = "Triple Detector", suffix = "TD", pack = 3, position = 3, bannedMissions = {}},
-    {name = "General Radar", suffix = "GR", pack = 3, position = 4, bannedMissions = {}},
-    {name = "X or Y ray", suffix = "XYR", pack = 3, position = 5, bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}}
-}
+-----------------------
+--- CONFIGURATION DATA STRUCTURES ---
+-----------------------
 
--- Position arrays for different numbers of character cards
-local positionLayouts = {
-    [2] = {
-        cards = {{-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}},
-        buttons = {0.58, -0.58}
+-- Character card configuration data structure
+local characterCardConfigs = {
+    ["Double Detector"] = {
+        suffix = "DD",
+        pack = 0,
+        position = 1,
+        bannedMissions = {},
+        isDefault = true
     },
-    [3] = {
-        cards = {{-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}},
-        buttons = {1.15, 0.00, -1.15}
+    ["Walkie-Talkies"] = {
+        suffix = "WT",
+        pack = 3,
+        position = 2,
+        bannedMissions = {35},
+        minPlayers = 2
     },
-    [4] = {
-        cards = {{-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}},
-        buttons = {1.73, 0.58, -0.58, -1.73}
+    ["Triple Detector"] = {
+        suffix = "TD",
+        pack = 3,
+        position = 3,
+        bannedMissions = {}
     },
-    [5] = {
-        cards = {{-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}},
-        buttons = {2.30, 1.15, 0.00, -1.15, -2.30}
+    ["General Radar"] = {
+        suffix = "GR",
+        pack = 3,
+        position = 4,
+        bannedMissions = {}
+    },
+    ["X or Y ray"] = {
+        suffix = "XYR",
+        pack = 3,
+        position = 5,
+        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
     }
 }
+
+-- Equipment configuration data structure
+local equipmentConfigs = {
+    ["Label Not Equals"] = {
+        description = "1",
+        pack = 0,
+        bannedMissions = {52}
+    },
+    ["Walkie-Talkies"] = {
+        description = "2",
+        pack = 0,
+        bannedMissions = {3, 20, 35}
+    },
+    ["Triple Detector"] = {
+        description = "3",
+        pack = 0,
+        bannedMissions = {}
+    },
+    ["Post-it"] = {
+        description = "4",
+        pack = 3,
+        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
+    },
+    ["Super Detector"] = {
+        description = "5",
+        pack = 0,
+        bannedMissions = {}
+    },
+    ["Rewinder"] = {
+        description = "6",
+        pack = 0,
+        bannedMissions = {53}
+    },
+    ["Emergency Batteries"] = {
+        description = "7",
+        pack = 0,
+        bannedMissions = {27, 46}
+    },
+    ["General Radar"] = {
+        description = "8",
+        pack = 0,
+        bannedMissions = {},
+        specialPositioning = {
+            [18] = {position = {0.04, 1.52, 5.39}, rotation = {0.00, 180.00, 0.00}}
+        },
+        requiredFor = {18}
+    },
+    ["Stabilizer"] = {
+        description = "9",
+        pack = 0,
+        bannedMissions = {53}
+    },
+    ["X or Y ray"] = {
+        description = "10",
+        pack = 0,
+        bannedMissions = {26, 44, 45, 47, 49, 51, 54, 59, 63, 65},
+        spareEquipmentSetup = {
+            count = 2,
+            position = {24.35, 1.50, 5.49},
+            rotation = {0.00, 180.00, 180.00}
+        }
+    },
+    ["Coffee Mug"] = {
+        description = "11",
+        pack = 0,
+        bannedMissions = {3, 10, 45}
+    },
+    ["Label Equals"] = {
+        description = "12",
+        pack = 0,
+        bannedMissions = {3, 52}
+    },
+    ["False Bottom"] = {
+        description = "0",
+        pack = 1,
+        bannedMissions = {}
+    },
+    ["Single Wire Label"] = {
+        description = "0202",
+        pack = 5,
+        bannedMissions = {}
+    },
+    ["Emergency Drop"] = {
+        description = "0303",
+        pack = 5,
+        bannedMissions = {}
+    },
+    ["Fast Pass Card"] = {
+        description = "0909",
+        pack = 5,
+        bannedMissions = {}
+    },
+    ["Disintegrator"] = {
+        description = "1010",
+        pack = 5,
+        bannedMissions = {57}
+    },
+    ["Grappling Hook"] = {
+        description = "1111",
+        pack = 5,
+        bannedMissions = {}
+    }
+}
+
+-- Position layout configuration
+local layoutConfigs = {
+    characterCards = {
+        [2] = {
+            cards = {{-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}},
+            buttons = {0.58, -0.58}
+        },
+        [3] = {
+            cards = {{-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}},
+            buttons = {1.15, 0.00, -1.15}
+        },
+        [4] = {
+            cards = {{-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}},
+            buttons = {1.73, 0.58, -0.58, -1.73}
+        },
+        [5] = {
+            cards = {{-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}},
+            buttons = {2.30, 1.15, 0.00, -1.15, -2.30}
+        }
+    },
+    equipmentCards = {
+        standard = {
+            {-14.58, 1.52, 5.49}, {-7.29, 1.52, 5.72}, {0.04, 1.52, 5.39}, 
+            {7.35, 1.52, 5.62}, {14.66, 1.52, 5.45}
+        },
+        mission23 = {
+            positions = {
+                {-14.68, 1.52, 5.49}, {-14.68, 1.52, 5.49}, {-14.68, 1.52, 5.49},
+                {-14.68, 1.52, 5.49}, {-14.68, 1.52, 5.49}, {-14.68, 1.52, 5.49}, {-14.68, 1.52, 5.49}
+            },
+            rotation = {0.00, 180.00, 180.00}
+        }
+    },
+    numberCards = {
+        grid3x4 = {
+            {-44.08, 1.50, 8.31}, {-38.14, 1.50, 8.31}, {-32.19, 1.50, 8.31}, {-26.24, 1.50, 8.31},
+            {-44.08, 1.50, 0.00}, {-38.14, 1.50, 0.00}, {-32.19, 1.50, 0.00}, {-26.24, 1.50, 0.00},
+            {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
+        },
+        vertical5 = {
+            {-40.79, 1.50, -12.44}, {-40.79, 1.50, -6.22}, {-40.79, 1.50, 0.00}, 
+            {-40.79, 1.50, 6.22}, {-40.79, 1.50, 12.44}
+        },
+        sequence3 = {
+            {-35.47, 1.50, -6.22}, {-35.46, 1.50, 0.00}, {-35.47, 1.50, 6.22}
+        },
+        equipmentBased = {
+            {-14.58, 1.57, 4.10}, {-7.29, 1.57, 4.35}, {0.04, 1.57, 4.11}, 
+            {7.35, 1.57, 4.43}, {14.66, 1.57, 4.30}
+        }
+    },
+    constraintCards = {
+        mission31Layout = {
+            {-42.32, 1.50, -11.87}, {-42.32, 1.50, -5.94}, {-42.32, 1.50, -0.01},
+            {-42.32, 1.50, 5.92}, {-42.32, 1.50, 11.85}
+        },
+        mission66Layout = {
+            {-43.80, 1.50, 0.00}, {-37.83, 1.50, 8.42}, {-31.86, 1.50, 0.00}, 
+            {-37.83, 1.50, -8.41}, {-24.36, 1.50, 0.00}
+        }
+    },
+    challengeCards = {
+        standard = {
+            {-46.65, 1.50, 0.00}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 7.26}, 
+            {-46.65, 1.50, -14.53}, {-46.65, 1.50, 14.53}
+        },
+        mission60 = {
+            {-46.65, 1.50, -14.53}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 0.00}, 
+            {-46.65, 1.50, 7.26}, {-46.65, 1.50, 14.53}
+        }
+    }
+}
+
+-- Wire distribution configuration
+local wireDistributionConfigs = {
+    standard = {
+        type = "even",
+        excludeAbove = "blueHighest"
+    },
+    mission41 = {
+        type = "yellowPerPlayer", 
+        yellowCount = "playerCount",
+        excludeFive = true,
+        startIndex = 1,
+        specialRule = "skipFifthPlayer"
+    },
+    mission48 = {
+        type = "yellowToFirst3",
+        yellowCount = 3,
+        skipDoubleHands = true,
+        startIndex = 1
+    },
+    mission20 = {
+        type = "specialLastWire",
+        lastWireHandling = "moveToTop",
+        tokenPlacement = "lastWire"
+    },
+    mission35 = {
+        type = "specialLastWire",
+        lastWireHandling = "moveToTop",
+        wireFilter = "multiples10Only",
+        tokenPlacement = "lastWire"
+    },
+    mission38 = {
+        type = "specialPlayerOne",
+        lastWireHandling = "outerPosition",
+        playerRestriction = 1
+    },
+    mission56 = {
+        type = "allPlayersOuter",
+        lastWireHandling = "outerPosition"
+    },
+    mission64 = {
+        type = "lastTwoOuter",
+        lastWireHandling = "twoOuterPositions"
+    }
+}
+
+-- Token/Marker configuration
+local tokenConfigs = {
+    validation = {
+        missions = {1, 2, 3},
+        positionSource = "numberTokenPositions",
+        rotation = {0.00, 180.00, 0.00}
+    },
+    warning = {
+        positionSource = "numberTokenPositions", 
+        rotation = {0.00, 180.00, 0.00}
+    },
+    info = {
+        standardCount = 13,
+        extendedCount = 14,
+        positions = "infoTokenPositions",
+        specialMissions = {
+            [58] = {tokenRange = {27, 52}, setState = 2}
+        }
+    },
+    oxygen = {
+        distributions = {
+            perPlayer2 = {
+                count = "playerNum * 2", 
+                position = {-16.65, 1.57, -14.39}
+            },
+            playerBased = {
+                tokenCounts = {[2] = 7, [3] = 6, [4] = 5, [5] = 4},
+                positionLogic = "characterPositions"
+            },
+            playerBasedSpecial = {
+                tokenCounts = {[2] = 9, [3] = 6, [4] = 3, [5] = 2},
+                positionLogic = "characterPositions",
+                extraTokens = "centerStack"
+            },
+            scalingToLeader = {
+                tokenCounts = {[2] = 14, [3] = 18, [4] = 24, [5] = 30},
+                assignTo = "leader"
+            }
+        }
+    },
+    specialty = {
+        odd = {missions = {21, 33}, position = {-9.18, 1.49, -6.38}},
+        even = {missions = {21, 33}, position = {-4.59, 1.49, -6.38}},
+        x1 = {missions = {24, 40}, position = {-9.58, 1.49, -7.65}},
+        x2 = {missions = {24, 40}, position = {-6.88, 1.49, -5.20}},
+        x3 = {missions = {24, 40}, position = {-4.19, 1.49, -7.65}},
+        xToken = {
+            missions = {20, 35},
+            positionLogic = "lastWireToken"
+        }
+    }
+}
+
+-- Audio/Music configuration
+local audioConfigs = {
+    [19] = {
+        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
+        title = "Mission 19",
+        autoPlay = true
+    },
+    [30] = {
+        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-30.mp3", 
+        title = "Mission 30",
+        autoPlay = true
+    },
+    [42] = {
+        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
+        title = "Mission 42",
+        autoPlay = true
+    },
+    [54] = {
+        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-54.mp3",
+        title = "Mission 54",
+        autoPlay = true
+    },
+    [66] = {
+        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-66.mp3",
+        title = "Mission 66",
+        autoPlay = true
+    }
+}
+
+-- Special rules configuration
+local specialRuleConfigs = {
+    nanoWires = {
+        missions = {43, 53, 59},
+        wireCounts = {5, 5, 4, 4, 3},
+        positioning = "nanoObject"
+    },
+    outerWires = {
+        missions = {38, 56, 64},
+        rules = {
+            [38] = {players = {1}, wirePosition = "last"},
+            [56] = {players = "all", wirePosition = "last"}, 
+            [64] = {players = "all", wirePosition = "lastTwo"}
+        }
+    },
+    sortingOverrides = {
+        [20] = "specialLastWire",
+        [35] = "specialLastWire", 
+        [38] = {player = 1, rule = "lastWireOnTop"},
+        [56] = "allPlayersLastWireOuter",
+        [64] = "lastTwoWiresOnTop"
+    },
+    playerTeams = {
+        [65] = {team = "Jokers", reason = "sharedVisibility"}
+    },
+    characterSpecial = {
+        [27] = {captainFlipped = true, otherCardsDestroyed = true},
+        [28] = {captainDestroyed = true},
+        [34] = {randomCaptain = true, constraintDistribution = "hands"}
+    }
+}
+
+-----------------------
+--- CONFIGURATION HELPER FUNCTIONS ---
+-----------------------
+
+-- Get position layout for a specific type and count
+function getPositionLayout(layoutType, count, missionNum)
+    local layouts = layoutConfigs[layoutType]
+    if not layouts then
+        printToAll("Error: No layout configuration found for " .. layoutType, {r=1,g=0,b=0})
+        return nil
+    end
+    
+    -- Handle mission-specific layouts
+    if layoutType == "challengeCards" and missionNum == 60 then
+        return layouts.mission60
+    elseif layoutType == "equipmentCards" and missionNum == 23 then
+        return layouts.mission23
+    elseif layoutType == "constraintCards" and missionNum == 31 then
+        return layouts.mission31Layout
+    elseif layoutType == "constraintCards" and missionNum == 66 then
+        return layouts.mission66Layout
+    end
+    
+    -- Handle count-based layouts
+    if layouts[count] then
+        return layouts[count]
+    elseif layouts.standard then
+        return layouts.standard
+    end
+    
+    return nil
+end
+
+-- Handle audio configuration for missions
+function handleAudioConfiguration(missionNum)
+    local config = audioConfigs[missionNum]
+    if not config then return end
+    
+    MusicPlayer.setCurrentAudioclip({
+        url = config.url,
+        title = config.title
+    })
+    
+    if config.autoPlay then
+        MusicPlayer.play()
+        printToAll("Use the built-in music player to control the audio - select 'Music' on the toolbar at the top.")
+    end
+end
+
+-- Check if equipment should be excluded based on configuration
+function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowNum)
+    -- Look up equipment by description first (legacy compatibility)
+    local config = nil
+    for name, equipConfig in pairs(equipmentConfigs) do
+        if equipConfig.description == desc then
+            config = equipConfig
+            break
+        end
+    end
+    
+    -- If not found by description, try by name
+    if not config then
+        config = equipmentConfigs[equipmentName]
+    end
+    
+    if config then
+        -- Check mission-specific bans
+        if config.bannedMissions then
+            for _, bannedMission in ipairs(config.bannedMissions) do
+                if missionNum == bannedMission then
+                    return true
+                end
+            end
+        end
+        
+        -- Check pack requirements
+        if config.pack and config.pack > 0 then
+            if (config.pack == 1 and (missionNum < 9 or yellowNum == 0)) or
+               (config.pack == 5 and missionNum < 55) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Generate character card wrapper functions dynamically using configuration
+for cardName, config in pairs(characterCardConfigs) do
+    _G["addToCharList" .. config.suffix] = function() addToCharList(cardName) end
+    _G["removeFromCharList" .. config.suffix] = function() removeFromCharList(cardName) end
+end
 
 -- Determines which character cards are available for a given mission
 function getAvailableCharacterCards(missionNum)
     local available = {}
-    for _, card in ipairs(characterCards) do
+    -- Use new configuration structure
+    for cardName, config in pairs(characterCardConfigs) do
         local isBanned = false
-        if card.bannedMissions then
-            for _, bannedMission in ipairs(card.bannedMissions) do
+        if config.bannedMissions then
+            for _, bannedMission in ipairs(config.bannedMissions) do
                 if missionNum == bannedMission then
                     isBanned = true
                     break
@@ -747,16 +1167,24 @@ function getAvailableCharacterCards(missionNum)
             end
         end
         if not isBanned then
-            table.insert(available, card)
+            table.insert(available, {
+                name = cardName,
+                suffix = config.suffix,
+                pack = config.pack,
+                position = config.position,
+                specialRules = config.specialRules or {}
+            })
         end
     end
+    -- Sort by position for consistent ordering
+    table.sort(available, function(a, b) return a.position < b.position end)
     return available
 end
 
 -- Sets up character card display and buttons based on available cards
 function setupCharacterCardSelection(missionNum, availableCards)
     local numCards = #availableCards
-    local layout = positionLayouts[numCards]
+    local layout = layoutConfigs.characterCards[numCards]
     
     if not layout then
         printToAll("Error: No layout defined for " .. numCards .. " character cards.", {r=1,g=0,b=0})
@@ -792,12 +1220,6 @@ function setupCharacterCardSelection(missionNum, availableCards)
         createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i], addZPosition}, addWidth, fontSize)
         createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i], removeZPosition}, removeWidth, fontSize)
     end
-end
-
--- Generate character card wrapper functions dynamically
-for _, card in ipairs(characterCards) do
-    _G["addToCharList" .. card.suffix] = function() addToCharList(card.name) end
-    _G["removeFromCharList" .. card.suffix] = function() removeFromCharList(card.name) end
 end
 
 -----------------------
@@ -1618,6 +2040,11 @@ function prepareWiresAndMarkers(missionNum)
         sortWiresAndEquipment(piles, wires[1], wires[2], wires[3], wires[4], wires[5], wires[6], wires[7])
     end
     
+    -- Red wires setup (before sorting and positioning)
+    if config.redWires then
+        handleRedWires(config.redWires)
+    end
+    
     dealWiresToHands(missionNum, piles)
 end
 
@@ -1661,11 +2088,6 @@ function handleMissionSpecialConfig(missionNum, config)
     -- Random info selection
     if config.randomInfo then
         chooseRandomInfo(false)
-    end
-    
-    -- Red wires setup
-    if config.redWires then
-        handleRedWires(config.redWires)
     end
     
     -- Number card handling
@@ -1776,11 +2198,7 @@ function handleSequenceNumbers(sequenceSide) -- 0 being side A and 1 being side 
     if sequenceSide == 1 then
         sequenceRotation = {0.00, 270.00, 180.00}
     end
-    numberCardPositions = {
-        {-35.47, 1.50, -6.22},
-        {-35.46, 1.50, 0.00},
-        {-35.47, 1.50, 6.22}
-    }
+    numberCardPositions = layoutConfigs.numberCards.sequence3
     numberCards = getObjectsWithTag("Numbers")[1]
     cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
     cardsToDeal.locked = false
@@ -1818,19 +2236,23 @@ end
 -- Handles red wire special setups
 function handleRedWires(redWiresConfig)
     if redWiresConfig == 3 then
-        -- Mission 13: Deal 3 red wires and setup markers
+        -- Mission 13: Deal 3 red wires to piles (positioning happens in dealWiresToHands)
         local redCopy = cloneAndPrepareDeck({"Wires", "Red"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        local count = 0
-        redsRevealed = {}
-        while count ~= 3 do
-            local ix = count + 1
-            local wire = redCopy.takeObject({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
-            wire.locked = false
-            wire.addTag("Destroy")
-            table.insert(piles[ix], wire)
-            table.insert(redsRevealed, wire)
-            count = count + 1
+        local redsRevealed = {}
+        
+        -- Add one red wire to each of the first 3 players
+        for i = 1, 3 do
+            if piles[i] then
+                local wire = redCopy.takeObject({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
+                wire.locked = false
+                wire.addTag("Destroy")
+                table.insert(piles[i], wire)
+                table.insert(redsRevealed, wire)
+            else
+                printToAll("Error: No pile found for player " .. i .. " in red wires setup", {r=1, g=0, b=0})
+            end
         end
+        
         redCopy.destruct()
         setupMarkers(redsRevealed, 3, 3, "Red")
         for _, pile in ipairs(piles) do
@@ -1861,13 +2283,7 @@ end
 
 -- Handles player-based number card distribution
 function handleEquipmentNumberCards()
-    local numberCardPositions = {
-        {-14.58, 1.57, 4.10},
-        {-7.29, 1.57, 4.35},
-        {0.04, 1.57, 4.11},
-        {7.35, 1.57, 4.43},
-        {14.66, 1.57, 4.30}
-    }
+    local numberCardPositions = layoutConfigs.numberCards.equipmentBased
     local numberCards = getObjectsWithTag("Numbers")[1]
     local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
     cardsToDeal.locked = false
@@ -1894,11 +2310,7 @@ end
 
 -- Handles 12-number grid layout
 function handleGridNumbers()
-    local cardPositions = {
-        {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
-        {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
-        {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
-    }
+    local cardPositions = layoutConfigs.numberCards.grid3x4
     local numberCards = {}
     local sourceDeck = getObjectsWithTag("Numbers")[1]
     local numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
@@ -1918,10 +2330,7 @@ end
 
 -- Handles 5 number cards setup
 function handleNumberCards5(missionNum)
-    local numberCardPositions = {
-        {-40.79, 1.50, -12.44}, {-40.79, 1.50, -6.22}, {-40.79, 1.50, 0.00}, 
-        {-40.79, 1.50, 6.22}, {-40.79, 1.50, 12.44}
-    }
+    local numberCardPositions = layoutConfigs.numberCards.vertical5
     local numberCards = getObjectsWithTag("Numbers")[1]
     local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
     cardsToDeal.locked = false
@@ -2019,10 +2428,7 @@ function handleConstraintCards(constraintType, missionNum)
                 end
             end
             shuffleInPlace(cardsToDeal)
-            local constraintCardPositions = {
-                {-42.32, 1.50, -11.87}, {-42.32, 1.50, -5.94}, {-42.32, 1.50, -0.01},
-                {-42.32, 1.50, 5.92}, {-42.32, 1.50, 11.85}
-            }
+            local constraintCardPositions = layoutConfigs.constraintCards.mission31Layout
             for i = 1, #cardsToDeal do
                 cardsToDeal[i].setPosition(constraintCardPositions[i])
                 cardsToDeal[i].setRotation({0.00, 90.00, 0.00})
@@ -2208,10 +2614,7 @@ end
 
 -- Handles 5 constraint cards setup
 function handleConstraintCards5()
-    local constraintPositions = {
-        {-43.80, 1.50, 0.00}, {-37.83, 1.50, 8.42}, {-31.86, 1.50, 0.00}, 
-        {-37.83, 1.50, -8.41}, {-24.36, 1.50, 0.00}
-    }
+    local constraintPositions = layoutConfigs.constraintCards.mission66Layout
     local constraintCards = getObjectsWithTag("Constraint")[1]
     local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
     constraintDeck.locked = false
@@ -2347,16 +2750,8 @@ end
 
 -- Handles challenge cards setup
 function handleChallengeCards(missionNum)
-    local challengePositions = {
-        {-46.65, 1.50, 0.00}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 7.26}, 
-        {-46.65, 1.50, -14.53}, {-46.65, 1.50, 14.53}
-    }
-    if missionNum == 60 then
-        challengePositions = {
-            {-46.65, 1.50, -14.53}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 0.00}, 
-            {-46.65, 1.50, 7.26}, {-46.65, 1.50, 14.53}
-        }
-    end
+    local layout = getPositionLayout("challengeCards", playerNum, missionNum)
+    local challengePositions = layout or layoutConfigs.challengeCards.standard
     
     local challengeCards = getObjectsWithTag("Challenge")[1]
     local cardsToDeal = challengeCards.clone({position={-82.10, 2.20, -24.63}})
