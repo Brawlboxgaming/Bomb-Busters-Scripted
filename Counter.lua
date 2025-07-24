@@ -505,6 +505,8 @@ playerNum = 0 -- This is used in various functions to keep track of the number o
 
 playerColors = {} -- This is used in various functions to keep track of the player colours in the game.
 
+captainColor = "" -- This is used to determine the captain's colour in the game. This is set when the Start Mission button is pressed.
+
 -- Initializes the counter object with Start Mission button
 function onLoad()
     createStandardButton("startMission", "Start Mission", {0, 0.6}, 2000, 300)
@@ -685,9 +687,9 @@ function createStandardButton(clickFunction, label, position, width, fontSize, s
     })
 end
 
------------------------
+-------------------------------------
 --- CONFIGURATION DATA STRUCTURES ---
------------------------
+-------------------------------------
 
 -- Character card configuration data structure
 local characterCardConfigs = {
@@ -1031,9 +1033,15 @@ local audioConfigs = {
 -- Special rules configuration
 local specialRuleConfigs = {
     nanoWires = {
-        missions = {43, 53, 59},
-        wireCounts = {5, 5, 4, 4, 3},
-        positioning = "nanoObject"
+        missions = {43, -2},
+        positioning = "nanoObject",
+        wireCounts = {
+            -- Default wire counts (used if mission-specific not defined)
+            default = {5, 5, 4, 4, 3}, -- [2p, 3p, 4p, 5p players]
+            -- Mission-specific wire counts
+            [43] = {5, 5, 4, 4, 3},     -- Mission 43: standard counts
+            [-2] = {1, 2, 3, 4, 5}      -- Custom mission -2: playerNum wires
+        }
     },
     outerWires = {
         missions = {38, 56, 64},
@@ -1048,7 +1056,8 @@ local specialRuleConfigs = {
         [35] = "specialLastWire", 
         [38] = {player = 1, rule = "lastWireOnTop"},
         [56] = "allPlayersLastWireOuter",
-        [64] = "lastTwoWiresOnTop"
+        [64] = "lastTwoWiresOnTop",
+        [-1] = "shuffleCaptain"
     },
     playerTeams = {
         [65] = {team = "Jokers", reason = "sharedVisibility"}
@@ -1056,13 +1065,96 @@ local specialRuleConfigs = {
     characterSpecial = {
         [27] = {captainFlipped = true, otherCardsDestroyed = true},
         [28] = {captainDestroyed = true},
-        [34] = {randomCaptain = true, constraintDistribution = "hands"}
+        [34] = {randomCaptain = false, captainFlipped = true, constraintDistribution = "hands"},
+        [-3] = {randomCaptain = true, captainFlipped = true}
+    },
+    equipmentSpecial = {
+        -- Equipment special rules for missions requiring custom equipment handling
+        -- Available configuration options:
+        --   rotation: Custom rotation for equipment cards {x, y, z}
+        --   count: Override number of equipment cards to deal
+        --   layout: Use specific layout from layoutConfigs (e.g., "mission23")
+        --   specificEquipment: Place specific equipment at custom positions (array format)
+        --     {{name = "Equipment Name", position = {x,y,z}, rotation = {x,y,z}}, ...}
+        --     Supports multiple instances of the same equipment
+        --   earlyReturn: Return after placing specific equipment (skip normal distribution)
+        --   noSorting: Disable sorting of equipment cards
+        
+        [15] = {
+            rotation = {0.00, 180.00, 180.00}
+        },
+        [18] = {
+            specificEquipment = {
+                {
+                    name = "General Radar",
+                    position = {0.04, 1.52, 5.39},
+                    rotation = {0.00, 180.00, 0.00}
+                }
+            },
+            earlyReturn = true -- Only place specified equipment and return
+        },
+        [23] = {
+            rotation = {0.00, 180.00, 180.00},
+            count = 7,
+            layout = "mission23" -- Uses layoutConfigs.equipmentCards.mission23
+        }
     }
 }
 
------------------------
+--------------------------------------
 --- CONFIGURATION HELPER FUNCTIONS ---
------------------------
+--------------------------------------
+
+-- Get special rule configuration for a mission
+function getSpecialRuleConfig(missionNum, ruleType)
+    local rules = specialRuleConfigs[ruleType]
+    if not rules then return nil end
+    
+    if ruleType == "nanoWires" then
+        if contains(rules.missions, missionNum) then
+            return rules
+        end
+    elseif ruleType == "outerWires" then
+        if contains(rules.missions, missionNum) then
+            return rules.rules[missionNum]
+        end
+    elseif ruleType == "sortingOverrides" then
+        return rules[missionNum]
+    elseif ruleType == "playerTeams" then
+        return rules[missionNum]
+    elseif ruleType == "characterSpecial" then
+        return rules[missionNum]
+    elseif ruleType == "equipmentSpecial" then
+        return rules[missionNum]
+    end
+    
+    return nil
+end
+
+-- Check if mission has nano wires special rule
+function hasNanoWires(missionNum)
+    return getSpecialRuleConfig(missionNum, "nanoWires") ~= nil
+end
+
+-- Check if mission has outer wires special rule
+function hasOuterWires(missionNum)
+    return getSpecialRuleConfig(missionNum, "outerWires") ~= nil
+end
+
+-- Get sorting override rule for mission
+function getSortingOverride(missionNum)
+    return getSpecialRuleConfig(missionNum, "sortingOverrides")
+end
+
+-- Get character special rules for mission
+function getCharacterSpecial(missionNum)
+    return getSpecialRuleConfig(missionNum, "characterSpecial")
+end
+
+-- Get equipment special rules for mission
+function getEquipmentSpecial(missionNum)
+    return getSpecialRuleConfig(missionNum, "equipmentSpecial")
+end
 
 -- Get position layout for a specific type and count
 function getPositionLayout(layoutType, count, missionNum)
@@ -1111,6 +1203,68 @@ end
 
 -- Check if equipment should be excluded based on configuration
 function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowNum)
+    -- Check if this is a custom mission with pack-based equipment requirements
+    local missionConfig = getMissionConfig(missionNum)
+    if missionConfig and (missionConfig.includePack1Equipment ~= nil or missionConfig.includePack5Equipment ~= nil) then
+        -- Custom mission with pack-based equipment configuration
+        
+        -- Determine equipment pack
+        local isPack1 = false  -- Pack 1 contains "False Bottom" 
+        local isPack5 = false  -- Pack 5 contains 4-digit equipment
+        local isPack0 = false  -- Pack 0 contains first 12 default equipment (descriptions 1-12)
+        
+        -- Check if it's Pack 1 equipment (False Bottom)
+        if equipmentName == "False Bottom" then
+            isPack1 = true
+        end
+        
+        -- Check if it's Pack 5 equipment (4-digit descriptions)
+        if desc and string.len(desc) == 4 and string.match(desc, "^%d%d%d%d$") then
+            isPack5 = true
+        end
+        
+        -- Look up in equipment configs to verify pack classification
+        local config = nil
+        for name, equipConfig in pairs(equipmentConfigs) do
+            if equipConfig.description == desc or name == equipmentName then
+                config = equipConfig
+                break
+            end
+        end
+        
+        if config and config.pack ~= nil then
+            if config.pack == 0 then
+                isPack0 = true
+            elseif config.pack == 1 then
+                isPack1 = true
+            elseif config.pack == 5 then
+                isPack5 = true
+            end
+        else
+            -- Default assumption: if no pack specified and not 4-digit, it's Pack 0
+            if not isPack5 and not isPack1 then
+                isPack0 = true
+            end
+        end
+        
+        -- Apply inclusion rules
+        local shouldInclude = false
+        
+        -- includePack1Equipment controls both Pack 0 (first 12) and Pack 1 (False Bottom)
+        if (isPack0 or isPack1) and missionConfig.includePack1Equipment then
+            shouldInclude = true
+        end
+        
+        -- Include Pack 5 equipment if enabled
+        if isPack5 and missionConfig.includePack5Equipment then
+            shouldInclude = true
+        end
+        
+        if not shouldInclude then
+            return true -- Exclude this equipment
+        end
+    end
+    
     -- Look up equipment by description first (legacy compatibility)
     local config = nil
     for name, equipConfig in pairs(equipmentConfigs) do
@@ -1135,8 +1289,8 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
             end
         end
         
-        -- Check pack requirements
-        if config.pack and config.pack > 0 then
+        -- Check pack requirements (for regular missions only, not custom missions)
+        if config.pack and config.pack > 0 and missionNum > 0 then
             if (config.pack == 1 and (missionNum < 9 or yellowNum == 0)) or
                (config.pack == 5 and missionNum < 55) then
                 return true
@@ -1155,27 +1309,69 @@ end
 -- Determines which character cards are available for a given mission
 function getAvailableCharacterCards(missionNum)
     local available = {}
-    -- Use new configuration structure
-    for cardName, config in pairs(characterCardConfigs) do
-        local isBanned = false
-        if config.bannedMissions then
-            for _, bannedMission in ipairs(config.bannedMissions) do
-                if missionNum == bannedMission then
-                    isBanned = true
-                    break
+    
+    -- Check if this is a custom mission with specific character cards
+    local config = getMissionConfig(missionNum)
+    if config and config.characterCards and #config.characterCards > 0 then
+        -- Custom mission with specific character cards - include Double Detector + specified cards
+        
+        -- Always include Double Detector first
+        for configName, cardConfig in pairs(characterCardConfigs) do
+            if (configName:lower() == "double detector") then
+                table.insert(available, {
+                    name = cardConfig.name or configName,
+                    suffix = cardConfig.suffix,
+                    pack = cardConfig.pack,
+                    position = cardConfig.position,
+                    specialRules = cardConfig.specialRules or {}
+                })
+                break
+            end
+        end
+        
+        -- Add the specified character cards
+        for _, cardName in ipairs(config.characterCards) do
+            -- Skip if it's already Double Detector to avoid duplicates
+            if cardName:lower() ~= "double detector" and cardName:lower() ~= "doubledetector" then
+                -- Find the card configuration
+                for configName, cardConfig in pairs(characterCardConfigs) do
+                    if configName:lower() == cardName:lower() or (cardConfig.name and cardConfig.name:lower() == cardName:lower()) then
+                        table.insert(available, {
+                            name = cardConfig.name or configName,
+                            suffix = cardConfig.suffix,
+                            pack = cardConfig.pack,
+                            position = cardConfig.position,
+                            specialRules = cardConfig.specialRules or {}
+                        })
+                        break
+                    end
                 end
             end
         end
-        if not isBanned then
-            table.insert(available, {
-                name = cardName,
-                suffix = config.suffix,
-                pack = config.pack,
-                position = config.position,
-                specialRules = config.specialRules or {}
-            })
+    else
+        -- Regular mission or custom mission without specific cards - use all available
+        for cardName, cardConfig in pairs(characterCardConfigs) do
+            local isBanned = false
+            if cardConfig.bannedMissions then
+                for _, bannedMission in ipairs(cardConfig.bannedMissions) do
+                    if missionNum == bannedMission then
+                        isBanned = true
+                        break
+                    end
+                end
+            end
+            if not isBanned then
+                table.insert(available, {
+                    name = cardConfig.name or cardName,
+                    suffix = cardConfig.suffix,
+                    pack = cardConfig.pack,
+                    position = cardConfig.position,
+                    specialRules = cardConfig.specialRules or {}
+                })
+            end
         end
     end
+    
     -- Sort by position for consistent ordering
     table.sort(available, function(a, b) return a.position < b.position end)
     return available
@@ -1243,37 +1439,31 @@ local missionConfigs = {
     [4] = {
         wires = {12, 4, 4, 12, 1, 1, 12},
         wiresAlt = {12, 2, 2, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3
     },
     [5] = {
         wires = {12, 2, 3, 12, 2, 2, 12},
         wiresAlt = {12, 2, 3, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3
     },
     [6] = {
         wires = {12, 4, 4, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3
     },
     [7] = {
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 1, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [8] = {
         wires = {12, 4, 4, 12, 1, 3, 12},
         wiresAlt = {12, 2, 3, 12, 1, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [9] = {
         wires = {12, 4, 4, 12, 2, 2, 12},
         wiresAlt = {12, 2, 2, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         sequence = 0
     },
@@ -1290,7 +1480,6 @@ local missionConfigs = {
     [11] = {
         wires = {12, 4, 4, 12, 0, 0, 12},
         wiresAlt = {12, 2, 2, 12, 0, 0, 12},
-        playerCheck = true,
         threshold = 3,
         numberCard = {
             position = {-16.79, 1.53, -14.36},
@@ -1300,7 +1489,6 @@ local missionConfigs = {
     [12] = {
         wires = {12, 4, 4, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         equipmentNumberCards = true
     },
@@ -1312,33 +1500,28 @@ local missionConfigs = {
     [14] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 2, 3, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [15] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        playerCheck = true,
         threshold = 3,
         numberCardSpecial = "faceUpAndShuffle"
     },
     [16] = {
         wires = {12, 4, 4, 12, 2, 2, 12},
         wiresAlt = {12, 2, 3, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         sequence = 1
     },
     [17] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3
     },
     [18] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         shuffleNumbers = true
     },
@@ -1352,13 +1535,11 @@ local missionConfigs = {
     [20] = {
         wires = {12, 4, 4, 12, 2, 3, 12},
         wiresAlt = {12, 2, 2, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [21] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [22] = {
@@ -1367,7 +1548,6 @@ local missionConfigs = {
     [23] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        playerCheck = true,
         threshold = 3,
         numberCardWithWarning = {
             position = {-24.18, 1.58, 0.00},
@@ -1377,13 +1557,11 @@ local missionConfigs = {
     [24] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [25] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [26] = {
@@ -1396,7 +1574,6 @@ local missionConfigs = {
     [28] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [29] = {
@@ -1418,14 +1595,12 @@ local missionConfigs = {
     [32] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         constraintCardSpecial = "faceUpAndShuffle"
     },
     [33] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3
     },
     [34] = {
@@ -1436,13 +1611,11 @@ local missionConfigs = {
     [35] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3
     },
     [36] = {
         wires = {12, 4, 4, 12, 2, 3, 12},
         wiresAlt = {12, 2, 2, 12, 1, 3, 12},
-        playerCheck = true,
         threshold = 3,
         numberCards5 = true,
         sequenceCard = true
@@ -1450,7 +1623,6 @@ local missionConfigs = {
     [37] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         constraintCard = {
             position = {-24.35, 1.50, -4.60},
@@ -1460,13 +1632,11 @@ local missionConfigs = {
     [38] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [39] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3,
         shuffleNumbers = true,
         randomInfo = true
@@ -1477,7 +1647,6 @@ local missionConfigs = {
     [41] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        playerCheck = true,
         threshold = 3,
         randomInfo = true
     },
@@ -1499,7 +1668,6 @@ local missionConfigs = {
     [45] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         shuffleNumbers = true
     },
@@ -1510,46 +1678,39 @@ local missionConfigs = {
     [47] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3,
         gridNumbers = true
     },
     [48] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [49] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         oxygenTokens = "playerBased"
     },
     [50] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 2, 2, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3
     },
     [51] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         shuffleNumbers = true
     },
     [52] = {
         wires = {12, 4, 4, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        playerCheck = true,
         threshold = 3
     },
     [53] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         nano = {{-20.22, 2.02, -1.16}, 1}
     },
@@ -1565,20 +1726,17 @@ local missionConfigs = {
     [55] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         challengeCards = true
     },
     [56] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3
     },
     [57] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         gridNumbers = true,
         gridConstraints = true
@@ -1586,13 +1744,11 @@ local missionConfigs = {
     [58] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
     },
     [59] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3,
         gridNumbers = true,
         nanoOnSeven = true
@@ -1600,35 +1756,30 @@ local missionConfigs = {
     [60] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        playerCheck = true,
         threshold = 3,
         challengeCards = true
     },
     [61] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3,
         constraintCards = "complexDistribution"
     },
     [62] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         numberCards5 = true
     },
     [63] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        playerCheck = true,
         threshold = 3,
         oxygenTokens = "scalingToLeader"
     },
     [64] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        playerCheck = true,
         threshold = 3
     },
     [65] = {
@@ -1647,6 +1798,64 @@ local missionConfigs = {
         }
     }
 }
+
+-- Custom missions configuration table (negative numbers starting from -1)
+local customMissionConfigs = {
+    [-1] = {
+        wires = {12, 2, 3, 12, 1, 2, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false
+    },
+    [-2] = {
+        wires = {12, 0, 0, 12, 0, 0, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        nano = {"mission-2", 0} -- Use string identifier "mission-2" to be resolved at runtime
+    },
+    [-3] = {
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"}
+    },
+    [-4] = {
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        numberCard = {
+            position = "mission-4" -- Use string identifier to be resolved at runtime
+        }
+    }
+}
+
+------------------------
+--- HELPER FUNCTIONS ---
+------------------------
+
+-- Gets mission configuration from either regular or custom missions
+function getMissionConfig(missionNum)
+    if missionNum < 0 then
+        return customMissionConfigs[missionNum]
+    else
+        return missionConfigs[missionNum]
+    end
+end
+
+-- Validates that a custom mission configuration is valid
+function validateCustomMissionConfig(config)
+    if not config then
+        return false
+    end
+    
+    -- Validate required fields
+    if not config.wires or #config.wires ~= 7 then
+        return false
+    end
+    
+    return true
+end
 
 -----------------------
 --- SETUP FUNCTIONS ---
@@ -1697,16 +1906,28 @@ function startMission()
     end
 
     missionNum = self.getValue()
-    if missionNum < 1 then
-        self.setValue(1)
-        missionNum = 1
-    elseif missionNum > #missionConfigs then
-        self.setValue(#missionConfigs)
-        missionNum = #missionConfigs
+
+    -- Early validation: Check if mission configuration exists before any setup
+    local config = getMissionConfig(missionNum)
+    if not config then
+        if missionNum < 0 then
+            printToAll(string.format("Error: No configuration found for custom mission %d. Please check your custom mission configuration.", missionNum), {r=1, g=0, b=0})
+        else
+            printToAll(string.format("Error: No configuration found for mission %d. Please choose a valid mission number.", missionNum), {r=1, g=0, b=0})
+        end
+        return
+    end
+    
+    -- Additional validation for custom missions
+    if missionNum < 0 and not validateCustomMissionConfig(config) then
+        printToAll(string.format("Error: Custom mission %d has invalid configuration. Please check that it has valid wires configuration.", missionNum), {r=1, g=0, b=0})
+        return
     end
 
-    -- Pack 5 missions (55+): Use extended info token positions for additional content
-    if missionNum > 54 then
+    -- Pack 5 missions (55+) or custom missions with Pack 5 equipment: Use extended info token positions for additional content
+    local needsExtendedPositions = missionNum > 54 or (config and config.includePack5Equipment)
+    
+    if needsExtendedPositions then
         infoTokenPositions = {
             {-10.65, 1.81, -5.20},
             {-9.13, 1.81, -5.20},
@@ -1724,7 +1945,7 @@ function startMission()
             {-6.09, 1.81, -10.10}
         }
     else
-        infoTokenPositions = { -- These are the standard positions of the info tokens..
+        infoTokenPositions = { -- These are the standard positions of the info tokens.
             {-10.65, 1.81, -5.20},
             {-9.13, 1.81, -5.20},
             {-7.61, 1.81, -5.20},
@@ -1756,8 +1977,11 @@ function startMission()
         setRuleCardRotations({0.00, 270.00, 0.00}, {0.00, 270.00, 0.00}, {0.00, 270.00, 0.00})
     end
 
-    -- From mission 31 onwards, you can choose which character cards you would like as there are additional ones added.
-    if missionNum > 30 then
+    -- From mission 31 onwards or custom missions with extra character cards, you can choose which character cards you would like
+    local config = getMissionConfig(missionNum)
+    local needsCharacterSelection = missionNum > 30 or (config and config.characterCards and #config.characterCards > 0)
+    
+    if needsCharacterSelection then
         printToAll("----------------------------")
         printToAll("Please select which character cards you would like to use for this mission.")
         fontSize = 250
@@ -1774,6 +1998,7 @@ function startMission()
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
     else
+        -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
         for i = 1, playerNum - 1 do
             table.insert(characterCardSelection, "Double Detector")
         end
@@ -1871,8 +2096,8 @@ function finishSetupAfterCharSel()
     end
     shuffledPlayers = sortCharacters(missionNum)
     captainColor = shuffledPlayers[1]
-    -- Mission 34: Captain is chosen randomly instead of by character order
-    if missionNum == 34 then
+    -- Mission 34/-3: Captain is chosen randomly instead of by character order
+    if missionNum == 34 or missionNum == -3 then
         captainColor = playerColors[math.random(playerNum)]
         colors = {
             Blue    = {0.118, 0.53, 1},
@@ -1944,15 +2169,22 @@ end
 function sortCharacters(missionNum)
     shuffledPlayers = shuffle(playerColors)
     ret = shuffledPlayers
-    -- Missions 34 & 65: Use original player order instead of shuffled
-    if missionNum == 34 or missionNum == 65 then
+    
+    local characterSpecial = getCharacterSpecial(missionNum)
+    
+    -- Check for original player order override
+    if characterSpecial and characterSpecial.randomCaptain == false then
+        ret = playerColors
+    elseif missionNum == 65 then -- Keep existing mission 65 logic for compatibility
         ret = playerColors
     end
+    
     flipped = 0
-    -- Missions 27 & 34: Captain card appears flipped (face-down)
-    if missionNum == 27 or missionNum == 34 then
+    -- Check for captain flipped rule
+    if characterSpecial and characterSpecial.captainFlipped then
         flipped = 180
     end
+    
     captainCard = getObjectsWithTag("Captain")[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
     captainCard.locked = false
     captainCard.setPositionSmooth(characterPositions[shuffledPlayers[1]])
@@ -1961,10 +2193,12 @@ function sortCharacters(missionNum)
         characterRotations[shuffledPlayers[1]][2],
         characterRotations[shuffledPlayers[1]][3] + flipped
     })
-    -- Mission 28: No captain card is used (destroyed immediately)
-    if missionNum == 28 then
+    
+    -- Check for captain destroyed rule
+    if characterSpecial and characterSpecial.captainDestroyed then
         captainCard.destruct()
     end
+    
     captainCard.addTag("Destroy")
     otherCards = {}
     doubleDetectorCount = 0
@@ -2001,8 +2235,9 @@ function sortCharacters(missionNum)
     end
     positionCards(otherCards, cardPositions, cardRotations)
     
-    -- Mission 27: All other character cards are destroyed (only captain remains)
-    if missionNum == 27 then
+    -- Check for other cards destroyed rule
+    local characterSpecial = getCharacterSpecial(missionNum)
+    if characterSpecial and characterSpecial.otherCardsDestroyed then
         for i = 1, #otherCards do
             otherCards[i].destruct()
         end
@@ -2013,22 +2248,21 @@ end
 -- Sets up wires, markers, and tokens based on mission-specific requirements
 function prepareWiresAndMarkers(missionNum)
     piles = {}
-    local config = missionConfigs[missionNum]
-    
-    if not config then
-        printToAll("Error: No configuration found for mission " .. missionNum, {r=1, g=0, b=0})
-        return
-    end
+    local config = getMissionConfig(missionNum)
     
     -- Check minimum player requirements
     if config.minPlayers and playerNum < config.minPlayers then
-        printToAll("Error: Mission cannot be played with only " .. playerNum .. " players.", {r=1, g=0, b=0})
+        if missionNum < 0 then
+            printToAll(string.format("Error: Custom mission %d cannot be played with only %d players.", missionNum, playerNum), {r=1, g=0, b=0})
+        else
+            printToAll(string.format("Error: Mission %d cannot be played with only %d players.", missionNum, playerNum), {r=1, g=0, b=0})
+        end
         return
     end
     
     -- Determine wire configuration based on player count
     local wires = config.wires
-    if config.playerCheck and config.wiresAlt and playerNum >= config.threshold then
+    if config.wiresAlt and playerNum >= config.threshold then
         wires = config.wiresAlt
     end
     
@@ -2223,12 +2457,24 @@ end
 
 -- Sets up nano components with specified position and direction
 function handleNano(startPos, direction) -- 0 is left and 1 is right, wires are sorted in sortWiresAndEquipment
+    -- Resolve position if it's a string identifier
+    local actualPosition = startPos
+    if type(startPos) == "string" then
+        if startPos == "mission-2" then
+            actualPosition = characterPositions[captainColor]
+        else
+            -- Could add other identifiers here in the future (e.g., "player1", "center", etc.)
+            log("Warning: Unknown position identifier: " .. startPos)
+            return
+        end
+    end
+    
     nanoRotation = {0.00, 0.00, 0.00}
     if direction == 1 then
         nanoRotation = {0.00, 180.00, 0.00}
     end
     nano = getObjectsWithTag("Nano")[1]
-    clone = nano.clone({position = startPos, rotation = nanoRotation})
+    clone = nano.clone({position = actualPosition, rotation = nanoRotation})
     clone.locked = false
     clone.addTag("Destroy")
 end
@@ -2271,11 +2517,26 @@ end
 
 -- Handles single number card setup
 function handleSingleNumberCard(cardConfig)
+    -- Resolve position if it's a string identifier
+    local actualPosition = cardConfig.position
+    local actualRotation = cardConfig.rotation
+    if type(cardConfig.position) == "string" then
+        if cardConfig.position == "mission-4" then
+            isBlueGreen = (captainColor == "Blue" or captainColor == "Green") and 1 or -1
+            actualPosition = {characterPositions[captainColor][1], characterPositions[captainColor][2] + 0.20, characterPositions[captainColor][3] + (3 * isBlueGreen)}
+            actualRotation = {characterRotations[captainColor][1], characterRotations[captainColor][2], characterRotations[captainColor][3] + 180}
+        else
+            -- Could add other identifiers here in the future
+            log("Warning: Unknown position identifier: " .. cardConfig.position)
+            return
+        end
+    end
+    
     local numberCards = getObjectsWithTag("Numbers")[1]
     local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
     cardsToDeal.locked = false
     cardsToDeal.shuffle()
-    local number = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
+    local number = cardsToDeal.takeObject({position=actualPosition, rotation=actualRotation})
     number.locked = false
     number.addTag("Destroy")
     cardsToDeal.destruct()
@@ -2893,7 +3154,20 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
 
     mainCopy = cloneAndPrepareDeck({"Wires", "Blue"}, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00}, true)
     handCount = playerNum == 5 and 5 or 4
-    nanoWireCounts = {5, 5, 4, 4, 3}
+    
+    -- Get mission-specific nano wire counts
+    local nanoWireCounts = {5, 5, 4, 4, 3} -- Default counts
+    local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
+    if nanoConfig and nanoConfig.wireCounts then
+        -- Try to get mission-specific counts first
+        if nanoConfig.wireCounts[missionNum] then
+            nanoWireCounts = nanoConfig.wireCounts[missionNum]
+        elseif nanoConfig.wireCounts.default then
+            -- Fall back to default if no mission-specific counts
+            nanoWireCounts = nanoConfig.wireCounts.default
+        end
+    end
+    
     for i = 1, handCount do
         table.insert(piles, {})
     end
@@ -2908,11 +3182,11 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
             destroyed = destroyed + 1
         else
             wire.addTag("Destroy")
-            if i <= nanoWireCounts[playerNum] and
-            (missionNum == 43) then
+            local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
+            if i <= nanoWireCounts[playerNum] and nanoConfig then
                 nano = getObjectsWithAllTags({"Nano", "Destroy"})[1]
                 nanoPos = nano.getPosition()
-                wire.setPosition({nanoPos[1] + -5, nanoPos[2] + 3.41, nanoPos[3] + 0.06})
+                wire.setPosition({-23.00, 1.52, -1.03})
                 wire.setRotation({359.54, 180.20, 172.48})
                 nanoCounter = nanoCounter + 1
             else
@@ -2921,9 +3195,13 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
         end
     end
     for num, pile in ipairs(piles) do
-        if (missionNum == 20 or missionNum == 35 or missionNum == 56) then
+        local sortingRule = getSortingOverride(missionNum)
+        
+        if sortingRule == "specialLastWire" then
+            -- Missions 20, 35, 56: Special last wire handling
             counter = 0
             wire = table.remove(pile)
+            -- Mission 35: Only multiples of 10 can be the last wire
             while missionNum == 35 and tonumber(wire.getDescription()) % 10 ~= 0 do
                 table.insert(pile, wire)
                 counter = counter + 1
@@ -2931,19 +3209,25 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
             end
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
             table.insert(pile, wire)
-        -- Mission 38: Special case for single wire - last wire stays on top
-        elseif missionNum == 38 and num == 1 then
+        elseif sortingRule and sortingRule.player and sortingRule.player == num and sortingRule.rule == "lastWireOnTop" then
+            -- Mission 38: Special case for single wire - last wire stays on top
             wire = table.remove(pile)
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
             table.insert(pile, wire)
-        -- Mission 64: Last two wires stay on top after sorting
-        elseif missionNum == 64 then
+        elseif sortingRule == "lastTwoWiresOnTop" then
+            -- Mission 64: Last two wires stay on top after sorting
             wire1 = table.remove(pile)
             wire2 = table.remove(pile)
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
             table.insert(pile, wire1)
             table.insert(pile, wire2)
+        elseif sortingRule == "shuffleCaptain" then
+            -- Custom mission -1: Special captain shuffling
+            if num ~= 1 then
+                table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+            end
         else
+            -- Standard sorting
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
         end
     end
@@ -3144,6 +3428,24 @@ function dealWiresToHands(missionNum, piles)
         end
         yellowCopy.destruct()
         setupMarkers(yellowsRevealed, yellowNum, yellowNum, "Yellow")
+    elseif missionNum == -2 then
+        -- Custom mission -2: Special wire distribution
+        local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
+        local yellowsRevealed = {}
+        for i = 1, playerNum do
+            local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
+            wire.setPosition(piles[i][1].getPosition())
+            table.insert(piles[i], wire)
+            table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+            table.insert(yellowsRevealed, wire)
+            wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
+            wire.setPosition(piles[i][1].getPosition())
+            table.insert(piles[i], wire)
+            table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+            table.insert(yellowsRevealed, wire)
+        end
+        yellowCopy.destruct()
+        setupMarkers(yellowsRevealed, playerNum, playerNum, "Yellow")
     end
     noMoreDouble = false
     handsDoubled = 0
@@ -3152,25 +3454,47 @@ function dealWiresToHands(missionNum, piles)
         outerWirePositions0 = wireOuterPositions0[playerColors[i]]
         tokenPositions0 = tokenHandPositions0[playerColors[i]]
         for j = 1, #piles[i + handsDoubled] do
-            if ((missionNum == 38 and i == 1) or missionNum == 56) and j == #piles[i + handsDoubled] then
-                piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
-                piles[i + handsDoubled][j].addTag("Outer")
-            elseif missionNum == 64 then
-                if j == #piles[i + handsDoubled] then
-                    piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
-                    piles[i + handsDoubled][j].addTag("Outer")
-                elseif j == #piles[i + handsDoubled] - 1 then
-                    piles[i + handsDoubled][j].setPosition(outerWirePositions0[2])
-                    piles[i + handsDoubled][j].addTag("Outer")
+            local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
+            local sortingRule = getSortingOverride(missionNum)
+            
+            if outerWireRule then
+                -- Check if this player should have outer wire positioning
+                local shouldUseOuter = false
+                if outerWireRule.players == "all" then
+                    shouldUseOuter = true
+                elseif type(outerWireRule.players) == "table" and contains(outerWireRule.players, i) then
+                    shouldUseOuter = true
+                end
+                
+                if shouldUseOuter then
+                    if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
+                        piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
+                        piles[i + handsDoubled][j].addTag("Outer")
+                    elseif outerWireRule.wirePosition == "lastTwo" then
+                        if j == #piles[i + handsDoubled] then
+                            piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
+                            piles[i + handsDoubled][j].addTag("Outer")
+                        elseif j == #piles[i + handsDoubled] - 1 then
+                            piles[i + handsDoubled][j].setPosition(outerWirePositions0[2])
+                            piles[i + handsDoubled][j].addTag("Outer")
+                        else
+                            piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                        end
+                    else
+                        piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                    end
                 else
                     piles[i + handsDoubled][j].setPosition(wirePositions0[j])
                 end
             else
                 piles[i + handsDoubled][j].setPosition(wirePositions0[j])
             end
+            
             piles[i + handsDoubled][j].setRotation(wireRotations[playerColors[i]])
             piles[i + handsDoubled][j].flip()
-            if (missionNum == 20 or missionNum == 35) and j == #piles[i + handsDoubled] then
+            
+            -- Handle X token placement for special last wire missions
+            if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
                 xToken = getObjectsWithTag("XToken")[1]
                 clone = xToken.clone({position=tokenPositions0[j], rotation=tokenHandRotations[playerColors[i]]})
                 clone.locked = false
@@ -3185,25 +3509,47 @@ function dealWiresToHands(missionNum, piles)
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
             handsDoubled = handsDoubled + 1
             for j = 1, #piles[i + handsDoubled] do
-                if missionNum == 56 and j == #piles[i + handsDoubled] then
-                    piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
-                    piles[i + handsDoubled][j].addTag("Outer")
-                elseif missionNum == 64 then
-                    if j == #piles[i + handsDoubled] then
-                        piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
-                        piles[i + handsDoubled][j].addTag("Outer")
-                    elseif j == #piles[i + handsDoubled] - 1 then
-                        piles[i + handsDoubled][j].setPosition(outerWirePositions1[2])
-                        piles[i + handsDoubled][j].addTag("Outer")
+                local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
+                local sortingRule = getSortingOverride(missionNum)
+                
+                if outerWireRule then
+                    -- Check if this player should have outer wire positioning
+                    local shouldUseOuter = false
+                    if outerWireRule.players == "all" then
+                        shouldUseOuter = true
+                    elseif type(outerWireRule.players) == "table" and contains(outerWireRule.players, i) then
+                        shouldUseOuter = true
+                    end
+                    
+                    if shouldUseOuter then
+                        if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
+                            piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
+                            piles[i + handsDoubled][j].addTag("Outer")
+                        elseif outerWireRule.wirePosition == "lastTwo" then
+                            if j == #piles[i + handsDoubled] then
+                                piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
+                                piles[i + handsDoubled][j].addTag("Outer")
+                            elseif j == #piles[i + handsDoubled] - 1 then
+                                piles[i + handsDoubled][j].setPosition(outerWirePositions1[2])
+                                piles[i + handsDoubled][j].addTag("Outer")
+                            else
+                                piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                            end
+                        else
+                            piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                        end
                     else
                         piles[i + handsDoubled][j].setPosition(wirePositions1[j])
                     end
                 else
                     piles[i + handsDoubled][j].setPosition(wirePositions1[j])
                 end
+                
                 piles[i + handsDoubled][j].setRotation(wireRotations[playerColors[i]])
                 piles[i + handsDoubled][j].flip()
-                if (missionNum == 20 or missionNum == 35) and j == #piles[i + handsDoubled] then
+                
+                -- Handle X token placement for special last wire missions
+                if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
                     xToken = getObjectsWithTag("XToken")[1]
                     clone = xToken.clone({position=tokenPositions1[j], rotation=tokenHandRotations[playerColors[i]]})
                     clone.locked = false
@@ -3218,39 +3564,80 @@ function dealWiresToHands(missionNum, piles)
 end
 
 function sortEquipment(missionNum, yellowNum)
-    if missionNum < 3
-    or missionNum == 39 then return end
+    -- Check if this is a custom mission that should exclude all equipment
+    local missionConfig = getMissionConfig(missionNum)
+    if missionConfig and (missionConfig.includePack1Equipment ~= nil or missionConfig.includePack5Equipment ~= nil) then
+        -- For custom missions with pack configuration, check if all equipment should be excluded
+        if not missionConfig.includePack1Equipment and not missionConfig.includePack5Equipment then
+            return -- No equipment should be set up
+        end
+    elseif (missionNum < 3 and missionNum > 0) or missionNum == 39 then 
+        -- Legacy hardcoded missions that don't use equipment
+        return 
+    end
+    
     equipmentCards = getObjectsWithTag("Equipment")
+    local equipmentSpecial = getEquipmentSpecial(missionNum)
+    
+    -- Set default values
     equipRot = {0.00, 180.00, 0.00}
     equipNum = playerNum
     equipPos = equipmentPositions
-    if missionNum == 15 then
-        equipRot = {0.00, 180.00, 180.00}
-    elseif missionNum == 18 then
-        radar = nil
-        for _, card in ipairs(equipmentCards) do
-            if card.getName() == "General Radar" then
-                radar = card
-                break
+    
+    -- Apply equipment special configurations
+    if equipmentSpecial then
+        -- Override rotation if specified
+        if equipmentSpecial.rotation then
+            equipRot = equipmentSpecial.rotation
+        end
+        
+        -- Handle specific equipment placement (like Mission 18 General Radar)
+        if equipmentSpecial.specificEquipment then
+            -- Array format - allows multiple instances of same equipment
+            for _, equipmentConfig in ipairs(equipmentSpecial.specificEquipment) do
+                local targetCard = nil
+                for _, card in ipairs(equipmentCards) do
+                    if card.getName() == equipmentConfig.name then
+                        targetCard = card
+                        break
+                    end
+                end
+                if targetCard then
+                    local copy = targetCard.clone({
+                        position = equipmentConfig.position,
+                        rotation = equipmentConfig.rotation or equipRot
+                    })
+                    copy.locked = false
+                    copy.addTag("Destroy")
+                end
+            end
+            
+            -- Early return if specified (Mission 18 only places General Radar)
+            if equipmentSpecial.earlyReturn then
+                return
             end
         end
-        copy = radar.clone({position=equipmentPositions[3], rotation=equipRot})
-        copy.locked = false
-        copy.addTag("Destroy")
-        return
-    elseif missionNum == 23 then
-        equipRot = {0.00, 180.00, 180.00}
-        equipNum = 7
-        equipPos = {
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49},
-            {-14.68, 1.52, 5.49}
-        }
+        
+        -- Override equipment count if specified
+        if equipmentSpecial.count then
+            equipNum = equipmentSpecial.count
+        end
+        
+        -- Use special layout if specified
+        if equipmentSpecial.layout then
+            local layout = getPositionLayout("equipmentCards", equipNum, missionNum)
+            if layout then
+                -- Handle nested position structure (like mission23)
+                if layout.positions then
+                    equipPos = layout.positions
+                else
+                    equipPos = layout
+                end
+            end
+        end
     end
+    
+    -- Continue with standard equipment distribution logic
     for _, card in ipairs(equipmentCards) do
         clone = card.clone({position={-139.11, 2.14, -22.37}, rotation={0.00, 180.00, 0.00}, smooth=false})
         clone.locked = false
@@ -3272,17 +3659,31 @@ function sortEquipment(missionNum, yellowNum)
         end
     end
     spareEquipment = getObjectsWithAllTags({"Equipment", "Spare"})
-    if #equipmentToDeal > 1
-    and (missionNum != 15) then
+    
+    -- Apply sorting unless Mission 15 or equipment special configuration specifies no sorting
+    local shouldSort = #equipmentToDeal > 1
+    if equipmentSpecial then
+        -- Don't sort if rotation is flipped (like Mission 15) or explicitly disabled
+        if equipmentSpecial.rotation and equipmentSpecial.rotation[3] == 180.00 then
+            shouldSort = false
+        elseif equipmentSpecial.noSorting then
+            shouldSort = false
+        end
+    end
+    
+    if shouldSort then
         table.sort(equipmentToDeal, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
     end
+    
     for i = 1, equipNum do
-        if equipmentToDeal[i].getDescription() == "0" then
-            setupSpareEquipment(spareEquipment[1], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
-            setupSpareEquipment(spareEquipment[2], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
+        if equipmentToDeal[i] and equipPos[i] then
+            if equipmentToDeal[i].getDescription() == "0" then
+                setupSpareEquipment(spareEquipment[1], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
+                setupSpareEquipment(spareEquipment[2], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
+            end
+            equipmentToDeal[i].setPositionSmooth(equipPos[i])
+            equipmentToDeal[i].setRotation(equipRot)
         end
-        equipmentToDeal[i].setPositionSmooth(equipPos[i])
-        equipmentToDeal[i].setRotation(equipRot)
     end
     toDestroy = getObjectsWithAllTags({"Equipment", "Spare"})
     for _, card in ipairs(toDestroy) do
@@ -3291,52 +3692,88 @@ function sortEquipment(missionNum, yellowNum)
 end
 
 function moveTokens(missionNum)
-    if missionNum == 21
-    or missionNum == 33 then
+    local config = getMissionConfig(missionNum)
+    local hasSpecialTokens = false
+    
+    -- Handle specific token types based on mission configuration or hardcoded rules
+    if missionNum == 21 or missionNum == 33 then
         cloneAndPositionTokens("OddTokens", {-9.18, 1.49, -6.38})
         cloneAndPositionTokens("EvenTokens", {-4.59, 1.49, -6.38})
-    elseif missionNum == 24
-    or missionNum == 40 then
+        hasSpecialTokens = true
+    elseif missionNum == 24 or missionNum == 40 then
         cloneAndPositionTokens("x1Tokens", {-9.58, 1.49, -7.65})
         cloneAndPositionTokens("x2Tokens", {-6.88, 1.49, -5.20})
         cloneAndPositionTokens("x3Tokens", {-4.19, 1.49, -7.65})
-    elseif missionNum == 58 then
-        infoTokens = getObjectsWithTag("InfoTokens")
-        table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for num, token in ipairs(infoTokens) do
-            if num > 26 then
-                object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
-                object.locked = false
-                object.addTag("Destroy")
-                newObject = object.setState(2)
-                newObject.addTag("Destroy")
-                newObject.setState(1)
+        hasSpecialTokens = true
+    elseif missionNum == -4 then
+        cloneAndPositionTokens("LessTokens", {-9.18, 1.49, -6.38})
+        cloneAndPositionTokens("GreaterTokens", {-4.59, 1.49, -6.38})
+        hasSpecialTokens = true
+    end
+    
+    -- Only handle regular info tokens if no special tokens were placed
+    if not hasSpecialTokens then
+        local infoTokens = getObjectsWithTag("InfoTokens")
+        if infoTokens and #infoTokens > 0 then
+            table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+            
+            -- Determine token limit based on mission type and configuration
+            local tokenLimit = 26 -- Default limit for regular missions < 55
+            local needsExtendedTokens = false
+            
+            -- Check if this mission needs extended info tokens (Pack 5 content)
+            if missionNum >= 55 then -- Regular Pack 5 missions
+                needsExtendedTokens = true
+            elseif config and config.includePack5Equipment then -- Custom missions with Pack 5 equipment
+                needsExtendedTokens = true
             end
-        end
-    else
-        infoTokens = getObjectsWithTag("InfoTokens")
-        table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for num, token in ipairs(infoTokens) do
-            if missionNum < 55 and num == 27 then
-                break
+            
+            -- Place info tokens based on mission requirements
+            for num, token in ipairs(infoTokens) do
+                local shouldPlaceToken = false
+                
+                if missionNum == 58 then
+                    -- Mission 58: Only place tokens beyond position 26
+                    shouldPlaceToken = (num > 26)
+                elseif needsExtendedTokens then
+                    -- Pack 5 missions or custom missions with Pack 5: Place all tokens
+                    shouldPlaceToken = true
+                else
+                    -- Regular missions: Place tokens up to position 26
+                    shouldPlaceToken = (num <= 26)
+                end
+                
+                if shouldPlaceToken then
+                    local tokenNumber = tonumber(token.getName())
+                    -- Ensure we have a valid position for this token
+                    if tokenNumber and infoTokenPositions[tokenNumber] then
+                        local object = token.clone({position=infoTokenPositions[tokenNumber]})
+                        object.locked = false
+                        object.addTag("Destroy")
+                        local newObject = object.setState(2)
+                        newObject.addTag("Destroy")
+                        newObject.setState(1)
+                    end
+                end
             end
-            object = token.clone({position=infoTokenPositions[tonumber(token.getName())]})
-            object.locked = false
-            object.addTag("Destroy")
-            newObject = object.setState(2)
-            newObject.addTag("Destroy")
-            newObject.setState(1)
         end
     end
+    
+    -- Handle equals/not equals tokens (exclude for mission 52)
     if missionNum ~= 52 then
-        notEquals = getObjectsWithTag("NotEquals")[1]
-        clone = notEquals.clone({position={-9.86, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
-        clone.addTag("Destroy")
-        equals = getObjectsWithTag("Equals")[1]
-        clone = equals.clone({position={-3.81, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-        clone.locked = false
-        clone.addTag("Destroy")
+        local notEquals = getObjectsWithTag("NotEquals")
+        if notEquals and #notEquals > 0 then
+            local clone = notEquals[1].clone({position={-9.86, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+            clone.locked = false
+            clone.addTag("Destroy")
+        end
+        
+        local equals = getObjectsWithTag("Equals")
+        if equals and #equals > 0 then
+            local clone = equals[1].clone({position={-3.81, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
+            clone.locked = false
+            clone.addTag("Destroy")
+        end
     end
 end
 
@@ -3345,9 +3782,15 @@ function moveMissionCard(missionNum)
     missionCard.locked = false
     missionCard.addTag("Destroy")
     missionCard.setName(missionNum)
+    
+    local folderName = "Missions"
+    if missionNum < 0 then
+        folderName = "Custom Missions"
+    end
+    
     params = {
-        face = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission %d Front.png", missionNum),
-        back = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission %d Back.png", missionNum)
+        face = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/%s/Mission %d Front.png", folderName, missionNum),
+        back = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/%s/Mission %d Back.png", folderName, missionNum)
     }
     missionCard.setCustomObject(params)
     missionCard.reload()
