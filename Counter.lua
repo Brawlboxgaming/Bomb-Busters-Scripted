@@ -747,7 +747,7 @@ local equipmentConfigs = {
     ["Post-it"] = {
         description = "4",
         pack = 3,
-        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
+        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65, -5}
     },
     ["Super Detector"] = {
         description = "5",
@@ -762,7 +762,7 @@ local equipmentConfigs = {
     ["Emergency Batteries"] = {
         description = "7",
         pack = 0,
-        bannedMissions = {27, 46}
+        bannedMissions = {27, 46, 58, -5}
     },
     ["General Radar"] = {
         description = "8",
@@ -1097,6 +1097,9 @@ local specialRuleConfigs = {
             rotation = {0.00, 180.00, 180.00},
             count = 7,
             layout = "mission23" -- Uses layoutConfigs.equipmentCards.mission23
+        },
+        [-5] = {
+            available = true, -- Indicates this equipment is available from the start of the mission
         }
     }
 }
@@ -1258,6 +1261,11 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
         -- Include Pack 5 equipment if enabled
         if isPack5 and missionConfig.includePack5Equipment then
             shouldInclude = true
+        end
+        
+        -- Special case: Always exclude False Bottom when yellowNum == 0, regardless of pack settings
+        if equipmentName == "False Bottom" and yellowNum == 0 then
+            return true -- Exclude False Bottom when no yellow wires
         end
         
         if not shouldInclude then
@@ -1827,6 +1835,12 @@ local customMissionConfigs = {
         numberCard = {
             position = "mission-4" -- Use string identifier to be resolved at runtime
         }
+    },
+    [-5] = {
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
     }
 }
 
@@ -3681,7 +3695,7 @@ function sortEquipment(missionNum, yellowNum)
                 setupSpareEquipment(spareEquipment[1], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
                 setupSpareEquipment(spareEquipment[2], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
             end
-            equipmentToDeal[i].setPositionSmooth(equipPos[i])
+            equipmentToDeal[i].setPositionSmooth({equipPos[i][1], equipPos[i][2], equipPos[i][3] + (equipmentSpecial and equipmentSpecial.available and 1.44 or 0.00)})
             equipmentToDeal[i].setRotation(equipRot)
         end
     end
@@ -3732,8 +3746,8 @@ function moveTokens(missionNum)
             for num, token in ipairs(infoTokens) do
                 local shouldPlaceToken = false
                 
-                if missionNum == 58 then
-                    -- Mission 58: Only place tokens beyond position 26
+                if missionNum == 58 or missionNum == -5 then
+                    -- Only place tokens beyond position 26
                     shouldPlaceToken = (num > 26)
                 elseif needsExtendedTokens then
                     -- Pack 5 missions or custom missions with Pack 5: Place all tokens
