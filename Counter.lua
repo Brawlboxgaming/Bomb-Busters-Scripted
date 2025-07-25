@@ -2294,6 +2294,10 @@ function prepareWiresAndMarkers(missionNum)
     end
     
     dealWiresToHands(missionNum, piles)
+    
+    if missionNum == 50 then
+        printToAll(string.format("Please delete the markers on the board before placing Info tokens."))
+    end
 end
 
 -- Handles special mission configurations that don't fit the standard pattern
@@ -3249,9 +3253,6 @@ end
 
 -- Sets up markers for revealed wires based on mission parameters
 function setupMarkers(revealedWires, num, total, color)
-    if missionNum == 50 then
-        printToAll(string.format("Please delete the markers on the board before placing Info tokens."))
-    end
     local marker = getObjectsWithAllTags({"Marker", color})[1]
     local markerRotation = {}
     if num == total then
