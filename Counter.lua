@@ -762,7 +762,7 @@ local equipmentConfigs = {
     ["Emergency Batteries"] = {
         description = "7",
         pack = 0,
-        bannedMissions = {27, 46, 58, -5}
+        bannedMissions = {27, 46, 58}
     },
     ["General Radar"] = {
         description = "8",
@@ -791,7 +791,7 @@ local equipmentConfigs = {
     ["Coffee Mug"] = {
         description = "11",
         pack = 0,
-        bannedMissions = {3, 10, 45}
+        bannedMissions = {3, 10, 45, -5}
     },
     ["Label Equals"] = {
         description = "12",
