@@ -747,7 +747,7 @@ local equipmentConfigs = {
     ["Post-it"] = {
         description = "4",
         pack = 3,
-        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65, -5}
+        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
     },
     ["Super Detector"] = {
         description = "5",
@@ -791,7 +791,7 @@ local equipmentConfigs = {
     ["Coffee Mug"] = {
         description = "11",
         pack = 0,
-        bannedMissions = {3, 10, 45, -5}
+        bannedMissions = {3, 10, 45}
     },
     ["Label Equals"] = {
         description = "12",
@@ -1838,7 +1838,7 @@ local customMissionConfigs = {
     },
     [-5] = {
         wires = {12, 2, 2, 12, 1, 2, 12},
-        includePack1Equipment = true,
+        includePack1Equipment = false,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
     }
@@ -3247,15 +3247,10 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
     end
 end
 
--- Sets up wire markers for specific missions (or prints wire info for mission 50)
+-- Sets up markers for revealed wires based on mission parameters
 function setupMarkers(revealedWires, num, total, color)
-    -- Mission 50: Instead of placing markers, print wire information to all players
     if missionNum == 50 then
-        table.sort(revealedWires, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-        for _, wire in ipairs(revealedWires) do
-            printToAll(string.format("One of the %s wires in play is %s.", color:lower(), wire.getName()))
-        end
-        return
+        printToAll(string.format("Please delete the markers on the board before placing Info tokens."))
     end
     local marker = getObjectsWithAllTags({"Marker", color})[1]
     local markerRotation = {}
