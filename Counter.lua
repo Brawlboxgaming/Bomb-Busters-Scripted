@@ -1837,7 +1837,7 @@ local customMissionConfigs = {
         }
     },
     [-5] = {
-        wires = {12, 0, 0, 12, 1, 1, 12},
+        wires = {12, 2, 2, 12, 1, 2, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
