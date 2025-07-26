@@ -1589,6 +1589,7 @@ local missionConfigs = {
         wires = {12, 0, 0, 12, 1, 2, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
         altCount = {2},
+        excludeInfoTokens = true,
         specialTokens = {
             type = "oddEven",
             tokens = {
@@ -1613,6 +1614,7 @@ local missionConfigs = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         altCount = {2},
+        excludeInfoTokens = true,
         specialTokens = {
             type = "multiplier",
             tokens = {
@@ -1665,6 +1667,7 @@ local missionConfigs = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         altCount = {2},
+        excludeInfoTokens = true,
         specialTokens = {
             type = "oddEven",
             tokens = {
@@ -1713,6 +1716,7 @@ local missionConfigs = {
     },
     [40] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
+        excludeInfoTokens = true,
         specialTokens = {
             type = "multiplier",
             tokens = {
@@ -1825,6 +1829,7 @@ local missionConfigs = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         altCount = {2},
+        shouldExcludeInfoTokens = true
     },
     [59] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
@@ -1911,8 +1916,8 @@ local customMissionConfigs = {
         specialTokens = {
             type = "comparison",
             tokens = {
-                {name = "LessTokens", position = {-9.18, 1.49, -6.38}},
-                {name = "GreaterTokens", position = {-4.59, 1.49, -6.38}}
+                {name = "LessTokens", position = {-9.18, 1.46, -13.92}},
+                {name = "GreaterTokens", position = {-4.59, 1.46, -13.92}}
             }
         }
     },
@@ -3827,7 +3832,6 @@ end
 
 function moveTokens(missionNum)
     local config = getMissionConfig(missionNum)
-    local hasSpecialTokens = false
     
     -- Handle specific token types based on mission configuration
     if config and config.specialTokens then
@@ -3835,11 +3839,11 @@ function moveTokens(missionNum)
         for _, tokenConfig in ipairs(specialTokens.tokens) do
             cloneAndPositionTokens(tokenConfig.name, tokenConfig.position)
         end
-        hasSpecialTokens = true
     end
     
-    -- Only handle regular info tokens if no special tokens were placed
-    if not hasSpecialTokens then
+    -- Handle regular info tokens unless excluded by config
+    local shouldExcludeInfoTokens = config and config.excludeInfoTokens
+    if not shouldExcludeInfoTokens then
         local infoTokens = getObjectsWithTag("InfoTokens")
         if infoTokens and #infoTokens > 0 then
             table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
