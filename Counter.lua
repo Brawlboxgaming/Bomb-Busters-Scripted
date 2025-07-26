@@ -615,14 +615,6 @@ function shouldExcludeEquipment(clone, missionNum, yellowNum)
         return true
     end
     
-    -- Special case for mission 11
-    if missionNum == 11 then
-        local destroyNumbers = getObjectsWithAllTags({"Numbers", "Destroy"})
-        if #destroyNumbers > 0 and desc == destroyNumbers[1].getName() then
-            return true
-        end
-    end
-    
     return false
 end
 
@@ -1065,8 +1057,8 @@ local specialRuleConfigs = {
     characterSpecial = {
         [27] = {captainFlipped = true, otherCardsDestroyed = true},
         [28] = {captainDestroyed = true},
-        [34] = {randomCaptain = false, captainFlipped = true, constraintDistribution = "hands"},
-        [-3] = {randomCaptain = true, captainFlipped = true}
+        [34] = {captainSelection = "reshuffle", captainFlipped = true, constraintDistribution = "hands"},
+        [-3] = {captainSelection = "reshuffle", captainFlipped = true}
     },
     equipmentSpecial = {
         -- Equipment special rules for missions requiring custom equipment handling
@@ -1204,6 +1196,30 @@ function handleAudioConfiguration(missionNum)
     end
 end
 
+-- Helper function to determine if a pack is available for a mission (unified logic for regular and custom missions)
+function isPackAvailable(missionNum, missionConfig, packNum, yellowNum)
+    -- Custom missions use explicit pack configuration
+    if missionConfig and (missionConfig.includePack1Equipment ~= nil or missionConfig.includePack5Equipment ~= nil) then
+        if packNum == 1 then
+            return missionConfig.includePack1Equipment == true
+        elseif packNum == 5 then
+            return missionConfig.includePack5Equipment == true
+        end
+        return false
+    end
+    
+    -- Regular missions use mission number ranges and conditions
+    if missionNum > 0 then
+        if packNum == 1 then
+            return missionNum >= 9 and yellowNum > 0 -- Pack 1 available from mission 9+ with yellows
+        elseif packNum == 5 then
+            return missionNum >= 55 -- Pack 5 available from mission 55+
+        end
+    end
+    
+    return false
+end
+
 -- Check if equipment should be excluded based on configuration
 function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowNum)
     -- Check if this is a custom mission with pack-based equipment requirements
@@ -1297,14 +1313,35 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
             end
         end
         
-        -- Check pack requirements (for regular missions only, not custom missions)
-        if config.pack and config.pack > 0 and missionNum > 0 then
-            if (config.pack == 1 and (missionNum < 9 or yellowNum == 0)) or
-               (config.pack == 5 and missionNum < 55) then
+        -- Check pack requirements using unified logic (works for both regular and custom missions)
+        if config.pack and config.pack > 0 then
+            local isPack1Available = isPackAvailable(missionNum, missionConfig, 1, yellowNum)
+            local isPack5Available = isPackAvailable(missionNum, missionConfig, 5, yellowNum)
+            
+            if (config.pack == 1 and not isPack1Available) or
+               (config.pack == 5 and not isPack5Available) then
                 return true
             end
         end
     end
+    
+    -- Check for mission-specific equipment exclusion rules
+    if not missionConfig then
+        missionConfig = getMissionConfig(missionNum)
+    end
+    
+    if missionConfig and missionConfig.equipmentExclusion then
+        local exclusionRule = missionConfig.equipmentExclusion
+        
+        if exclusionRule.type == "matchNumberCard" then
+            -- Exclude equipment that matches destroyed number cards
+            local destroyNumbers = getObjectsWithAllTags({"Numbers", "Destroy"})
+            if #destroyNumbers > 0 and desc == destroyNumbers[1].getName() then
+                return true
+            end
+        end
+    end
+    
     return false
 end
 
@@ -1445,34 +1482,34 @@ local missionConfigs = {
         validationTokens = {11, 12}
     },
     [4] = {
-        wires = {12, 4, 4, 12, 1, 1, 12},
-        wiresAlt = {12, 2, 2, 12, 1, 1, 12},
-        threshold = 3
+        wires = {12, 2, 2, 12, 1, 1, 12},
+        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
+        altCount = {2}
     },
     [5] = {
-        wires = {12, 2, 3, 12, 2, 2, 12},
-        wiresAlt = {12, 2, 3, 12, 1, 1, 12},
-        threshold = 3
+        wires = {12, 2, 3, 12, 1, 1, 12},
+        wiresAlt = {12, 2, 3, 12, 2, 2, 12},
+        altCount = {2}
     },
     [6] = {
-        wires = {12, 4, 4, 12, 2, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
-        threshold = 3
+        wires = {12, 4, 4, 12, 1, 1, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
+        altCount = {2}
     },
     [7] = {
-        wires = {12, 0, 0, 12, 1, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 1, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
+        altCount = {2}
     },
     [8] = {
-        wires = {12, 4, 4, 12, 1, 3, 12},
-        wiresAlt = {12, 2, 3, 12, 1, 2, 12},
-        threshold = 3
+        wires = {12, 2, 3, 12, 1, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 1, 3, 12},
+        altCount = {2}
     },
     [9] = {
-        wires = {12, 4, 4, 12, 2, 2, 12},
-        wiresAlt = {12, 2, 2, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 2, 2, 12, 1, 1, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
+        altCount = {2},
         sequence = 0
     },
     [10] = {
@@ -1486,18 +1523,21 @@ local missionConfigs = {
         }
     },
     [11] = {
-        wires = {12, 4, 4, 12, 0, 0, 12},
-        wiresAlt = {12, 2, 2, 12, 0, 0, 12},
-        threshold = 3,
+        wires = {12, 2, 2, 12, 0, 0, 12},
+        wiresAlt = {12, 4, 4, 12, 0, 0, 12},
+        altCount = {2},
         numberCard = {
             position = {-16.79, 1.53, -14.36},
             rotation = {0.45, 180.00, 0.00}
+        },
+        equipmentExclusion = {
+            type = "matchNumberCard" -- exclude equipment matching destroyed number cards
         }
     },
     [12] = {
-        wires = {12, 4, 4, 12, 2, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 4, 4, 12, 1, 1, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
+        altCount = {2},
         equipmentNumberCards = true
     },
     [13] = {
@@ -1506,31 +1546,31 @@ local missionConfigs = {
         randomInfo = true
     },
     [14] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 2, 3, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 2, 3, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2}
     },
     [15] = {
-        wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        altCount = {2},
         numberCardSpecial = "faceUpAndShuffle"
     },
     [16] = {
-        wires = {12, 4, 4, 12, 2, 2, 12},
-        wiresAlt = {12, 2, 3, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 2, 3, 12, 1, 1, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
+        altCount = {2},
         sequence = 1
     },
     [17] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2}
     },
     [18] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         shuffleNumbers = true
     },
     [19] = {
@@ -1541,36 +1581,51 @@ local missionConfigs = {
         }
     },
     [20] = {
-        wires = {12, 4, 4, 12, 2, 3, 12},
-        wiresAlt = {12, 2, 2, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 2, 2, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
+        altCount = {2}
     },
     [21] = {
-        wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 1, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        altCount = {2},
+        specialTokens = {
+            type = "oddEven",
+            tokens = {
+                {name = "OddTokens", position = {-9.18, 1.49, -6.38}},
+                {name = "EvenTokens", position = {-4.59, 1.49, -6.38}}
+            }
+        }
     },
     [22] = {
         wires = {12, 4, 4, 12, 1, 1, 12}
     },
     [23] = {
-        wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        altCount = {2},
         numberCardWithWarning = {
             position = {-24.18, 1.58, 0.00},
             rotation = {0.00, 180.00, 0.00}
         }
     },
     [24] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
+        specialTokens = {
+            type = "multiplier",
+            tokens = {
+                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
+                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
+                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
+            }
+        }
     },
     [25] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2}
     },
     [26] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
@@ -1580,9 +1635,9 @@ local missionConfigs = {
         wires = {12, 4, 4, 12, 1, 1, 12}
     },
     [28] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 4, 4, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2}
     },
     [29] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
@@ -1601,15 +1656,22 @@ local missionConfigs = {
         constraintCards = "special31"
     },
     [32] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         constraintCardSpecial = "faceUpAndShuffle"
     },
     [33] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
+        specialTokens = {
+            type = "oddEven",
+            tokens = {
+                {name = "OddTokens", position = {-9.18, 1.49, -6.38}},
+                {name = "EvenTokens", position = {-4.59, 1.49, -6.38}}
+            }
+        }
     },
     [34] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
@@ -1617,45 +1679,53 @@ local missionConfigs = {
         constraintCards = "handDistribution"
     },
     [35] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        threshold = 3
+        wires = {12, 4, 4, 12, 2, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2}
     },
     [36] = {
-        wires = {12, 4, 4, 12, 2, 3, 12},
-        wiresAlt = {12, 2, 2, 12, 1, 3, 12},
-        threshold = 3,
+        wires = {12, 2, 2, 12, 1, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
+        altCount = {2},
         numberCards5 = true,
         sequenceCard = true
     },
     [37] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         constraintCard = {
             position = {-24.35, 1.50, -4.60},
             rotation = {0.00, 180.00, 0.00}
         }
     },
     [38] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2}
     },
     [39] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        threshold = 3,
+        wires = {12, 4, 4, 12, 2, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2},
         shuffleNumbers = true,
         randomInfo = true
     },
     [40] = {
-        wires = {12, 0, 0, 12, 3, 3, 12}
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        specialTokens = {
+            type = "multiplier",
+            tokens = {
+                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
+                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
+                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
+            }
+        }
     },
     [41] = {
-        wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        altCount = {2},
         randomInfo = true
     },
     [42] = {
@@ -1674,9 +1744,9 @@ local missionConfigs = {
         oxygenTokens = "perPlayer2"
     },
     [45] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         shuffleNumbers = true
     },
     [46] = {
@@ -1684,42 +1754,44 @@ local missionConfigs = {
         warningToken = 7
     },
     [47] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         gridNumbers = true
     },
     [48] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2}
     },
     [49] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         oxygenTokens = "playerBased"
     },
     [50] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 2, 2, 12, 2, 2, 12},
-        threshold = 3
+        wires = {12, 2, 2, 12, 2, 2, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2},
+        specialMessage = "Please delete the markers on the board before placing Info tokens."
     },
     [51] = {
-        wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        altCount = {2},
         shuffleNumbers = true
     },
     [52] = {
-        wires = {12, 4, 4, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 3, 3, 12},
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
+        altCount = {2},
+        excludeTokens = {"Equals", "NotEquals"}
     },
     [53] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         nano = {{-20.22, 2.02, -1.16}, 1}
     },
     [54] = {
@@ -1732,68 +1804,69 @@ local missionConfigs = {
         }
     },
     [55] = {
-        wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
+        altCount = {2},
         challengeCards = true
     },
     [56] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2}
     },
     [57] = {
-        wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        altCount = {2},
         gridNumbers = true,
         gridConstraints = true
     },
     [58] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
     },
     [59] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         challengeCards = true
     },
     [61] = {
-        wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        altCount = {2},
         constraintCards = "complexDistribution"
     },
     [62] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         numberCards5 = true
     },
     [63] = {
-        wires = {12, 0, 0, 12, 3, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        threshold = 3,
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        altCount = {2},
         oxygenTokens = "scalingToLeader"
     },
     [64] = {
-        wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 1, 12},
-        threshold = 3
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
+        altCount = {2}
     },
     [65] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         minPlayers = 3,
-        customDistribution = "mission65"
+        customDistribution = "mission65",
+        teamAssignment = "Jokers"
     },
     [66] = {
         wires = {12, 2, 2, 12, 2, 2, 12},
@@ -1834,6 +1907,13 @@ local customMissionConfigs = {
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
         numberCard = {
             position = "mission-4" -- Use string identifier to be resolved at runtime
+        },
+        specialTokens = {
+            type = "comparison",
+            tokens = {
+                {name = "LessTokens", position = {-9.18, 1.49, -6.38}},
+                {name = "GreaterTokens", position = {-4.59, 1.49, -6.38}}
+            }
         }
     },
     [-5] = {
@@ -1869,6 +1949,46 @@ function validateCustomMissionConfig(config)
     end
     
     return true
+end
+
+-- Helper function to determine if character selection is available (unified logic)
+function hasCharacterSelection(missionNum, config)
+    -- Custom missions use explicit character card configuration
+    if config and config.characterCards and #config.characterCards > 0 then
+        return true
+    end
+    
+    -- Regular missions from 31 onwards have character selection
+    return missionNum > 30
+end
+
+-- Dynamically sets rule card rotations based on mission features
+function setDynamicRuleCardRotations(missionNum, config)
+    -- Default rotation (face down/tutorial)
+    local faceDown = {0.00, 270.00, 180.00}
+    local faceUp = {0.00, 270.00, 0.00}
+    
+    -- Rule Card A: Show if mission has yellow wires (mission > 8 or custom mission with yellows)
+    local cardARotation = faceDown
+    if missionNum > 8 then
+        cardARotation = faceUp
+    elseif config and config.wires and config.wires[2] > 0 then -- yellowNum > 0
+        cardARotation = faceUp
+    end
+    
+    -- Rule Card B: Show if mission has character selection
+    local cardBRotation = faceDown
+    if hasCharacterSelection(missionNum, config) then
+        cardBRotation = faceUp
+    end
+    
+    -- Rule Card C: Show if mission has Pack 5 equipment
+    local cardCRotation = faceDown
+    if isPackAvailable(missionNum, config, 5, 0) then -- yellowNum not relevant for Pack 5
+        cardCRotation = faceUp
+    end
+    
+    setRuleCardRotations(cardARotation, cardBRotation, cardCRotation)
 end
 
 -----------------------
@@ -1980,20 +2100,12 @@ function startMission()
     moveMissionCard(missionNum)
     adjustDial(missionNum, playerNum)
 
-    -- Tutorial missions (1-8): Flip rule cards to show tutorial information
-    if missionNum < 9 then
-        setRuleCardRotations({0.00, 270.00, 180.00}, {0.00, 270.00, 180.00}, {0.00, 270.00, 180.00})
-    elseif missionNum < 31 then
-        setRuleCardRotations({0.00, 270.00, 0.00}, {0.00, 270.00, 180.00}, {0.00, 270.00, 180.00})
-    elseif missionNum < 55 then
-        setRuleCardRotations({0.00, 270.00, 0.00}, {0.00, 270.00, 0.00}, {0.00, 270.00, 180.00})
-    else
-        setRuleCardRotations({0.00, 270.00, 0.00}, {0.00, 270.00, 0.00}, {0.00, 270.00, 0.00})
-    end
+    -- Set rule card rotations dynamically based on mission features
+    setDynamicRuleCardRotations(missionNum, config)
 
     -- From mission 31 onwards or custom missions with extra character cards, you can choose which character cards you would like
     local config = getMissionConfig(missionNum)
-    local needsCharacterSelection = missionNum > 30 or (config and config.characterCards and #config.characterCards > 0)
+    local needsCharacterSelection = hasCharacterSelection(missionNum, config)
     
     if needsCharacterSelection then
         printToAll("----------------------------")
@@ -2110,10 +2222,11 @@ function finishSetupAfterCharSel()
     end
     shuffledPlayers = sortCharacters(missionNum)
     captainColor = shuffledPlayers[1]
-    -- Mission 34/-3: Captain is chosen randomly instead of by character order
-    if missionNum == 34 or missionNum == -3 then
-        captainColor = playerColors[math.random(playerNum)]
-        colors = {
+    
+    -- Check if captain should be announced (for reshuffle missions)
+    local characterSpecial = getCharacterSpecial(missionNum)
+    if characterSpecial and characterSpecial.captainSelection == "reshuffle" then
+        local colors = {
             Blue    = {0.118, 0.53, 1},
             Green   = {0.192, 0.701, 0.168},
             Purple  = {0.627, 0.125, 0.941},
@@ -2166,10 +2279,12 @@ function sortPlayerColors(playerNum)
         end
         table.insert(doubleHandColors, toInsert)
     end
-    -- Mission 65: All players are on the same "Jokers" team to allow for everyone to see their cards.
-    if missionNum == 65 then
+    
+    -- Handle team assignment based on mission configuration
+    local config = getMissionConfig(missionNum)
+    if config and config.teamAssignment then
         for i = 1, #players do
-            players[i].team = "Jokers"
+            players[i].team = config.teamAssignment
         end
     else
         for i = 1, #players do
@@ -2186,8 +2301,12 @@ function sortCharacters(missionNum)
     
     local characterSpecial = getCharacterSpecial(missionNum)
     
-    -- Check for original player order override
-    if characterSpecial and characterSpecial.randomCaptain == false then
+    -- Check for captain selection override
+    if characterSpecial and characterSpecial.captainSelection == "reshuffle" then
+        -- Use shuffled order for captain selection
+        ret = shuffledPlayers
+    elseif characterSpecial and characterSpecial.randomCaptain == false then
+        -- Legacy support: use original player order
         ret = playerColors
     elseif missionNum == 65 then -- Keep existing mission 65 logic for compatibility
         ret = playerColors
@@ -2276,7 +2395,10 @@ function prepareWiresAndMarkers(missionNum)
     
     -- Determine wire configuration based on player count
     local wires = config.wires
-    if config.wiresAlt and playerNum >= config.threshold then
+    if config.wiresAlt and config.altCount and contains(config.altCount, playerNum) then
+        wires = config.wiresAlt
+    elseif config.wiresAlt and config.threshold and playerNum >= config.threshold then
+        -- Legacy support for threshold-based system
         wires = config.wiresAlt
     end
     
@@ -2295,8 +2417,10 @@ function prepareWiresAndMarkers(missionNum)
     
     dealWiresToHands(missionNum, piles)
     
-    if missionNum == 50 then
-        printToAll(string.format("Please delete the markers on the board before placing Info tokens."))
+    -- Display special message if configured
+    local config = getMissionConfig(missionNum)
+    if config and config.specialMessage then
+        printToAll(config.specialMessage)
     end
 end
 
@@ -3705,19 +3829,12 @@ function moveTokens(missionNum)
     local config = getMissionConfig(missionNum)
     local hasSpecialTokens = false
     
-    -- Handle specific token types based on mission configuration or hardcoded rules
-    if missionNum == 21 or missionNum == 33 then
-        cloneAndPositionTokens("OddTokens", {-9.18, 1.49, -6.38})
-        cloneAndPositionTokens("EvenTokens", {-4.59, 1.49, -6.38})
-        hasSpecialTokens = true
-    elseif missionNum == 24 or missionNum == 40 then
-        cloneAndPositionTokens("x1Tokens", {-9.58, 1.49, -7.65})
-        cloneAndPositionTokens("x2Tokens", {-6.88, 1.49, -5.20})
-        cloneAndPositionTokens("x3Tokens", {-4.19, 1.49, -7.65})
-        hasSpecialTokens = true
-    elseif missionNum == -4 then
-        cloneAndPositionTokens("LessTokens", {-9.18, 1.49, -6.38})
-        cloneAndPositionTokens("GreaterTokens", {-4.59, 1.49, -6.38})
+    -- Handle specific token types based on mission configuration
+    if config and config.specialTokens then
+        local specialTokens = config.specialTokens
+        for _, tokenConfig in ipairs(specialTokens.tokens) do
+            cloneAndPositionTokens(tokenConfig.name, tokenConfig.position)
+        end
         hasSpecialTokens = true
     end
     
@@ -3769,8 +3886,13 @@ function moveTokens(missionNum)
         end
     end
     
-    -- Handle equals/not equals tokens (exclude for mission 52)
-    if missionNum ~= 52 then
+    -- Handle equals/not equals tokens based on configuration
+    local config = getMissionConfig(missionNum)
+    local shouldExcludeEquals = config and config.excludeTokens and (
+        contains(config.excludeTokens, "Equals") or contains(config.excludeTokens, "NotEquals")
+    )
+    
+    if not shouldExcludeEquals then
         local notEquals = getObjectsWithTag("NotEquals")
         if notEquals and #notEquals > 0 then
             local clone = notEquals[1].clone({position={-9.86, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
@@ -3883,3 +4005,13 @@ function table.shallow_copy(t)
   end
   return t2
 end
+
+
+
+
+
+
+
+
+
+
