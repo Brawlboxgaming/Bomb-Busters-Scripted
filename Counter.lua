@@ -3343,6 +3343,27 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
             end
         end
     end
+    
+    -- Handle wire hand count limitation before sorting piles
+    local config = getMissionConfig(missionNum)
+    local wireHandCount = config and config.wireHandCount
+    local excessWires = {}  -- Store wires that exceed the hand count limit
+    
+    if wireHandCount then
+        for num, pile in ipairs(piles) do
+            if #pile > wireHandCount then
+                -- Move excess wires to the excess pile
+                for j = wireHandCount + 1, #pile do
+                    table.insert(excessWires, pile[j])
+                end
+                -- Remove excess wires from the pile
+                for j = #pile, wireHandCount + 1, -1 do
+                    table.remove(pile, j)
+                end
+            end
+        end
+    end
+    
     for num, pile in ipairs(piles) do
         local sortingRule = getSortingOverride(missionNum)
         
@@ -3378,6 +3399,14 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
         else
             -- Standard sorting
             table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+        end
+    end
+    
+    -- Place excess wires in a pile beside the board if wireHandCount is configured
+    if wireHandCount and #excessWires > 0 then
+        for i, wire in ipairs(excessWires) do
+            wire.setPosition({-23.00, 1.52 + (i * 0.1), -1.03})  -- Stack the wires slightly above each other
+            wire.setRotation({0.00, 180.00, 180.00})  -- Face down
         end
     end
 end
@@ -3523,11 +3552,6 @@ function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, r
 end
 
 function dealWiresToHands(missionNum, piles)
-    -- Get mission configuration for wire hand count limitation
-    local config = getMissionConfig(missionNum)
-    local wireHandCount = config and config.wireHandCount
-    local excessWires = {}  -- Store wires that exceed the hand count limit
-    
     if missionNum == 41 then
         yellowNum = playerNum
         if yellowNum == 5 then
@@ -3600,19 +3624,6 @@ function dealWiresToHands(missionNum, piles)
         outerWirePositions0 = wireOuterPositions0[playerColors[i]]
         tokenPositions0 = tokenHandPositions0[playerColors[i]]
         
-        -- Handle wire hand count limitation for custom missions
-        local actualPileSize = #piles[i + handsDoubled]
-        if wireHandCount and actualPileSize > wireHandCount then
-            -- Move excess wires to the excess pile
-            for j = wireHandCount + 1, actualPileSize do
-                table.insert(excessWires, piles[i + handsDoubled][j])
-            end
-            -- Remove excess wires from the pile
-            for j = actualPileSize, wireHandCount + 1, -1 do
-                table.remove(piles[i + handsDoubled], j)
-            end
-        end
-        
         for j = 1, #piles[i + handsDoubled] do
             local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
             local sortingRule = getSortingOverride(missionNum)
@@ -3669,19 +3680,6 @@ function dealWiresToHands(missionNum, piles)
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
             handsDoubled = handsDoubled + 1
             
-            -- Handle wire hand count limitation for the second hand as well
-            local actualPileSize = #piles[i + handsDoubled]
-            if wireHandCount and actualPileSize > wireHandCount then
-                -- Move excess wires to the excess pile
-                for j = wireHandCount + 1, actualPileSize do
-                    table.insert(excessWires, piles[i + handsDoubled][j])
-                end
-                -- Remove excess wires from the pile
-                for j = actualPileSize, wireHandCount + 1, -1 do
-                    table.remove(piles[i + handsDoubled], j)
-                end
-            end
-            
             for j = 1, #piles[i + handsDoubled] do
                 local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
                 local sortingRule = getSortingOverride(missionNum)
@@ -3733,15 +3731,6 @@ function dealWiresToHands(missionNum, piles)
             if playerNum == 3 then
                 noMoreDouble = true
             end
-        end
-    end
-    
-    -- Place excess wires in a pile beside the board if wireHandCount is configured
-    if wireHandCount and #excessWires > 0 then
-        for i, wire in ipairs(excessWires) do
-            wire.setPosition({-23.00, 1.52 + (i * 0.1), -1.03})  -- Stack the wires slightly above each other
-            wire.setRotation({0.00, 180.00, 180.00})  -- Face down
-            wire.addTag("Destroy")
         end
     end
 end
