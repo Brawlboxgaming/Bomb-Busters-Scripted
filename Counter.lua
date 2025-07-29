@@ -1089,9 +1089,6 @@ local specialRuleConfigs = {
             rotation = {0.00, 180.00, 180.00},
             count = 7,
             layout = "mission23" -- Uses layoutConfigs.equipmentCards.mission23
-        },
-        [-5] = {
-            available = true, -- Indicates this equipment is available from the start of the mission
         }
     }
 }
@@ -1926,6 +1923,12 @@ local customMissionConfigs = {
         includePack1Equipment = false,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+    },
+    [-6] = {
+        wires = {12, 2, 2, 12, 2, 2, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        wireHandCount = 6
     }
 }
 
@@ -2250,7 +2253,7 @@ end
 function sortPlayerColors(playerNum)
     players = {}
     for _, p in ipairs(Player.getPlayers()) do
-        if p.color ~= "Black" then
+        if p.color ~= "Black" and p.color ~= "Grey" then
             table.insert(players, p)
         end
     end
@@ -2273,14 +2276,14 @@ function sortPlayerColors(playerNum)
     end
     if playerNum == 2 then
         toInsert = nil
-        if playerColors[2] == blueGreen[2] then
-            toInsert = blueGreen[2]
-        elseif playerColors[2] == blueGreen[1] then
+        if playerColors[2] == blueGreen[1] then
             toInsert = blueGreen[1]
-        else
-            playerColors[2] = blueGreen[2]
-            players[2].changeColor(blueGreen[2])
+        elseif playerColors[2] == blueGreen[2] then
             toInsert = blueGreen[2]
+        else
+            playerColors[2] = blueGreen[1]
+            players[2].changeColor(blueGreen[1])
+            toInsert = blueGreen[1]
         end
         table.insert(doubleHandColors, toInsert)
     end
@@ -3332,7 +3335,6 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
             local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
             if i <= nanoWireCounts[playerNum] and nanoConfig then
                 nano = getObjectsWithAllTags({"Nano", "Destroy"})[1]
-                nanoPos = nano.getPosition()
                 wire.setPosition({-23.00, 1.52, -1.03})
                 wire.setRotation({359.54, 180.20, 172.48})
                 nanoCounter = nanoCounter + 1
@@ -3521,6 +3523,11 @@ function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, r
 end
 
 function dealWiresToHands(missionNum, piles)
+    -- Get mission configuration for wire hand count limitation
+    local config = getMissionConfig(missionNum)
+    local wireHandCount = config and config.wireHandCount
+    local excessWires = {}  -- Store wires that exceed the hand count limit
+    
     if missionNum == 41 then
         yellowNum = playerNum
         if yellowNum == 5 then
@@ -3592,6 +3599,20 @@ function dealWiresToHands(missionNum, piles)
         wirePositions0 = wireHandPositions0[playerColors[i]]
         outerWirePositions0 = wireOuterPositions0[playerColors[i]]
         tokenPositions0 = tokenHandPositions0[playerColors[i]]
+        
+        -- Handle wire hand count limitation for custom missions
+        local actualPileSize = #piles[i + handsDoubled]
+        if wireHandCount and actualPileSize > wireHandCount then
+            -- Move excess wires to the excess pile
+            for j = wireHandCount + 1, actualPileSize do
+                table.insert(excessWires, piles[i + handsDoubled][j])
+            end
+            -- Remove excess wires from the pile
+            for j = actualPileSize, wireHandCount + 1, -1 do
+                table.remove(piles[i + handsDoubled], j)
+            end
+        end
+        
         for j = 1, #piles[i + handsDoubled] do
             local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
             local sortingRule = getSortingOverride(missionNum)
@@ -3647,6 +3668,20 @@ function dealWiresToHands(missionNum, piles)
             outerWirePositions1 = wireOuterPositions1[playerColors[i]]
             tokenPositions1 = tokenHandPositions1[playerColors[i]]
             handsDoubled = handsDoubled + 1
+            
+            -- Handle wire hand count limitation for the second hand as well
+            local actualPileSize = #piles[i + handsDoubled]
+            if wireHandCount and actualPileSize > wireHandCount then
+                -- Move excess wires to the excess pile
+                for j = wireHandCount + 1, actualPileSize do
+                    table.insert(excessWires, piles[i + handsDoubled][j])
+                end
+                -- Remove excess wires from the pile
+                for j = actualPileSize, wireHandCount + 1, -1 do
+                    table.remove(piles[i + handsDoubled], j)
+                end
+            end
+            
             for j = 1, #piles[i + handsDoubled] do
                 local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
                 local sortingRule = getSortingOverride(missionNum)
@@ -3698,6 +3733,15 @@ function dealWiresToHands(missionNum, piles)
             if playerNum == 3 then
                 noMoreDouble = true
             end
+        end
+    end
+    
+    -- Place excess wires in a pile beside the board if wireHandCount is configured
+    if wireHandCount and #excessWires > 0 then
+        for i, wire in ipairs(excessWires) do
+            wire.setPosition({-23.00, 1.52 + (i * 0.1), -1.03})  -- Stack the wires slightly above each other
+            wire.setRotation({0.00, 180.00, 180.00})  -- Face down
+            wire.addTag("Destroy")
         end
     end
 end
