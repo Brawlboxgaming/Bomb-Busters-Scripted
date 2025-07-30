@@ -3954,44 +3954,43 @@ function moveTokens(missionNum)
 end
 
 function moveMissionCard(missionNum)
-    config = getMissionConfig(missionNum) -- Ensure mission config is loaded
+    local config = getMissionConfig(missionNum) -- Ensure mission config is loaded
     
-    local folderName = "Missions"
-    if missionNum < 1 then
-        folderName = "Custom Missions"
-    end
+    local folderName = missionNum < 1 and "Missions" or "Custom Missions"
 
-    if config.missionCardFrontUrl == nil or config.missionCardBackUrl == nil then
-        printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
-        missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
-        missionCard.locked = false
-        missionCard.addTag("Destroy")
-        missionCard.setName(missionNum)
-        params = {
-            face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
-            back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
-        }
-        missionCard.setCustomObject(params)
-        missionCard.reload()
-        return
-    end
-
-    missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
+    -- Create mission card object once
+    local missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
     missionCard.locked = false
     missionCard.addTag("Destroy")
     missionCard.setName(missionNum)
 
-    if missionNum == 0 then
+    -- Determine URLs based on mission type and config
+    local params
+    if missionNum == 0 and config and config.missionCardFrontUrl and config.missionCardBackUrl then
+        -- Mission 0 with custom URLs
         params = {
             face = config.missionCardFrontUrl,
             back = config.missionCardBackUrl
         }
     else
-        params = {
-            face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Front.png",
-            back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Back.png"
-        }
+        -- Default URL pattern or fallback
+        if not config or not config.missionCardFrontUrl or not config.missionCardBackUrl then
+            if missionNum ~= 0 then
+                printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
+            end
+            params = {
+                face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
+                back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
+            }
+        else
+            -- Standard URL pattern
+            params = {
+                face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Front.png",
+                back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Back.png"
+            }
+        end
     end
+    
     missionCard.setCustomObject(params)
     missionCard.reload()
 end
