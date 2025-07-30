@@ -3956,7 +3956,10 @@ end
 function moveMissionCard(missionNum)
     local config = getMissionConfig(missionNum) -- Ensure mission config is loaded
     
-    local folderName = missionNum < 1 and "Missions" or "Custom Missions"
+    local folderName = "Missions"
+    if missionNum < 1 then
+        folderName = "Custom Missions"
+    end
 
     -- Create mission card object once
     local missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
@@ -3974,10 +3977,8 @@ function moveMissionCard(missionNum)
         }
     else
         -- Default URL pattern or fallback
-        if not config or not config.missionCardFrontUrl or not config.missionCardBackUrl then
-            if missionNum ~= 0 then
-                printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
-            end
+        if missionNum == 0 and (not config.missionCardFrontUrl or not config.missionCardBackUrl) then
+            printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
             params = {
                 face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
                 back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
