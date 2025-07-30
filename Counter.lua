@@ -1896,11 +1896,7 @@ local missionConfigs = {
 
 -- Custom missions configuration table (negative numbers starting from -1)
 local customMissionConfigs = {
-    [0] = {
-        wires = {12, 4, 5, 12, 4, 5, 12},
-        includePack1Equipment = false,
-        includePack5Equipment = true,
-    },
+    -- Mission 0 reserved for testing
     [-1] = {
         wires = {12, 2, 3, 12, 1, 2, 12},
         includePack1Equipment = true,
@@ -1952,6 +1948,12 @@ local customMissionConfigs = {
         includePack1Equipment = true,
         includePack5Equipment = false,
         wireHandCount = 8
+    },
+    [-7] = {
+        wires = {12, 4, 4, 12, 1, 2, 12},
+        includePack1Equipment = false,
+        includePack5Equipment = true,
+        equipmentNumberCards = true
     }
 }
 
@@ -2723,6 +2725,7 @@ function handleEquipmentNumberCards()
     local numberCards = getObjectsWithTag("Numbers")[1]
     local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
     cardsToDeal.locked = false
+    cardsToDeal.shuffle()
     for i = 1, playerNum do
         local number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 180.00, 0.00}})
         number.locked = false
@@ -4016,7 +4019,7 @@ function moveMissionCard(missionNum)
 
     -- Determine URLs based on mission type and config
     local params
-    if missionNum == 0 and config and config.missionCardFrontUrl and config.missionCardBackUrl then
+    if config and config.missionCardFrontUrl and config.missionCardBackUrl then
         -- Mission 0 with custom URLs
         params = {
             face = config.missionCardFrontUrl,
