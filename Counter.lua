@@ -1277,7 +1277,7 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
         end
         
         -- Special case: Always exclude False Bottom when yellowNum == 0, regardless of pack settings
-        if equipmentName == "False Bottom" and yellowNum == 0 then
+        if equipmentName == "False Bottom" and yellowNum == 0 and missionConfig.yellowWires == nil then
             return true -- Exclude False Bottom when no yellow wires
         end
         
@@ -1727,7 +1727,13 @@ local missionConfigs = {
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
         altCount = {2},
-        randomInfo = true
+        randomInfo = true,
+        yellowWires = {
+            type = "playerBased",
+            count = "playerNum", -- playerNum wires, but 4 if playerNum is 5
+            startIndex = 1, -- Start from player 1, but player 2 if playerNum is 5
+            skipDoubleHands = false
+        }
     },
     [42] = {
         wires = {12, 4, 4, 12, 1, 3, 12},
@@ -1763,7 +1769,13 @@ local missionConfigs = {
     [48] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2}
+        altCount = {2},
+        yellowWires = {
+            type = "sequential",
+            count = 3,
+            startIndex = 1,
+            skipDoubleHands = true -- Skip double hand players in 3-player games
+        }
     },
     [49] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
@@ -1898,8 +1910,14 @@ local customMissionConfigs = {
         wires = {12, 0, 0, 12, 0, 0, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
-        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
-        nano = {"mission-2", 0} -- Use string identifier "mission-2" to be resolved at runtime
+        --characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        nano = {"mission-2", 0}, -- Use string identifier "mission-2" to be resolved at runtime
+        yellowWires = {
+            type = "perPlayer",
+            count = 2, -- 2 yellow wires per player
+            startIndex = 1,
+            skipDoubleHands = false
+        }
     },
     [-3] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
@@ -1985,7 +2003,7 @@ function setDynamicRuleCardRotations(missionNum, config)
     local cardARotation = faceDown
     if missionNum > 8 then
         cardARotation = faceUp
-    elseif config and config.wires and config.wires[2] > 0 and config.includePack1Equipment then -- yellowNum > 0
+    elseif config and config.wires and (config.wires[2] > 0 or config.yellowWires) and config.includePack1Equipment then -- yellowNum > 0
         cardARotation = faceUp
     end
     
@@ -3328,7 +3346,7 @@ function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yello
     for i = 1, handCount do
         table.insert(piles, {})
     end
-    sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
+    sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
     destroyed = 0
     nanoCounter = 0
     for i = 1, mainCopy.getQuantity() do
@@ -3433,9 +3451,103 @@ function setupMarkers(revealedWires, num, total, color)
     end
 end
 
+-- Handles special yellow wire distributions that place wires directly in player hands
+function handleSpecialYellowWires(yellowConfig, piles)
+    local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
+    local yellowsRevealed = {}
+    
+    if yellowConfig.type == "playerBased" then
+        -- Mission 41: playerNum wires (4 if playerNum is 5), starting from specific index
+        local wireCount = yellowConfig.count == "playerNum" and playerNum or yellowConfig.count
+        if wireCount == "playerNum" and playerNum == 5 then
+            wireCount = 4
+        end
+        
+        local startIndex = yellowConfig.startIndex
+        if playerNum == 5 and startIndex == 1 then
+            startIndex = 2 -- Start from player 2 if playerNum is 5
+        end
+        
+        for i = 1, wireCount do
+            local pileIndex = startIndex + i - 1
+            if pileIndex <= #piles then
+                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
+                -- Position the wire - use existing pile position if available, otherwise temporary position
+                if #piles[pileIndex] > 0 then
+                    wire.setPosition(piles[pileIndex][1].getPosition())
+                else
+                    wire.setPosition({-92.12, 2.38, -1.60})
+                end
+                table.insert(piles[pileIndex], wire)
+                table.sort(piles[pileIndex], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+                table.insert(yellowsRevealed, wire)
+            end
+        end
+        
+    elseif yellowConfig.type == "sequential" then
+        -- Mission 48: 3 wires sequentially, skipping double hands in 3-player games
+        local wireCount = yellowConfig.count or 3
+        local playerIndex = yellowConfig.startIndex or 1
+        
+        for i = 1, wireCount do
+            if playerIndex <= #piles then
+                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
+                -- Position the wire - use existing pile position if available, otherwise temporary position
+                if #piles[playerIndex] > 0 then
+                    wire.setPosition(piles[playerIndex][1].getPosition())
+                else
+                    wire.setPosition({-92.12, 2.38, -1.60})
+                end
+                table.insert(piles[playerIndex], wire)
+                table.sort(piles[playerIndex], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+                table.insert(yellowsRevealed, wire)
+                
+                playerIndex = playerIndex + 1
+                
+                -- Skip double hand players in 3-player games
+                if yellowConfig.skipDoubleHands and playerNum == 3 and playerIndex <= playerNum then
+                    if (playerColors[playerIndex] == "Blue" and contains(doubleHandColors, "Blue"))
+                    or (playerColors[playerIndex] == "Green" and contains(doubleHandColors, "Green")) then
+                        playerIndex = playerIndex + 1
+                    end
+                end
+            end
+        end
+        
+    elseif yellowConfig.type == "perPlayer" then
+        -- Custom mission -2: Multiple wires per player
+        local wiresPerPlayer = yellowConfig.count or 2
+        
+        for i = 1, playerNum do
+            for j = 1, wiresPerPlayer do
+                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
+                -- Position the wire - use existing pile position if available, otherwise temporary position
+                if #piles[i] > 0 then
+                    wire.setPosition(piles[i][1].getPosition())
+                else
+                    wire.setPosition({-92.12, 2.38, -1.60})
+                end
+                table.insert(piles[i], wire)
+                table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+                table.insert(yellowsRevealed, wire)
+            end
+        end
+    end
+    
+    yellowCopy.destruct()
+    local yellowNum = #yellowsRevealed
+    setupMarkers(yellowsRevealed, yellowNum, yellowNum, "Yellow")
+end
+
 -- Sorts and reveals wires based on mission parameters and wire counts
-function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
-    -- Sort yellow wires
+function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
+    -- Check for special yellow wire distribution
+    local config = getMissionConfig(missionNum)
+    if config and config.yellowWires then
+        handleSpecialYellowWires(config.yellowWires, piles)
+    end
+    
+    -- Sort yellow wires (standard method)
     if yellowNum > 0 then
         local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
         local count = 0
@@ -3559,71 +3671,6 @@ function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, r
 end
 
 function dealWiresToHands(missionNum, piles)
-    if missionNum == 41 then
-        yellowNum = playerNum
-        if yellowNum == 5 then
-            yellowNum = 4
-        end
-        
-        yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        count = 0
-        yellowsRevealed = {}
-        ix = 1
-        if playerNum == 5 then
-            ix = 2
-        end
-        while count ~= yellowNum do
-            wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-            wire.setPosition(piles[ix][1].getPosition())
-            table.insert(piles[ix], wire)
-            table.sort(piles[ix], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(yellowsRevealed, wire)
-            count = count + 1
-            ix = ix + 1
-        end
-        yellowCopy.destruct()
-        setupMarkers(yellowsRevealed, yellowNum, yellowNum, "Yellow")
-    elseif missionNum == 48 then
-        yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        count = 0
-        ix = 1
-        yellowsRevealed = {}
-        while count ~= 3 do
-            wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-            wire.setPosition(piles[ix][1].getPosition())
-            table.insert(piles[ix], wire)
-            table.sort(piles[ix], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(yellowsRevealed, wire)
-            count = count + 1
-            ix = ix + 1
-            if playerNum == 3 then
-                if (playerColors[ix] == "Blue" and contains(doubleHandColors, "Blue"))
-                or (playerColors[ix] == "Green" and contains(doubleHandColors, "Green")) then
-                    ix = ix + 1
-                end
-            end
-        end
-        yellowCopy.destruct()
-        setupMarkers(yellowsRevealed, yellowNum, yellowNum, "Yellow")
-    elseif missionNum == -2 then
-        -- Custom mission -2: Special wire distribution
-        local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        local yellowsRevealed = {}
-        for i = 1, playerNum do
-            local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-            wire.setPosition(piles[i][1].getPosition())
-            table.insert(piles[i], wire)
-            table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(yellowsRevealed, wire)
-            wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-            wire.setPosition(piles[i][1].getPosition())
-            table.insert(piles[i], wire)
-            table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(yellowsRevealed, wire)
-        end
-        yellowCopy.destruct()
-        setupMarkers(yellowsRevealed, playerNum, playerNum, "Yellow")
-    end
     noMoreDouble = false
     handsDoubled = 0
     for i = 1, playerNum do
