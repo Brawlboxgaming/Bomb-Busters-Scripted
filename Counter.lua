@@ -573,8 +573,8 @@ function moveDial(newDialNum, playerColor, direction)
     if newDialNum == 0 then
         zeroText = " KABOOM!"
     end
-    
-    printToAll(string.format("%s moved the dial %s to %d.%s", playerColor, direction, newDialNum, zeroText), colors[playerColor])
+
+    printToAll(playerColor .. " moved the dial " .. direction .. " to " .. newDialNum .. "." .. zeroText, colors[playerColor])
 end
 
 -- Sets up spare equipment with position, rotation, and tag removal
@@ -659,7 +659,7 @@ function chooseRandomInfo(includeYellow)
     virtualBag = {"1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9", "10", "10", "11", "11", "12", "12", "Yellow", "Yellow"}
     for _, color in ipairs(playerColors) do
         randomToken = math.random(1, #virtualBag - 2 + (includeYellow and 2 or 0))
-        printToAll(string.format("%s will take the %s token.", color, virtualBag[randomToken]))
+        printToAll(color .. " will take the " .. virtualBag[randomToken] .. " token.")
         table.remove(virtualBag, randomToken)
     end
 end
@@ -1884,6 +1884,11 @@ local missionConfigs = {
 
 -- Custom missions configuration table (negative numbers starting from -1)
 local customMissionConfigs = {
+    [0] = {
+        wires = {12, 4, 5, 12, 4, 5, 12},
+        includePack1Equipment = false,
+        includePack5Equipment = true,
+    },
     [-1] = {
         wires = {12, 2, 3, 12, 1, 2, 12},
         includePack1Equipment = true,
@@ -1928,7 +1933,7 @@ local customMissionConfigs = {
         wires = {12, 2, 2, 12, 2, 2, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
-        wireHandCount = 6
+        wireHandCount = 8
     }
 }
 
@@ -1938,7 +1943,7 @@ local customMissionConfigs = {
 
 -- Gets mission configuration from either regular or custom missions
 function getMissionConfig(missionNum)
-    if missionNum < 0 then
+    if missionNum < 1 then
         return customMissionConfigs[missionNum]
     else
         return missionConfigs[missionNum]
@@ -1980,7 +1985,7 @@ function setDynamicRuleCardRotations(missionNum, config)
     local cardARotation = faceDown
     if missionNum > 8 then
         cardARotation = faceUp
-    elseif config and config.wires and config.wires[2] > 0 then -- yellowNum > 0
+    elseif config and config.wires and config.wires[2] > 0 and config.includePack1Equipment then -- yellowNum > 0
         cardARotation = faceUp
     end
     
@@ -2052,18 +2057,20 @@ function startMission()
     -- Early validation: Check if mission configuration exists before any setup
     local config = getMissionConfig(missionNum)
     if not config then
-        if missionNum < 0 then
-            printToAll(string.format("Error: No configuration found for custom mission %d. Please check your custom mission configuration.", missionNum), {r=1, g=0, b=0})
+        if missionNum < 1 then
+            printToAll("Error: No configuration found for custom mission " .. missionNum .. ". Please check your custom mission configuration.", {r=1, g=0, b=0})
         else
-            printToAll(string.format("Error: No configuration found for mission %d. Please choose a valid mission number.", missionNum), {r=1, g=0, b=0})
+            printToAll("Error: No configuration found for mission " .. missionNum .. ". Please choose a valid mission number.", {r=1, g=0, b=0})
         end
         return
     end
     
     -- Additional validation for custom missions
-    if missionNum < 0 and not validateCustomMissionConfig(config) then
-        printToAll(string.format("Error: Custom mission %d has invalid configuration. Please check that it has valid wires configuration.", missionNum), {r=1, g=0, b=0})
+    if missionNum < 1 and not validateCustomMissionConfig(config) then
+        printToAll("Error: Custom mission " .. missionNum .. " has invalid configuration. Please check that it has valid wires configuration.", {r=1, g=0, b=0})
         return
+    elseif missionNum == 0 then
+        printToAll("Notice: Mission 0 is reserved for testing and not for public play.", {r=1, g=0, b=0})
     end
 
     -- Pack 5 missions (55+) or custom missions with Pack 5 equipment: Use extended info token positions for additional content
@@ -2148,7 +2155,7 @@ function addToCharList(selection)
         printToAll("Current selection:")
         printToAll("1: Captain - Double Detector")
         for num, card in ipairs(characterCardSelection) do
-            printToAll(string.format("%d: %s", num + 1, card))
+            printToAll(num + 1 .. ": " .. card)
         end
         return
     elseif selection ~= "Double Detector" then
@@ -2158,64 +2165,64 @@ function addToCharList(selection)
                 printToAll("Current selection:")
                 printToAll("1: Captain - Double Detector")
                 for num, card in ipairs(characterCardSelection) do
-                    printToAll(string.format("%d: %s", num + 1, card))
+                    printToAll(num + 1 .. ": " .. card)
                 end
                 return
             end
         end
     end
     table.insert(characterCardSelection, selection)
-    printToAll(string.format("%s has been added to the selection.", selection))
+    printToAll(selection .. " has been added to the selection.")
     printToAll("Current selection:")
     printToAll("1: Captain - Double Detector")
     for num, card in ipairs(characterCardSelection) do
-        printToAll(string.format("%d: %s", num + 1, card))
+        printToAll(num + 1 .. ": " .. card)
     end
 end
 
 function removeFromCharList(selection)
     printToAll("----------------------------")
     if #characterCardSelection == 0 then
-        printToAll(string.format("%s was not found in the selection.", selection), {r=1,g=0,b=0})
+        printToAll(selection .. " was not found in the selection.", {r=1,g=0,b=0})
         printToAll("Current selection:")
         printToAll("1: Captain - Double Detector")
         for num, card in ipairs(characterCardSelection) do
-            printToAll(string.format("%d: %s", num + 1, card))
+            printToAll(num + 1 .. ": " .. card)
         end
         return
     else
         for num, card in ipairs(characterCardSelection) do
             if card == selection then
                 table.remove(characterCardSelection, num)
-                printToAll(string.format("%s has been removed from the selection.", selection))
+                printToAll(selection .. " has been removed from the selection.")
                 printToAll("Current selection:")
                 printToAll("1: Captain - Double Detector")
                 for num, card in ipairs(characterCardSelection) do
-                    printToAll(string.format("%d: %s", num + 1, card))
+                    printToAll(num + 1 .. ": " .. card)
                 end
                 return
             end
         end
     end
-    printToAll(string.format("%s was not found in the selection.", selection), {r=1,g=0,b=0})
+    printToAll(selection .. " was not found in the selection.", {r=1,g=0,b=0})
     printToAll("Current selection:")
     printToAll("1: Captain - Double Detector")
     for num, card in ipairs(characterCardSelection) do
-        printToAll(string.format("%d: %s", num + 1, card))
+        printToAll(num + 1 .. ": " .. card)
     end
 end
 
 function finishSetupAfterCharSel()
     if #characterCardSelection ~= playerNum - 1 then
         printToAll("----------------------------")
-        printToAll(string.format("You have not selected enough characters. You need %d selected.", playerNum), {r=1,g=0,b=0})
+        printToAll("You have not selected enough characters. You need " .. playerNum .. " selected.", {r=1,g=0,b=0})
         if #characterCardSelection == 0 then
             printToAll("Character Selection List is currently empty.")
         else
             printToAll("Current selection:")
             printToAll("1: Captain - Double Detector")
             for num, card in ipairs(characterCardSelection) do
-                printToAll(string.format("%d: %s", num + 1, card))
+                printToAll(num + 1 .. ": " .. card)
             end
         end
         return
@@ -2241,7 +2248,7 @@ function finishSetupAfterCharSel()
             Red     = {0.856, 0.1, 0.094},
             White   = {1, 1, 1}
         }
-        printToAll(string.format("The captain of this mission is %s!", captainColor), colors[captainColor])
+        printToAll("The captain of this mission is " .. captainColor .. "!", colors[captainColor])
     end
     while playerColors[1] ~= captainColor do
         wrap(playerColors, 1)
@@ -2393,10 +2400,10 @@ function prepareWiresAndMarkers(missionNum)
     
     -- Check minimum player requirements
     if config.minPlayers and playerNum < config.minPlayers then
-        if missionNum < 0 then
-            printToAll(string.format("Error: Custom mission %d cannot be played with only %d players.", missionNum, playerNum), {r=1, g=0, b=0})
+        if missionNum < 1 then
+            printToAll("Error: Custom mission " .. missionNum .. " cannot be played with only " .. playerNum .. " players.", {r=1, g=0, b=0})
         else
-            printToAll(string.format("Error: Mission %d cannot be played with only %d players.", missionNum, playerNum), {r=1, g=0, b=0})
+            printToAll("Error: Mission " .. missionNum .. " cannot be played with only " .. playerNum .. " players.", {r=1, g=0, b=0})
         end
         return
     end
@@ -3947,20 +3954,44 @@ function moveTokens(missionNum)
 end
 
 function moveMissionCard(missionNum)
+    config = getMissionConfig(missionNum) -- Ensure mission config is loaded
+    
+    local folderName = "Missions"
+    if missionNum < 1 then
+        folderName = "Custom Missions"
+    end
+
+    if config.missionCardFrontUrl == nil or config.missionCardBackUrl == nil then
+        printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
+        missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
+        missionCard.locked = false
+        missionCard.addTag("Destroy")
+        missionCard.setName(missionNum)
+        params = {
+            face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
+            back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
+        }
+        missionCard.setCustomObject(params)
+        missionCard.reload()
+        return
+    end
+
     missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
     missionCard.locked = false
     missionCard.addTag("Destroy")
     missionCard.setName(missionNum)
-    
-    local folderName = "Missions"
-    if missionNum < 0 then
-        folderName = "Custom Missions"
+
+    if missionNum == 0 then
+        params = {
+            face = config.missionCardFrontUrl,
+            back = config.missionCardBackUrl
+        }
+    else
+        params = {
+            face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Front.png",
+            back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Back.png"
+        }
     end
-    
-    params = {
-        face = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/%s/Mission %d Front.png", folderName, missionNum),
-        back = string.format("https://files.timwi.de/Tabletop Simulator/Bomb Busters/%s/Mission %d Back.png", folderName, missionNum)
-    }
     missionCard.setCustomObject(params)
     missionCard.reload()
 end
