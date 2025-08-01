@@ -759,11 +759,7 @@ local equipmentConfigs = {
     ["General Radar"] = {
         description = "8",
         pack = 0,
-        bannedMissions = {},
-        specialPositioning = {
-            [18] = {position = {0.04, 1.52, 5.39}, rotation = {0.00, 180.00, 0.00}}
-        },
-        requiredFor = {18}
+        bannedMissions = {}
     },
     ["Stabilizer"] = {
         description = "9",
@@ -1071,6 +1067,7 @@ local specialRuleConfigs = {
         --     Supports multiple instances of the same equipment
         --   earlyReturn: Return after placing specific equipment (skip normal distribution)
         --   noSorting: Disable sorting of equipment cards
+        --   available: Raise equipment cards by 1.44 units (makes them appear "available")
         
         [15] = {
             rotation = {0.00, 180.00, 180.00}
@@ -1079,7 +1076,7 @@ local specialRuleConfigs = {
             specificEquipment = {
                 {
                     name = "General Radar",
-                    position = {0.04, 1.52, 5.39},
+                    position = {0.04, 1.52, 6.83},
                     rotation = {0.00, 180.00, 0.00}
                 }
             },
@@ -1089,6 +1086,16 @@ local specialRuleConfigs = {
             rotation = {0.00, 180.00, 180.00},
             count = 7,
             layout = "mission23" -- Uses layoutConfigs.equipmentCards.mission23
+        },
+        [0] = {
+            specificEquipment = {
+                {
+                    name = "Walkie-Talkies",
+                    position = {0.04, 1.52, 6.83},
+                    rotation = {0.00, 180.00, 0.00}
+                }
+            },
+            earlyReturn = true -- Only place specified equipment and return
         }
     }
 }
@@ -1897,6 +1904,12 @@ local missionConfigs = {
 -- Custom missions configuration table (negative numbers starting from -1)
 local customMissionConfigs = {
     -- Mission 0 reserved for testing
+    [0] = {
+        wires = {12, 2, 2, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Triple Detector", "General Radar"}
+    },
     [-1] = {
         wires = {12, 2, 3, 12, 1, 2, 12},
         includePack1Equipment = true,
