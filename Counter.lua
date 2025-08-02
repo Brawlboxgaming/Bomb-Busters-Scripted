@@ -1155,6 +1155,15 @@ function getEquipmentSpecial(missionNum)
     return getSpecialRuleConfig(missionNum, "equipmentSpecial")
 end
 
+-- Helper function to determine if a mission should use altCount = {2} by default
+function shouldUseDefaultAltCount(missionNum, config)
+    -- Only apply default altCount to regular missions 4-66 that have wiresAlt but no explicit altCount
+    if missionNum >= 4 and missionNum <= 66 and config and config.wiresAlt and not config.altCount then
+        return true
+    end
+    return false
+end
+
 -- Get position layout for a specific type and count
 function getPositionLayout(layoutType, count, missionNum)
     local layouts = layoutConfigs[layoutType]
@@ -1487,33 +1496,27 @@ local missionConfigs = {
     },
     [4] = {
         wires = {12, 2, 2, 12, 1, 1, 12},
-        wiresAlt = {12, 4, 4, 12, 1, 1, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 1, 1, 12}
     },
     [5] = {
         wires = {12, 2, 3, 12, 1, 1, 12},
-        wiresAlt = {12, 2, 3, 12, 2, 2, 12},
-        altCount = {2}
+        wiresAlt = {12, 2, 3, 12, 2, 2, 12}
     },
     [6] = {
         wires = {12, 4, 4, 12, 1, 1, 12},
-        wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 2, 2, 12}
     },
     [7] = {
         wires = {12, 0, 0, 12, 1, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 1, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 1, 3, 12}
     },
     [8] = {
         wires = {12, 2, 3, 12, 1, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 1, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 1, 3, 12}
     },
     [9] = {
         wires = {12, 2, 2, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        altCount = {2},
         sequence = 0
     },
     [10] = {
@@ -1529,7 +1532,6 @@ local missionConfigs = {
     [11] = {
         wires = {12, 2, 2, 12, 0, 0, 12},
         wiresAlt = {12, 4, 4, 12, 0, 0, 12},
-        altCount = {2},
         numberCard = {
             position = {-16.79, 1.53, -14.36},
             rotation = {0.45, 180.00, 0.00}
@@ -1541,7 +1543,6 @@ local missionConfigs = {
     [12] = {
         wires = {12, 4, 4, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        altCount = {2},
         equipmentNumberCards = true
     },
     [13] = {
@@ -1551,30 +1552,25 @@ local missionConfigs = {
     },
     [14] = {
         wires = {12, 2, 3, 12, 2, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [15] = {
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        altCount = {2},
         numberCardSpecial = "faceUpAndShuffle"
     },
     [16] = {
         wires = {12, 2, 3, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        altCount = {2},
         sequence = 1
     },
     [17] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [18] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         shuffleNumbers = true
     },
     [19] = {
@@ -1586,13 +1582,11 @@ local missionConfigs = {
     },
     [20] = {
         wires = {12, 2, 2, 12, 2, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 2, 3, 12}
     },
     [21] = {
         wires = {12, 0, 0, 12, 1, 2, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        altCount = {2},
         excludeInfoTokens = true,
         specialTokens = {
             type = "oddEven",
@@ -1608,7 +1602,6 @@ local missionConfigs = {
     [23] = {
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        altCount = {2},
         numberCardWithWarning = {
             position = {-24.18, 1.58, 0.00},
             rotation = {0.00, 180.00, 0.00}
@@ -1617,7 +1610,6 @@ local missionConfigs = {
     [24] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         excludeInfoTokens = true,
         specialTokens = {
             type = "multiplier",
@@ -1630,8 +1622,7 @@ local missionConfigs = {
     },
     [25] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [26] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
@@ -1642,8 +1633,7 @@ local missionConfigs = {
     },
     [28] = {
         wires = {12, 4, 4, 12, 2, 2, 12},
-        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [29] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
@@ -1664,13 +1654,11 @@ local missionConfigs = {
     [32] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         constraintCardSpecial = "faceUpAndShuffle"
     },
     [33] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         excludeInfoTokens = true,
         specialTokens = {
             type = "oddEven",
@@ -1687,34 +1675,26 @@ local missionConfigs = {
     },
     [35] = {
         wires = {12, 4, 4, 12, 2, 3, 12},
-        wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [36] = {
         wires = {12, 2, 2, 12, 1, 3, 12},
         wiresAlt = {12, 4, 4, 12, 2, 3, 12},
-        altCount = {2},
         numberCards5 = true,
         sequenceCard = true
     },
     [37] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
-        constraintCard = {
-            position = {-24.35, 1.50, -4.60},
-            rotation = {0.00, 180.00, 0.00}
-        }
+        constraintCardSpecial = "faceUpAndShuffle"
     },
     [38] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
-        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [39] = {
         wires = {12, 4, 4, 12, 2, 3, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2},
         shuffleNumbers = true,
         randomInfo = true
     },
@@ -1733,7 +1713,6 @@ local missionConfigs = {
     [41] = {
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        altCount = {2},
         randomInfo = true,
         yellowWires = {
             type = "playerBased",
@@ -1760,7 +1739,6 @@ local missionConfigs = {
     [45] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         shuffleNumbers = true
     },
     [46] = {
@@ -1770,13 +1748,11 @@ local missionConfigs = {
     [47] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         gridNumbers = true
     },
     [48] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         yellowWires = {
             type = "sequential",
             count = 3,
@@ -1787,31 +1763,26 @@ local missionConfigs = {
     [49] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         oxygenTokens = "playerBased"
     },
     [50] = {
         wires = {12, 2, 2, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2},
         specialMessage = "Please delete the markers on the board before placing Info tokens."
     },
     [51] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        altCount = {2},
         shuffleNumbers = true
     },
     [52] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        altCount = {2},
         excludeTokens = {"Equals", "NotEquals"}
     },
     [53] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         nano = {{-20.22, 2.02, -1.16}, 1}
     },
     [54] = {
@@ -1826,62 +1797,52 @@ local missionConfigs = {
     [55] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
-        altCount = {2},
         challengeCards = true
     },
     [56] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
-        wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [57] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        altCount = {2},
         gridNumbers = true,
         gridConstraints = true
     },
     [58] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         shouldExcludeInfoTokens = true
     },
     [59] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         challengeCards = true
     },
     [61] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        altCount = {2},
         constraintCards = "complexDistribution"
     },
     [62] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         numberCards5 = true
     },
     [63] = {
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        altCount = {2},
         oxygenTokens = "scalingToLeader"
     },
     [64] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
-        wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        altCount = {2}
+        wiresAlt = {12, 0, 0, 12, 2, 2, 12}
     },
     [65] = {
         wires = {12, 0, 0, 12, 3, 3, 12},
@@ -1967,6 +1928,13 @@ local customMissionConfigs = {
         includePack1Equipment = false,
         includePack5Equipment = true,
         equipmentNumberCards = true
+    },
+    [-8] = {
+        wires = {12, 0, 0, 12, 2, 2, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        constraintCards = "special-8"
     }
 }
 
@@ -2443,11 +2411,17 @@ function prepareWiresAndMarkers(missionNum)
     
     -- Determine wire configuration based on player count
     local wires = config.wires
-    if config.wiresAlt and config.altCount and contains(config.altCount, playerNum) then
-        wires = config.wiresAlt
-    elseif config.wiresAlt and config.threshold and playerNum >= config.threshold then
+    if config.wiresAlt then
+        -- Check for explicit altCount configuration
+        if config.altCount and contains(config.altCount, playerNum) then
+            wires = config.wiresAlt
+        -- Apply default altCount = {2} behavior for missions that should use it
+        elseif shouldUseDefaultAltCount(missionNum, config) and playerNum == 2 then
+            wires = config.wiresAlt
         -- Legacy support for threshold-based system
-        wires = config.wiresAlt
+        elseif config.threshold and playerNum >= config.threshold then
+            wires = config.wiresAlt
+        end
     end
     
     -- Handle special configurations
@@ -2558,8 +2532,6 @@ function handleMissionSpecialConfig(missionNum, config)
         handleConstraintCards(config.constraintCards, missionNum)
     elseif config.shuffleConstraints then
         handleShuffleConstraints()
-    elseif config.constraintCard then
-        handleSingleConstraintCard(config.constraintCard)
     elseif config.constraintCards5 then
         handleConstraintCards5()
     elseif config.gridConstraints then
@@ -2858,27 +2830,47 @@ function handleNumberCardWithWarning(cardConfig)
     cardsToDeal.destruct()
 end
 
+-- Filters constraint cards to only include specified letter range
+-- Parameters:
+--   startLetter: Starting letter (e.g., "A")
+--   endLetter: Ending letter (e.g., "E") 
+--   position: Position to place the filtered deck {x, y, z}
+--   rotation: Rotation for the filtered deck {x, y, z}
+-- Returns: Table of filtered constraint cards
+function filterConstraintCardsByRange(startLetter, endLetter, position, rotation)
+    local constraintCards = getObjectsWithTag("Constraint")[1]
+    local constraintDeck = constraintCards.clone({position = position or {-62.10, 2.20, -24.63}, rotation = rotation or {0.00, 180.00, 180.00}})
+    constraintDeck.locked = false
+    
+    local cardsToDeal = {}
+    local startByte = string.byte(startLetter)
+    local endByte = string.byte(endLetter)
+    
+    for i = 1, constraintDeck.getQuantity() do
+        local card = constraintDeck.takeObject({position = position or {-82.10, 2.20, -24.63}, rotation = rotation or {0.00, 180.00, 180.00}})
+        local cardName = card.getName()
+        local cardByte = string.byte(cardName)
+        
+        if cardByte >= startByte and cardByte <= endByte then
+            table.insert(cardsToDeal, card)
+            card.addTag("Destroy")
+        else
+            card.destruct()
+        end
+    end
+    
+    return cardsToDeal
+end
+
 -- Handles various constraint card configurations
 function handleConstraintCards(constraintType, missionNum)
     if constraintType == "special31" then
         -- Mission 31: Complex constraint validation logic
-        local constraintCards = getObjectsWithTag("Constraint")[1]
         local cardsAreGood = false
         while not cardsAreGood do
-            local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-            constraintDeck.locked = false
+            local cardsToDeal = filterConstraintCardsByRange("A", "E")
             cardsAreGood = true
-            local cardsToDeal = {}
-            for i = 1, constraintDeck.getQuantity() do
-                local card = constraintDeck.takeObject({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-                if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
-                    card.getName() == "D" or card.getName() == "E") then
-                    table.insert(cardsToDeal, card)
-                    card.addTag("Destroy")
-                else
-                    card.destruct()
-                end
-            end
+            
             shuffleInPlace(cardsToDeal)
             local constraintCardPositions = layoutConfigs.constraintCards.mission31Layout
             for i = 1, #cardsToDeal do
@@ -2909,22 +2901,7 @@ function handleConstraintCards(constraintType, missionNum)
         end
     elseif constraintType == "handDistribution" then
         -- Mission 34: Distribute constraint cards to player hands
-        local constraintCards = getObjectsWithTag("Constraint")[1]
-        local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        constraintDeck.locked = false
-        constraintDeck.shuffle()
-        local cardsToDeal = {}
-        for i = 1, constraintDeck.getQuantity() do
-            local card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
-                card.getName() == "D" or card.getName() == "E") then
-                table.insert(cardsToDeal, card)
-                card.addTag("Destroy")
-            else
-                card.destruct()
-            end
-        end
+        local cardsToDeal = filterConstraintCardsByRange("A", "E")
         shuffleInPlace(cardsToDeal)
         for num, card in ipairs(cardsToDeal) do
             if num > playerNum then
@@ -2936,24 +2913,20 @@ function handleConstraintCards(constraintType, missionNum)
         end
     elseif constraintType == "complexDistribution" then
         -- Mission 61: Complex constraint distribution logic
-        local constraintCards = getObjectsWithTag("Constraint")[1]
-        local constraintDeck = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        constraintDeck.locked = false
-        constraintDeck.shuffle()
-        local cardsToDeal = {}
-        for i = 1, constraintDeck.getQuantity() do
-            local card = constraintDeck.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-            if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
-                card.getName() == "D" or card.getName() == "E") then
-                if playerNum < 5 and #cardsToDeal == 4 then
-                    card.destruct()
-                else
-                    table.insert(cardsToDeal, card)
-                end
+        local cardsToDeal = filterConstraintCardsByRange("A", "E", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
+        
+        -- Apply player count filtering for Mission 61
+        if playerNum < 5 and #cardsToDeal > 4 then
+            -- Remove excess cards if less than 5 players
+            for i = 5, #cardsToDeal do
+                cardsToDeal[i].destruct()
+            end
+            -- Trim the table
+            for i = #cardsToDeal, 5, -1 do
+                table.remove(cardsToDeal, i)
             end
         end
+        
         shuffleInPlace(cardsToDeal)
         local j = 0
         for i = 1, #cardsToDeal do
@@ -3009,6 +2982,29 @@ function handleConstraintCards(constraintType, missionNum)
                 cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
             end
         end
+        filterConstraintCardsByRange("F", "L", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
+    elseif constraintType == "special-8" then
+        local cardsToDeal = filterConstraintCardsByRange("A", "Z", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
+        
+        shuffleInPlace(cardsToDeal)
+        for i = 1, playerNum do
+            local isBlueGreen = 1
+            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
+                isBlueGreen = -1
+            end
+            cardsToDeal[i].setPosition({
+                characterPositions[playerColors[i]][1],
+                characterPositions[playerColors[i]][2] + 25,
+                characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
+            })
+            cardsToDeal[i].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+        end
+        cardsToDeal[playerNum + 1].setPositionSmooth({-24.35, 1.50, -4.60})
+        cardsToDeal[playerNum + 1].setRotationSmooth({0.00, 180.00, 0.00})
+        for i = playerNum + 2, #cardsToDeal do
+            cardsToDeal[i].setPositionSmooth({-24.35, 1.56, 4.60})
+            cardsToDeal[i].setRotationSmooth({0.00, 180.00, 180.00})
+        end
     end
 end
 
@@ -3025,41 +3021,23 @@ function handleShuffleConstraints()
     end
 end
 
--- Handles single constraint card
-function handleSingleConstraintCard(cardConfig)
-    local constraintCards = getObjectsWithTag("Constraint")[1]
-    local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
-    local constraint = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
-    constraint.locked = false
-    constraint.addTag("Destroy")
-    for i = 1, cardsToDeal.getQuantity() do
-        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        card.locked = false
-        card.addTag("Destroy")
-    end
-end
-
 -- Handles special constraint card configurations
 function handleConstraintCardSpecial(specialType)
     if specialType == "faceUpAndShuffle" then
         -- Mission 32: One card face-up, rest shuffled face-down
-        local constraintCards = getObjectsWithTag("Constraint")[1]
-        local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
+        local cardsToDeal = filterConstraintCardsByRange("A", "L")
+        shuffleInPlace(cardsToDeal)
         
         -- Take one card and place it face-up
-        local constraint = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
-        constraint.locked = false
-        constraint.addTag("Destroy")
+        cardsToDeal[1].setPositionSmooth({-24.35, 1.50, -4.60})
+        cardsToDeal[1].setRotationSmooth({0.00, 180.00, 0.00})
+        cardsToDeal[1].addTag("Destroy")
         
         -- Shuffle and place all remaining cards face-down
-        for i = 1, cardsToDeal.getQuantity() do
-            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
+        for i = 2, #cardsToDeal do
+            cardsToDeal[i].setPositionSmooth({-24.35, 1.56, 4.60})
+            cardsToDeal[i].setRotationSmooth({0.00, 180.00, 180.00})
+            cardsToDeal[i].addTag("Destroy")
         end
     end
 end
@@ -3067,21 +3045,7 @@ end
 -- Handles 5 constraint cards setup
 function handleConstraintCards5()
     local constraintPositions = layoutConfigs.constraintCards.mission66Layout
-    local constraintCards = getObjectsWithTag("Constraint")[1]
-    local constraintDeck = constraintCards.clone({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-    constraintDeck.locked = false
-    local cardsToDeal = {}
-    for i = 1, constraintDeck.getQuantity() do
-        local card = constraintDeck.takeObject({position={-62.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        card.locked = false
-        if (card.getName() == "A" or card.getName() == "B" or card.getName() == "C" or 
-            card.getName() == "D" or card.getName() == "E") then
-            table.insert(cardsToDeal, card)
-            card.addTag("Destroy")
-        else
-            card.destruct()
-        end
-    end
+    local cardsToDeal = filterConstraintCardsByRange("A", "E")
     shuffleInPlace(cardsToDeal)
     for num, card in ipairs(cardsToDeal) do
         card.setPosition(constraintPositions[num])
@@ -3096,20 +3060,13 @@ function handleGridConstraints()
         {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
         {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
     }
-    local constraintCards = {}
-    local sourceDeck = getObjectsWithTag("Constraint")[1]
-    local constraintCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}, scale={2.00, 1.00, 2.00}})
-    constraintCardDeck.locked = false
-    constraintCardDeck.shuffle()
-    for i = 1, 12 do
-        local card = constraintCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-        card.locked = false
-        card.addTag("Destroy")
-        table.insert(constraintCards, card)
-    end
-    for i = 1, 12 do
+    local constraintCards = filterConstraintCardsByRange("A", "L", {-62.10, 2.20, -24.63}, {0.00, 180.00, 180.00})
+    shuffleInPlace(constraintCards)
+    for i = 1, #constraintCards do
         constraintCards[i].setPositionSmooth({cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]})
         constraintCards[i].setRotation({0.00, 180.00, 0.00})
+        constraintCards[i].setScale({2.00, 1.00, 2.00})
+        constraintCards[i].addTag("Destroy")
     end
 end
 
