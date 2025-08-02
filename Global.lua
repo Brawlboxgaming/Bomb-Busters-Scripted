@@ -1,5 +1,4 @@
 DEBUG = false
-
 DEBUG_PLAYER_COUNT = 5
 
 function onLoad()
@@ -51,7 +50,10 @@ function onLoad()
             allTokenBags = {
                 "6ae025", -- Validation Tokens
                 "1e89b5", -- Attention Tokens
-                "eda3e6"  -- Warning Tokens
+                "eda3e6", -- Warning Tokens
+                "71d8fc", -- Validation Tokens
+                "65ad93", -- Attention Tokens
+                "598943"  -- Warning Tokens
             }
             for _, guid in ipairs(allTokenBags) do
                 local tokenBag = getObjectFromGUID(guid)

@@ -562,7 +562,8 @@ function moveDial(newDialNum, playerColor, direction)
         Green   = {0.192, 0.701, 0.168},
         Purple  = {0.627, 0.125, 0.941},
         Red     = {0.856, 0.1, 0.094},
-        White   = {1, 1, 1}
+        White   = {1, 1, 1},
+        Black   = {0, 0, 0}
     }
 
     local dial = getObjectsWithTag("Dial")[1]
@@ -661,7 +662,7 @@ function chooseRandomInfo(includeYellow)
         randomToken = math.random(1, #virtualBag - 2 + (includeYellow and 2 or 0))
         printToAll(color .. " will take the " .. virtualBag[randomToken] .. " token.")
         table.remove(virtualBag, randomToken)
-    end
+    end    
 end
 
 -- Creates a standard button with common properties
@@ -1768,7 +1769,8 @@ local missionConfigs = {
     [50] = {
         wires = {12, 2, 2, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
-        specialMessage = "Please delete the markers on the board before placing Info tokens."
+        specialMessage = "Please delete the markers on the board before placing Info tokens.",
+        excludeTokenBags = true
     },
     [51] = {
         wires = {12, 0, 0, 12, 1, 1, 12},
@@ -2440,9 +2442,13 @@ function prepareWiresAndMarkers(missionNum)
     dealWiresToHands(missionNum, piles)
     
     -- Display special message if configured
-    local config = getMissionConfig(missionNum)
     if config and config.specialMessage then
         printToAll(config.specialMessage)
+    end
+
+    -- Do not place the token bags if explicitly excluded
+    if config.excludeTokenBags ~= true then
+        setupTokenBags()
     end
 end
 
@@ -3123,13 +3129,13 @@ function handleOxygenTokens(tokenType)
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                     characterPositions[playerColors[i]][2],
                     characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 180.00}})
+                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
                 token.locked = false
                 token.addTag("Destroy")
             end
         end
         for i = 1, tokensToDeal.getQuantity() do
-            local token = tokensToDeal.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 180.00}})
+            local token = tokensToDeal.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 0.00}})
             token.locked = false
             token.addTag("Destroy")
         end
@@ -4049,6 +4055,24 @@ function moveDialAntiClockwise(self, playerColor)
         return
     end
     moveDial(currentDialNum, playerColor, "anti-clockwise")
+end
+
+function setupTokenBags()
+    local randomBag = getObjectsWithTag("Random")[1].clone({position={1.48, 1.32, -6.23}, rotation={0.00, 0.00, 0.00}})
+    randomBag.setPosition({1.48, 1.32, -6.23})
+    randomBag.addTag("Destroy")
+
+    local validationBag = getObjectsWithTag("Validation")[1].clone({position={4.87, 1.49, -6.27}, rotation={0.00, 0.00, 0.00}})
+    validationBag.setPosition({4.87, 1.49, -6.27})
+    validationBag.addTag("Destroy")
+
+    local attentionBag = getObjectsWithTag("Attention")[1].clone({position={4.82, 1.49, -9.26}, rotation={0.00, 0.00, 0.00}})
+    attentionBag.setPosition({4.82, 1.49, -9.26})
+    attentionBag.addTag("Destroy")
+
+    local warningBag = getObjectsWithTag("Warning")[1].clone({position={1.46, 1.49, -9.26}, rotation={0.00, 0.00, 0.00}})
+    warningBag.setPosition({1.46, 1.49, -9.26})
+    warningBag.addTag("Destroy")
 end
 
 ------------------------
