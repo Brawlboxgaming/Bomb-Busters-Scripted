@@ -155,7 +155,7 @@ function spawn(missionNum)
     else
         -- Default URL pattern or fallback
         if missionNum == 0 and (not config.missionCardFrontUrl or not config.missionCardBackUrl) then
-            printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
+            log("No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
             params = {
                 face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
                 back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
