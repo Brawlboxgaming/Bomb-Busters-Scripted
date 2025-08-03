@@ -48,12 +48,12 @@ function onLoad()
         -- If the request is successful, the text is not empty.
         elseif e.text ~= "" then
             allTokenBags = {
-                "6ae025", -- Validation Tokens
-                "1e89b5", -- Attention Tokens
-                "eda3e6", -- Warning Tokens
                 "71d8fc", -- Validation Tokens
                 "65ad93", -- Attention Tokens
-                "598943"  -- Warning Tokens
+                "598943", -- Warning Tokens
+                "44bcac", -- Validation Tokens
+                "00d52c", -- Attention Tokens
+                "13939b"  -- Warning Tokens
             }
             for _, guid in ipairs(allTokenBags) do
                 local tokenBag = getObjectFromGUID(guid)
