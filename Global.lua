@@ -57,13 +57,15 @@ function onLoad()
             }
             for _, guid in ipairs(allTokenBags) do
                 local tokenBag = getObjectFromGUID(guid)
-                token = tokenBag.takeObject()
-                -- Set the fetched script to the token bag object.
-                token.setLuaScript(e.text)
-                -- Reload the object's script to apply the changes.
-                token.reload()
-                tokenBag.reset()
-                tokenBag.putObject(token)
+                if tokenBag then
+                    token = tokenBag.takeObject()
+                    -- Set the fetched script to the token bag object.
+                    token.setLuaScript(e.text)
+                    -- Reload the object's script to apply the changes.
+                    token.reload()
+                    tokenBag.reset()
+                    tokenBag.putObject(token)
+                end
             end
         end
     end)
@@ -121,6 +123,54 @@ function onLoad()
             end
         end
     end)
+end
+
+function spawn(missionNum)
+    local counter = getObjectFromGUID("151b73")
+    local config = counter.call("getMissionConfig", missionNum)
+    if config == nil then
+        log("Mission configuration not found for mission number: " .. missionNum)
+        return
+    end
+    
+    local folderName = "Missions"
+    if missionNum < 1 then
+        folderName = "Custom Missions"
+    end
+
+    -- Create mission card object once
+    local missionCard = getObjectsWithTag("Mission")[1].clone({position = {-34.45, 1.50, -2.63}})
+    missionCard.locked = false
+    missionCard.addTag("Destroy")
+    missionCard.setName(missionNum)
+
+    -- Determine URLs based on mission type and config
+    local params
+    if config and config.missionCardFrontUrl and config.missionCardBackUrl then
+        -- Mission 0 with custom URLs
+        params = {
+            face = config.missionCardFrontUrl,
+            back = config.missionCardBackUrl
+        }
+    else
+        -- Default URL pattern or fallback
+        if missionNum == 0 and (not config.missionCardFrontUrl or not config.missionCardBackUrl) then
+            printToAll("Error: No mission card found for mission " .. missionNum .. ". Using default card.", {1, 0, 0})
+            params = {
+                face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
+                back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png"
+            }
+        else
+            -- Standard URL pattern
+            params = {
+                face = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Front.png",
+                back = "https://files.timwi.de/Tabletop Simulator/Bomb Busters/" .. folderName .. "/Mission " .. missionNum .. " Back.png"
+            }
+        end
+    end
+    
+    missionCard.setCustomObject(params)
+    missionCard.reload()
 end
 
 -----------------

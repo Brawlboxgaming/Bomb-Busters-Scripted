@@ -1482,45 +1482,55 @@ end
 -----------------------
 
 -- Mission configuration data structure containing all mission-specific parameters
-local missionConfigs = {
+missionConfigs = {
     [1] = {
+        name = "TRAINING, Day 1",
         wires = {6, 0, 0, 0, 0, 0, 0},
         validationTokens = {7, 12}
     },
     [2] = {
+        name = "TRAINING, Day 2",
         wires = {8, 2, 2, 8, 0, 0, 8},
         validationTokens = {9, 12}
     },
     [3] = {
+        name = "TRAINING, Day 3",
         wires = {10, 0, 0, 10, 1, 1, 10},
         validationTokens = {11, 12}
     },
     [4] = {
+        name = "TRAINING: First Day in the Field",
         wires = {12, 2, 2, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 1, 1, 12}
     },
     [5] = {
+        name = "TRAINING: Second Day in the Field",
         wires = {12, 2, 3, 12, 1, 1, 12},
         wiresAlt = {12, 2, 3, 12, 2, 2, 12}
     },
     [6] = {
+        name = "TRAINING: Third Day in the Field",
         wires = {12, 4, 4, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12}
     },
     [7] = {
+        name = "TRAINING: Last Day of Class",
         wires = {12, 0, 0, 12, 1, 2, 12},
         wiresAlt = {12, 0, 0, 12, 1, 3, 12}
     },
     [8] = {
+        name = "FINAL EXAM",
         wires = {12, 2, 3, 12, 1, 2, 12},
         wiresAlt = {12, 4, 4, 12, 1, 3, 12}
     },
     [9] = {
+        name = "A Sense of Priorities",
         wires = {12, 2, 2, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
         sequence = 0
     },
     [10] = {
+        name = "A Rough Patch",
         wires = {12, 4, 4, 12, 1, 1, 12},
         timer = {
             position = {-36.69, -0.28, 0.00},
@@ -1531,6 +1541,7 @@ local missionConfigs = {
         }
     },
     [11] = {
+        name = "Blue on Red, Looks Like We Are Dead",
         wires = {12, 2, 2, 12, 0, 0, 12},
         wiresAlt = {12, 4, 4, 12, 0, 0, 12},
         numberCard = {
@@ -1542,39 +1553,47 @@ local missionConfigs = {
         }
     },
     [12] = {
+        name = "Wrapped in Red Tape",
         wires = {12, 4, 4, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
         equipmentNumberCards = true
     },
     [13] = {
+        name = "Red Alert!",
         wires = {12, 0, 0, 12, 0, 0, 12},
         redWires = 3,
         randomInfo = true
     },
     [14] = {
+        name = "High-Risk Bomb Disposal Expert (aka. NOOB)",
         wires = {12, 2, 3, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [15] = {
+        name = "Mission in Новосибирск (Don't worry, we can't pronounce it either...)",
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
         numberCardSpecial = "faceUpAndShuffle"
     },
     [16] = {
+        name = "Time to Reprioritize (Is this deja vu?)",
         wires = {12, 2, 3, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
         sequence = 1
     },
     [17] = {
+        name = "Rhett Herrings",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [18] = {
+        name = "BAT-Helping-Hand",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         shuffleNumbers = true
     },
     [19] = {
+        name = "In the Belly of the Beast",
         wires = {12, 2, 3, 12, 1, 1, 12},
         music = {
             url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
@@ -1582,10 +1601,12 @@ local missionConfigs = {
         }
     },
     [20] = {
+        name = "The Big Bad Wolf",
         wires = {12, 2, 2, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 2, 3, 12}
     },
     [21] = {
+        name = "Death by Haggis",
         wires = {12, 0, 0, 12, 1, 2, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
         excludeInfoTokens = true,
@@ -1598,9 +1619,11 @@ local missionConfigs = {
         }
     },
     [22] = {
+        name = "Negative Impressions",
         wires = {12, 4, 4, 12, 1, 1, 12}
     },
     [23] = {
+        name = "Defusing in Fordwich (381 inhabitants, 64 miles from London)",
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
         numberCardWithWarning = {
@@ -1609,6 +1632,7 @@ local missionConfigs = {
         }
     },
     [24] = {
+        name = "Tally Ho!",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         excludeInfoTokens = true,
@@ -1622,25 +1646,31 @@ local missionConfigs = {
         }
     },
     [25] = {
+        name = "The Better to Hear You with...",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [26] = {
+        name = "Speaking of the Wolf...",
         wires = {12, 0, 0, 12, 2, 2, 12},
         gridNumbers = true
     },
     [27] = {
+        name = "Playing with Wire",
         wires = {12, 4, 4, 12, 1, 1, 12}
     },
     [28] = {
+        name = "Captain Careless",
         wires = {12, 4, 4, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [29] = {
+        name = "Guessing Game",
         wires = {12, 0, 0, 12, 3, 3, 12},
         customDistribution = "mission29"
     },
     [30] = {
+        name = "Speed Mission!",
         wires = {12, 4, 4, 12, 1, 2, 12},
         shuffleNumbers = true,
         music = {
@@ -1649,15 +1679,18 @@ local missionConfigs = {
         }
     },
     [31] = {
+        name = "With One Hand Tied Behind My Back...",
         wires = {12, 0, 0, 12, 2, 3, 12},
         constraintCards = "special31"
     },
     [32] = {
+        name = "Pranks-A-Plenty",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         constraintCardSpecial = "faceUpAndShuffle"
     },
     [33] = {
+        name = "What Happens in Vegas...",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         excludeInfoTokens = true,
@@ -1670,36 +1703,43 @@ local missionConfigs = {
         }
     },
     [34] = {
+        name = "The Weakest Link",
         wires = {12, 0, 0, 12, 1, 1, 12},
         minPlayers = 3,
         constraintCards = "handDistribution"
     },
     [35] = {
+        name = "No Link, Single Wire",
         wires = {12, 4, 4, 12, 2, 3, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12}
     },
     [36] = {
+        name = "Panic under the Palm Trees",
         wires = {12, 2, 2, 12, 1, 3, 12},
         wiresAlt = {12, 4, 4, 12, 2, 3, 12},
         numberCards5 = true,
         sequenceCard = true
     },
     [37] = {
+        name = "Joker's Gone Wild",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         constraintCardSpecial = "faceUpAndShuffle"
     },
     [38] = {
+        name = "Knit a Wire, Purl a Wire",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [39] = {
+        name = "The 4 Noble Wires",
         wires = {12, 4, 4, 12, 2, 3, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
         shuffleNumbers = true,
         randomInfo = true
     },
     [40] = {
+        name = "Hard to Die (A Christmas Tale)",
         wires = {12, 0, 0, 12, 3, 3, 12},
         excludeInfoTokens = true,
         specialTokens = {
@@ -1712,6 +1752,7 @@ local missionConfigs = {
         }
     },
     [41] = {
+        name = "Latin Bombshell",
         wires = {12, 0, 0, 12, 1, 3, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
         randomInfo = true,
@@ -1723,6 +1764,7 @@ local missionConfigs = {
         }
     },
     [42] = {
+        name = "Time to Run Away and Join The Circus",
         wires = {12, 4, 4, 12, 1, 3, 12},
         music = {
             url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
@@ -1730,28 +1772,34 @@ local missionConfigs = {
         }
     },
     [43] = {
+        name = "Nano the Robot",
         wires = {12, 0, 0, 12, 3, 3, 12},
         nano = {numberTokenPositions[1], 1}
     },
     [44] = {
+        name = "Underwater Pressure",
         wires = {12, 0, 0, 12, 1, 3, 12},
         oxygenTokens = "perPlayer2"
     },
     [45] = {
+        name = "Seeking Volunteers",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         shuffleNumbers = true
     },
     [46] = {
+        name = "Secret Agent",
         wires = {12, 4, 4, 12, 0, 0, 12},
         warningToken = 7
     },
     [47] = {
+        name = "Calculate the Odds",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         gridNumbers = true
     },
     [48] = {
+        name = "Lethal Wires 3",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         yellowWires = {
@@ -1762,32 +1810,38 @@ local missionConfigs = {
         }
     },
     [49] = {
+        name = "Message in a Bottle",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         oxygenTokens = "playerBased"
     },
     [50] = {
+        name = "The Blackest Sea",
         wires = {12, 2, 2, 12, 2, 2, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
         specialMessage = "Please delete the markers on the board before placing Info tokens.",
         excludeTokenBags = true
     },
     [51] = {
+        name = "It's Your (Un)Lucky Day!",
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
         shuffleNumbers = true
     },
     [52] = {
+        name = "Dirty Double-crossers",
         wires = {12, 0, 0, 12, 3, 3, 12},
         wiresAlt = {12, 4, 4, 12, 3, 3, 12},
         excludeTokens = {"Equals", "NotEquals"}
     },
     [53] = {
+        name = "Nano Nano",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         nano = {{-20.22, 2.02, -1.16}, 1}
     },
     [54] = {
+        name = "The Attack of Rabbit the Red",
         wires = {12, 0, 0, 12, 0, 0, 12},
         redWires = "all",
         oxygenTokens = "playerBasedSpecial",
@@ -1797,62 +1851,74 @@ local missionConfigs = {
         }
     },
     [55] = {
+        name = "Doctor Nope's Challenge",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 2, 3, 12},
         challengeCards = true
     },
     [56] = {
+        name = "Tripwires",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12}
     },
     [57] = {
+        name = "An Impossible Mission", 
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
         gridNumbers = true,
         gridConstraints = true
     },
     [58] = {
+        name = "Double and/or Nothing",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         shouldExcludeInfoTokens = true
     },
     [59] = {
+        name = "Nano to the Rescue",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
+        name = "Yes, it's Doctor Nope!",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         challengeCards = true
     },
     [61] = {
+        name = "Sharing is Caring",
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
         constraintCards = "complexDistribution"
     },
     [62] = {
+        name = "Armageddon Roulette",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         numberCards5 = true
     },
     [63] = {
+        name = "It is Positively Titanic",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
         oxygenTokens = "scalingToLeader"
     },
     [64] = {
+        name = "Return of the Tripwires",
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12}
     },
     [65] = {
+        name = "Hand-Me-Downs",
         wires = {12, 0, 0, 12, 3, 3, 12},
         minPlayers = 3,
         customDistribution = "mission65",
         teamAssignment = "Jokers"
     },
     [66] = {
+        name = "The Final Countdown",
         wires = {12, 2, 2, 12, 2, 2, 12},
         bunkerCard = true,
         standee = true,
@@ -1865,20 +1931,23 @@ local missionConfigs = {
 }
 
 -- Custom missions configuration table (negative numbers starting from -1)
-local customMissionConfigs = {
+customMissionConfigs = {
     -- Mission 0 reserved for testing
     [0] = {
+        name = "Test",
         wires = {12, 2, 2, 12, 1, 1, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
         characterCards = {"Triple Detector", "General Radar"}
     },
     [-1] = {
+        name = "Captain Clumsy",
         wires = {12, 2, 3, 12, 1, 2, 12},
         includePack1Equipment = true,
         includePack5Equipment = false
     },
     [-2] = {
+        name = "Nano Yellow",
         wires = {12, 0, 0, 12, 0, 0, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
@@ -1892,12 +1961,14 @@ local customMissionConfigs = {
         }
     },
     [-3] = {
+        name = "Double Agent",
         wires = {12, 0, 0, 12, 1, 1, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"}
     },
     [-4] = {
+        name = "Challenge, 3, 2, 1",
         wires = {12, 0, 0, 12, 1, 1, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
@@ -1914,24 +1985,28 @@ local customMissionConfigs = {
         }
     },
     [-5] = {
+        name = "Whack-a-wire",
         wires = {12, 2, 2, 12, 1, 2, 12},
         includePack1Equipment = false,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
     },
     [-6] = {
+        name = "The Hydra",
         wires = {12, 2, 2, 12, 2, 2, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
         wireHandCount = 8
     },
     [-7] = {
+        name = "Locked Away",
         wires = {12, 4, 4, 12, 1, 2, 12},
         includePack1Equipment = false,
         includePack5Equipment = true,
         equipmentNumberCards = true
     },
     [-8] = {
+        name = "Captain Says",
         wires = {12, 0, 0, 12, 2, 2, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
