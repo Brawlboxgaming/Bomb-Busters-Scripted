@@ -5,7 +5,7 @@ function onDrop(playerColor)
             (otherObj.hasTag("Attention")
             or otherObj.hasTag("Validation")
             or otherObj.hasTag("Warning"))
-            and otherObj.hasTag("Destroy") and not otherObj.hasTag("Token") then
+            and otherObj.hasTag("Destroy") and not otherObj.hasTag("Token")
             and math.abs(self.getPosition()[1] - otherObj.getPosition()[1]) < 0.1
             and math.abs(self.getPosition()[3] - otherObj.getPosition()[3]) < 0.1 then
                 otherObj.destruct()
