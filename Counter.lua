@@ -2291,9 +2291,9 @@ function sortPlayerColors(playerNum)
         elseif playerColors[2] == blueGreen[2] then
             toInsert = blueGreen[2]
         else
-            playerColors[2] = blueGreen[1]
-            players[2].changeColor(blueGreen[1])
-            toInsert = blueGreen[1]
+            playerColors[2] = blueGreen[2]
+            players[2].changeColor(blueGreen[2])
+            toInsert = blueGreen[2]
         end
         table.insert(doubleHandColors, toInsert)
     end
