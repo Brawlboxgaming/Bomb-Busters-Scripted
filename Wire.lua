@@ -55,6 +55,10 @@ function onDrop(playerColor)
                 elseif otherObj.hasTag("EvenTokens")
                 or otherObj.hasTag("OddTokens") then
                     otherObj.destruct()
+                elseif otherObj.hasTag("GreaterTokens") then
+                    otherObj.setPosition({-7.61, 2.81, -10.10})
+                elseif otherObj.hasTag("LessTokens") then
+                    otherObj.setPosition({-6.09, 2.81, -10.10})
                 end
             end
         end

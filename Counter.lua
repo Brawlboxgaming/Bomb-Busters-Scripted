@@ -598,12 +598,22 @@ function cloneAndPrepareDeck(deckTags, position, rotation, shouldShuffle)
 end
 
 -- Clones token bags and positions them on the board
-function cloneAndPositionTokens(tokenTag, position)
+function cloneAndPositionTokenBags(tokenTag, position)
     local tokensBag = getObjectsWithTag(tokenTag)[1]
     local clone = tokensBag.clone({position=position, rotation={0.00, 180.00, 0.00}})
     clone.setPosition(position)
     clone.addTag("Destroy")
     return clone
+end
+
+function cloneAndPositionTokens(tokenTag, position, tokenCount)
+    local takenTable = {}
+    for i = 1, tokenCount do
+        local tokensBag = getObjectsWithTag(tokenTag)[1]
+        local taken = tokensBag.takeObject({position={position[1], position[2] + (0.2 * (i - 1)), position[3]}, rotation={0.00, 180.00, 0.00}})
+        table.insert(takenTable, taken)
+    end
+    return takenTable
 end
 
 -- Determines if equipment should be excluded based on mission and pack rules
@@ -888,104 +898,6 @@ local layoutConfigs = {
         mission60 = {
             {-46.65, 1.50, -14.53}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 0.00}, 
             {-46.65, 1.50, 7.26}, {-46.65, 1.50, 14.53}
-        }
-    }
-}
-
--- Wire distribution configuration
-local wireDistributionConfigs = {
-    standard = {
-        type = "even",
-        excludeAbove = "blueHighest"
-    },
-    mission41 = {
-        type = "yellowPerPlayer", 
-        yellowCount = "playerCount",
-        excludeFive = true,
-        startIndex = 1,
-        specialRule = "skipFifthPlayer"
-    },
-    mission48 = {
-        type = "yellowToFirst3",
-        yellowCount = 3,
-        skipDoubleHands = true,
-        startIndex = 1
-    },
-    mission20 = {
-        type = "specialLastWire",
-        lastWireHandling = "moveToTop",
-        tokenPlacement = "lastWire"
-    },
-    mission35 = {
-        type = "specialLastWire",
-        lastWireHandling = "moveToTop",
-        wireFilter = "multiples10Only",
-        tokenPlacement = "lastWire"
-    },
-    mission38 = {
-        type = "specialPlayerOne",
-        lastWireHandling = "outerPosition",
-        playerRestriction = 1
-    },
-    mission56 = {
-        type = "allPlayersOuter",
-        lastWireHandling = "outerPosition"
-    },
-    mission64 = {
-        type = "lastTwoOuter",
-        lastWireHandling = "twoOuterPositions"
-    }
-}
-
--- Token/Marker configuration
-local tokenConfigs = {
-    validation = {
-        missions = {1, 2, 3},
-        positionSource = "numberTokenPositions",
-        rotation = {0.00, 180.00, 0.00}
-    },
-    warning = {
-        positionSource = "numberTokenPositions", 
-        rotation = {0.00, 180.00, 0.00}
-    },
-    info = {
-        standardCount = 13,
-        extendedCount = 14,
-        positions = "infoTokenPositions",
-        specialMissions = {
-            [58] = {tokenRange = {27, 52}, setState = 2}
-        }
-    },
-    oxygen = {
-        distributions = {
-            perPlayer2 = {
-                count = "playerNum * 2", 
-                position = {-16.65, 1.57, -14.39}
-            },
-            playerBased = {
-                tokenCounts = {[2] = 7, [3] = 6, [4] = 5, [5] = 4},
-                positionLogic = "characterPositions"
-            },
-            playerBasedSpecial = {
-                tokenCounts = {[2] = 9, [3] = 6, [4] = 3, [5] = 2},
-                positionLogic = "characterPositions",
-                extraTokens = "centerStack"
-            },
-            scalingToLeader = {
-                tokenCounts = {[2] = 14, [3] = 18, [4] = 24, [5] = 30},
-                assignTo = "leader"
-            }
-        }
-    },
-    specialty = {
-        odd = {missions = {21, 33}, position = {-9.18, 1.49, -6.38}},
-        even = {missions = {21, 33}, position = {-4.59, 1.49, -6.38}},
-        x1 = {missions = {24, 40}, position = {-9.58, 1.49, -7.65}},
-        x2 = {missions = {24, 40}, position = {-6.88, 1.49, -5.20}},
-        x3 = {missions = {24, 40}, position = {-4.19, 1.49, -7.65}},
-        xToken = {
-            missions = {20, 35},
-            positionLogic = "lastWireToken"
         }
     }
 }
@@ -1576,7 +1488,7 @@ missionConfigs = {
         numberCardSpecial = "faceUpAndShuffle"
     },
     [16] = {
-        name = "Time to Reprioritize (Is this deja vu?)",
+        name = "Time to Reprioritize (Is this déjà vu?)",
         wires = {12, 2, 3, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
         sequence = 1
@@ -1615,7 +1527,8 @@ missionConfigs = {
             tokens = {
                 {name = "OddTokens", position = {-9.18, 1.49, -6.38}},
                 {name = "EvenTokens", position = {-4.59, 1.49, -6.38}}
-            }
+            },
+            count = 0 -- 0 means a bag is placed instead of tokens
         }
     },
     [22] = {
@@ -1642,7 +1555,8 @@ missionConfigs = {
                 {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
                 {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
                 {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
-            }
+            },
+            count = 0 -- 0 means a bag is placed instead of tokens
         }
     },
     [25] = {
@@ -1699,7 +1613,8 @@ missionConfigs = {
             tokens = {
                 {name = "OddTokens", position = {-9.18, 1.49, -6.38}},
                 {name = "EvenTokens", position = {-4.59, 1.49, -6.38}}
-            }
+            },
+            count = 0 -- 0 means a bag is placed instead of tokens
         }
     },
     [34] = {
@@ -1748,7 +1663,8 @@ missionConfigs = {
                 {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
                 {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
                 {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
-            }
+            },
+            count = 0 -- 0 means a bag is placed instead of tokens
         }
     },
     [41] = {
@@ -1933,13 +1849,6 @@ missionConfigs = {
 -- Custom missions configuration table (negative numbers starting from -1)
 customMissionConfigs = {
     -- Mission 0 reserved for testing
-    [0] = {
-        name = "Test",
-        wires = {12, 2, 2, 12, 1, 1, 12},
-        includePack1Equipment = true,
-        includePack5Equipment = false,
-        characterCards = {"Triple Detector", "General Radar"}
-    },
     [-1] = {
         name = "Captain Clumsy",
         wires = {12, 2, 3, 12, 1, 2, 12},
@@ -1979,9 +1888,10 @@ customMissionConfigs = {
         specialTokens = {
             type = "comparison",
             tokens = {
-                {name = "LessTokens", position = {-9.18, 1.46, -13.92}},
-                {name = "GreaterTokens", position = {-4.59, 1.46, -13.92}}
-            }
+                {name = "LessTokens", position = {-7.61, 1.61, -10.10}},
+                {name = "GreaterTokens", position = {-6.09, 1.61, -10.10}}
+            },
+            count = 1 -- 0 means a bag is placed instead of tokens
         }
     },
     [-5] = {
@@ -2012,6 +1922,31 @@ customMissionConfigs = {
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
         constraintCards = "special-8"
+    },
+    [-9] = {
+        name = "C.C.C. (Communication, concentration, co-operation)",
+        wires = {12, 2, 2, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Triple Detector", "General Radar"}
+    },
+    [-10] = {
+        name = "Fuzzy Signal",
+        wires = {12, 2, 3, 12, 1, 3, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        excludeInfoTokens = true,
+        specialTokens = {
+            type = "range",
+            tokens = {
+                {name = "R1Tokens", position = {-7.61, 1.81, -5.20}},
+                {name = "R2Tokens", position = {-6.09, 1.81, -5.20}},
+                {name = "R3Tokens", position = {-7.61, 1.81, -7.65}},
+                {name = "R4Tokens", position = {-6.09, 1.81, -7.65}}
+            },
+            count = 2 -- 2 for each token types
+        }
     }
 }
 
@@ -3774,10 +3709,8 @@ function dealWiresToHands(missionNum, piles)
             
             -- Handle X token placement for special last wire missions
             if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
-                xToken = getObjectsWithTag("XToken")[1]
-                clone = xToken.clone({position=tokenPositions0[j], rotation=tokenHandRotations[playerColors[i]]})
-                clone.locked = false
-                clone.addTag("Destroy")
+                xTokenBag = getObjectsWithTag("XTokens")[1]
+                clone = xTokenBag.takeObject({position=tokenPositions0[j], rotation=tokenHandRotations[playerColors[i]]})
             end
         end
         if (playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
@@ -3978,7 +3911,11 @@ function moveTokens(missionNum)
     if config and config.specialTokens then
         local specialTokens = config.specialTokens
         for _, tokenConfig in ipairs(specialTokens.tokens) do
-            cloneAndPositionTokens(tokenConfig.name, tokenConfig.position)
+            if specialTokens.count == 0 then
+                cloneAndPositionTokenBags(tokenConfig.name, tokenConfig.position)
+            else
+                cloneAndPositionTokens(tokenConfig.name, tokenConfig.position, specialTokens.count)
+            end
         end
     end
     
@@ -3986,11 +3923,26 @@ function moveTokens(missionNum)
     local shouldExcludeInfoTokens = config and config.excludeInfoTokens
     if not shouldExcludeInfoTokens then
         local infoTokens = getObjectsWithTag("InfoTokens")
+        table.insert(infoTokens, getObjectsWithTag("x1Tokens")[1])
         if infoTokens and #infoTokens > 0 then
-            table.sort(infoTokens, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-            
+            table.sort(infoTokens,
+            function(a, b)
+                local ret
+                if b.getName() == "x1 Tokens" and a.getName() ~= "x1 Tokens" then
+                    ret = true
+                elseif b.getName() == "Yellow Tokens" and a.getName() ~= "Yellow Tokens" and a.getName() ~= "x1 Tokens" then
+                    ret = true
+                elseif (a.getName() == "Yellow Tokens" or a.getName() == "x1 Tokens")
+                and (b.getName() ~= "Yellow Tokens" or b.getName() ~= "x1 Tokens") then
+                    ret = false
+                else
+                    ret = tonumber(string.sub(a.getName(), 1, 2)) < tonumber(string.sub(b.getName(), 1, 2))
+                end
+                return ret
+            end)
+
             -- Determine token limit based on mission type and configuration
-            local tokenLimit = 26 -- Default limit for regular missions < 55
+            local tokenLimit = 13 -- Default limit for regular missions < 55
             local needsExtendedTokens = false
             
             -- Check if this mission needs extended info tokens (Pack 5 content)
@@ -4001,30 +3953,28 @@ function moveTokens(missionNum)
             end
             
             -- Place info tokens based on mission requirements
-            for num, token in ipairs(infoTokens) do
+            for tokenNumber, tokenBag in ipairs(infoTokens) do
                 local shouldPlaceToken = false
-                
-                if missionNum == 58 or missionNum == -5 then
-                    -- Only place tokens beyond position 26
-                    shouldPlaceToken = (num > 26)
+
+                if tokenNumber == 13 and config.wires[3] == 0 and config.yellowWires == nil then
+                    shouldPlaceToken = false -- Don't place Yellow Tokens if no yellow wires are present
+                elseif missionNum == 58 or missionNum == -5 then
+                    -- Only place tokens beyond position 13
+                    shouldPlaceToken = (tokenNumber > 13)
                 elseif needsExtendedTokens then
                     -- Pack 5 missions or custom missions with Pack 5: Place all tokens
                     shouldPlaceToken = true
                 else
-                    -- Regular missions: Place tokens up to position 26
-                    shouldPlaceToken = (num <= 26)
+                    -- Regular missions: Place tokens up to position 13
+                    shouldPlaceToken = (tokenNumber <= 13)
                 end
                 
                 if shouldPlaceToken then
-                    local tokenNumber = tonumber(token.getName())
                     -- Ensure we have a valid position for this token
-                    if tokenNumber and infoTokenPositions[tokenNumber] then
-                        local object = token.clone({position=infoTokenPositions[tokenNumber]})
-                        object.locked = false
-                        object.addTag("Destroy")
-                        local newObject = object.setState(2)
-                        newObject.addTag("Destroy")
-                        newObject.setState(1)
+                    if infoTokenPositions[tokenNumber] then
+                        -- Execute it twice as there are two tokens of each type by default
+                        tokenBag.takeObject({position=infoTokenPositions[tokenNumber]})
+                        tokenBag.takeObject({position={infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}})
                     end
                 end
             end
