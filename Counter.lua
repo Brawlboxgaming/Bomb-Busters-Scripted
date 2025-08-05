@@ -2085,44 +2085,7 @@ function startMission()
     elseif missionNum == 0 then
         printToAll("Notice: Mission 0 is reserved for testing and not for public play.", {r=1, g=0, b=0})
     end
-
-    -- Pack 5 missions (55+) or custom missions with Pack 5 equipment: Use extended info token positions for additional content
-    local needsExtendedPositions = missionNum > 54 or (config and config.includePack5Equipment)
     
-    if needsExtendedPositions then
-        infoTokenPositions = {
-            {-10.65, 1.81, -5.20},
-            {-9.13, 1.81, -5.20},
-            {-7.61, 1.81, -5.20},
-            {-6.09, 1.81, -5.20},
-            {-4.57, 1.81, -5.20},
-            {-3.04, 1.81, -5.20},
-            {-10.65, 1.81, -7.65},
-            {-9.13, 1.81, -7.65},
-            {-7.61, 1.81, -7.65},
-            {-6.09, 1.81, -7.65},
-            {-4.57, 1.81, -7.65},
-            {-3.04, 1.81, -7.65},
-            {-7.61, 1.81, -10.10},
-            {-6.09, 1.81, -10.10}
-        }
-    else
-        infoTokenPositions = { -- These are the standard positions of the info tokens.
-            {-10.65, 1.81, -5.20},
-            {-9.13, 1.81, -5.20},
-            {-7.61, 1.81, -5.20},
-            {-6.09, 1.81, -5.20},
-            {-4.57, 1.81, -5.20},
-            {-3.04, 1.81, -5.20},
-            {-10.65, 1.81, -7.65},
-            {-9.13, 1.81, -7.65},
-            {-7.61, 1.81, -7.65},
-            {-6.09, 1.81, -7.65},
-            {-4.57, 1.81, -7.65},
-            {-3.04, 1.81, -7.65},
-            {-6.85, 1.81, -10.10}
-        }
-    end
     doubleHandColors = {}
     sortPlayerColors(playerNum)
     moveMissionCard(missionNum)
@@ -3906,6 +3869,22 @@ end
 
 function moveTokens(missionNum)
     local config = getMissionConfig(missionNum)
+
+    infoTokenPositions = { -- These are the standard positions of the info tokens.
+        {-10.65, 1.81, -5.20},
+        {-9.13, 1.81, -5.20},
+        {-7.61, 1.81, -5.20},
+        {-6.09, 1.81, -5.20},
+        {-4.57, 1.81, -5.20},
+        {-3.04, 1.81, -5.20},
+        {-10.65, 1.81, -7.65},
+        {-9.13, 1.81, -7.65},
+        {-7.61, 1.81, -7.65},
+        {-6.09, 1.81, -7.65},
+        {-4.57, 1.81, -7.65},
+        {-3.04, 1.81, -7.65},
+        {-6.85, 1.81, -10.10}
+    }
     
     -- Handle specific token types based on mission configuration
     if config and config.specialTokens then
@@ -3923,28 +3902,25 @@ function moveTokens(missionNum)
     local shouldExcludeInfoTokens = config and config.excludeInfoTokens
     if not shouldExcludeInfoTokens then
         local infoTokens = getObjectsWithTag("InfoTokens")
-        table.insert(infoTokens, getObjectsWithTag("x1Tokens")[1])
         if infoTokens and #infoTokens > 0 then
             table.sort(infoTokens,
             function(a, b)
                 local ret
-                if b.getName() == "x1 Tokens" and a.getName() ~= "x1 Tokens" then
+                if b.getName() == "Yellow Tokens" and a.getName() ~= "Yellow Tokens" then
                     ret = true
-                elseif b.getName() == "Yellow Tokens" and a.getName() ~= "Yellow Tokens" and a.getName() ~= "x1 Tokens" then
-                    ret = true
-                elseif (a.getName() == "Yellow Tokens" or a.getName() == "x1 Tokens")
-                and (b.getName() ~= "Yellow Tokens" or b.getName() ~= "x1 Tokens") then
+                elseif a.getName() == "Yellow Tokens"and b.getName() ~= "Yellow Tokens" then
                     ret = false
                 else
                     ret = tonumber(string.sub(a.getName(), 1, 2)) < tonumber(string.sub(b.getName(), 1, 2))
                 end
                 return ret
             end)
+            table.insert(infoTokens, getObjectsWithTag("x1Tokens")[1])
 
             -- Determine token limit based on mission type and configuration
             local tokenLimit = 13 -- Default limit for regular missions < 55
             local needsExtendedTokens = false
-            
+
             -- Check if this mission needs extended info tokens (Pack 5 content)
             if missionNum >= 55 then -- Regular Pack 5 missions
                 needsExtendedTokens = true
@@ -3952,23 +3928,43 @@ function moveTokens(missionNum)
                 needsExtendedTokens = true
             end
             
+            if config.wires[3] == 0 and config.yellowWires == nil then
+                table.remove(infoTokens, 13) -- Remove Yellow Tokens if no yellow wires are present
+                tokenLimit = 12 -- Adjust limit if Yellow Tokens are not needed
+            end
+            
             -- Place info tokens based on mission requirements
             for tokenNumber, tokenBag in ipairs(infoTokens) do
                 local shouldPlaceToken = false
 
-                if tokenNumber == 13 and config.wires[3] == 0 and config.yellowWires == nil then
-                    shouldPlaceToken = false -- Don't place Yellow Tokens if no yellow wires are present
-                elseif missionNum == 58 or missionNum == -5 then
+                if missionNum == 58 or missionNum == -5 then
                     -- Only place tokens beyond position 13
-                    shouldPlaceToken = (tokenNumber > 13)
+                    shouldPlaceToken = (tokenNumber > tokenLimit)
                 elseif needsExtendedTokens then
                     -- Pack 5 missions or custom missions with Pack 5: Place all tokens
                     shouldPlaceToken = true
+                    if tokenLimit > 12 then
+                        infoTokenPositions = {
+                            {-10.65, 1.81, -5.20},
+                            {-9.13, 1.81, -5.20},
+                            {-7.61, 1.81, -5.20},
+                            {-6.09, 1.81, -5.20},
+                            {-4.57, 1.81, -5.20},
+                            {-3.04, 1.81, -5.20},
+                            {-10.65, 1.81, -7.65},
+                            {-9.13, 1.81, -7.65},
+                            {-7.61, 1.81, -7.65},
+                            {-6.09, 1.81, -7.65},
+                            {-4.57, 1.81, -7.65},
+                            {-3.04, 1.81, -7.65},
+                            {-7.61, 1.81, -10.10},
+                            {-6.09, 1.81, -10.10}
+                        }
+                    end
                 else
                     -- Regular missions: Place tokens up to position 13
-                    shouldPlaceToken = (tokenNumber <= 13)
+                    shouldPlaceToken = (tokenNumber <= tokenLimit)
                 end
-                
                 if shouldPlaceToken then
                     -- Ensure we have a valid position for this token
                     if infoTokenPositions[tokenNumber] then
