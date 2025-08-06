@@ -3051,19 +3051,15 @@ end
 
 -- Handles various oxygen token configurations
 function handleOxygenTokens(tokenType)
-    local oxygenTokens = getObjectsWithTag("OxygenTokens")[1]
-    local tokensToDeal = oxygenTokens.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-    tokensToDeal.locked = false
-    tokensToDeal.shuffle()
+    local oxygenTokenBag = getObjectsWithTag("OxygenTokens")[1]
     
     if tokenType == "perPlayer2" then
         -- Mission 44: 2 tokens per player
         for i = 1, playerNum * 2 do
-            local card = tokensToDeal.takeObject({position={-16.65, 1.57, -14.39}, rotation={0.00, 180.00, 0.00}})
+            local card = oxygenTokenBag.takeObject({position={-16.65, 1.57, -14.39}, rotation={0.00, 180.00, 0.00}})
             card.locked = false
             card.addTag("Destroy")
         end
-        tokensToDeal.destruct()
     elseif tokenType == "playerBased" then
         -- Mission 49: Variable tokens based on player count
         for i = 1, playerNum do
@@ -3076,16 +3072,13 @@ function handleOxygenTokens(tokenType)
             elseif playerNum == 4 then tokenCount = 5
             elseif playerNum == 5 then tokenCount = 4 end
             for j = 1, tokenCount do
-                local token = tokensToDeal.takeObject({position={
+                local token = oxygenTokenBag.takeObject({position={
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                     characterPositions[playerColors[i]][2],
                     characterPositions[playerColors[i]][3]
                 }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
-                token.locked = false
-                token.addTag("Destroy")
             end
         end
-        tokensToDeal.destruct()
     elseif tokenType == "playerBasedSpecial" then
         -- Mission 54: Special distribution
         local isBlueGreen = 1
@@ -3098,21 +3091,16 @@ function handleOxygenTokens(tokenType)
             elseif playerNum == 4 then tokenCount = 3
             elseif playerNum == 5 then tokenCount = 2 end
             for j = 1, tokenCount do
-                local token = tokensToDeal.takeObject({position={
+                local token = oxygenTokenBag.takeObject({position={
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                     characterPositions[playerColors[i]][2],
                     characterPositions[playerColors[i]][3]
                 }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
-                token.locked = false
-                token.addTag("Destroy")
             end
         end
-        for i = 1, tokensToDeal.getQuantity() do
-            local token = tokensToDeal.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 0.00}})
-            token.locked = false
-            token.addTag("Destroy")
+        for i = 1, 32 do
+            local token = oxygenTokenBag.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 0.00}})
         end
-        tokensToDeal.destruct()
     elseif tokenType == "scalingToLeader" then
         -- Mission 63: Scaling tokens to leader
         local tokenCount = 14
@@ -3124,15 +3112,12 @@ function handleOxygenTokens(tokenType)
             isBlueGreen = -1
         end
         for i = 1, tokenCount do
-            local token = tokensToDeal.takeObject({position={
+            local token = oxygenTokenBag.takeObject({position={
                 characterPositions[playerColors[1]][1] + (7 * isBlueGreen),
                 characterPositions[playerColors[1]][2],
                 characterPositions[playerColors[1]][3]
             }, rotation=characterRotations[playerColors[1]]})
-            token.locked = false
-            token.addTag("Destroy")
         end
-        tokensToDeal.destruct()
     end
 end
 
