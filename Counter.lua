@@ -3082,14 +3082,14 @@ function handleOxygenTokens(tokenType)
     elseif tokenType == "playerBasedSpecial" then
         -- Mission 54: Special distribution
         local isBlueGreen = 1
+        local tokenCount = 9
+        if playerNum == 3 then tokenCount = 6
+        elseif playerNum == 4 then tokenCount = 3
+        elseif playerNum == 5 then tokenCount = 2 end
         for i = 1, playerNum do
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
-            local tokenCount = 9
-            if playerNum == 3 then tokenCount = 6
-            elseif playerNum == 4 then tokenCount = 3
-            elseif playerNum == 5 then tokenCount = 2 end
             for j = 1, tokenCount do
                 local token = oxygenTokenBag.takeObject({position={
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
@@ -3098,7 +3098,7 @@ function handleOxygenTokens(tokenType)
                 }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
             end
         end
-        for i = 1, 32 do
+        for i = 1, 32 - (tokenCount * playerNum) do
             local token = oxygenTokenBag.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 0.00}})
         end
     elseif tokenType == "scalingToLeader" then
