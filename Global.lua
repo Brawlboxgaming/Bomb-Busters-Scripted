@@ -53,21 +53,23 @@ function onLoad()
             -- If the request is successful, the text is not empty.
             elseif e.text ~= "" then
                 allBagsBag = getObjectsWithTag("All")[1]
-                local validationBag = allBagsBag.takeObject({position = {-55.85, 32, -29.70}, smooth = false})
-                local attentionBag = allBagsBag.takeObject({position = {-55.85, 40, -29.70}, smooth = false})
-                local warningBag = allBagsBag.takeObject({position = {-55.85, 48, -29.70}, smooth = false})
-                validationBag.locked = true
-                attentionBag.locked = true
-                warningBag.locked = true
-                tokenBags = {validationBag, attentionBag, warningBag}
-                for _, bag in ipairs(tokenBags) do
-                    token = bag.takeObject()
-                    -- Set the fetched script to the token bag object.
-                    token.setLuaScript(e.text)
-                    -- Reload the object's script to apply the changes.
-                    token.reload()
-                    bag.reset()
-                    bag.putObject(token)
+                if allBagsBag then
+                    local validationBag = allBagsBag.takeObject({position = {-55.85, 32, -29.70}, smooth = false})
+                    local attentionBag = allBagsBag.takeObject({position = {-55.85, 40, -29.70}, smooth = false})
+                    local warningBag = allBagsBag.takeObject({position = {-55.85, 48, -29.70}, smooth = false})
+                    validationBag.locked = true
+                    attentionBag.locked = true
+                    warningBag.locked = true
+                    tokenBags = {validationBag, attentionBag, warningBag}
+                    for _, bag in ipairs(tokenBags) do
+                        token = bag.takeObject()
+                        -- Set the fetched script to the token bag object.
+                        token.setLuaScript(e.text)
+                        -- Reload the object's script to apply the changes.
+                        token.reload()
+                        bag.reset()
+                        bag.putObject(token)
+                    end
                 end
             end
         end)
@@ -75,17 +77,21 @@ function onLoad()
     
     Wait.frames(function()
         allBagsBag = getObjectsWithTag("All")[1]
-        allModifiedBags = getObjectsWithTag("Scripted")
-        for _, bag in ipairs(allModifiedBags) do
-            bag.locked = false
-            allBagsBag.putObject(bag)
+        if allBagsBag then
+            allModifiedBags = getObjectsWithTag("Scripted")
+            for _, bag in ipairs(allModifiedBags) do
+                bag.locked = false
+                allBagsBag.putObject(bag)
+            end
         end
     end, 80)
 
     Wait.frames(function()
         allBagsBag = getObjectsWithTag("All")[1]
-        infiniteBag = getObjectsWithTag("AllInfinite")[1]
-        infiniteBag.putObject(allBagsBag)
+        if allBagsBag then
+            infiniteBag = getObjectsWithTag("AllInfinite")[1]
+            infiniteBag.putObject(allBagsBag)
+        end
     end, 120)
 
     -- For the wire zones, set the Lua script to the one fetched from the web.
