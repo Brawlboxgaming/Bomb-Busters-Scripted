@@ -2022,7 +2022,7 @@ function searchGlobalBag(tags, keep)
             for _, obj in ipairs(returnObjects) do
                 obj.destruct()
             end
-        end, 40)
+        end, 100)
     end
     return returnObjects
 end
