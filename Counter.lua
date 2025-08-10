@@ -14,10 +14,6 @@ playerHandPositions = {
     White = {33.00, 5.00, -37.50}
 }
 
--- Mission card final position and rotation on table
-missionPosition = {-16.77, 1.52, -10.55}
-missionRotation = {0.00, 180.00, 180.00}
-
 -- Positions for validation and warning tokens on numbered board spaces
 numberTokenPositions = {
     {-18.01, 1.61, -1.09}, {-14.76, 1.61, -1.09}, {-11.52, 1.61, -1.09},
@@ -56,31 +52,31 @@ infoTokenPositions = { -- These are the standard positions of the info tokens. T
 }
 
 yellowMarkerPositions = { -- These are the positions on the board for the yellow markers used to indicate the yellow wire locations.
-    {-16.60, 1.51, -0.57},
-    {-13.29, 1.51, -0.57},
-    {-9.98, 1.51, -0.57},
-    {-6.65, 1.51, -0.57},
-    {-3.33, 1.51, -0.57},
-    {-0.02, 1.51, -0.57},
-    {3.30, 1.51, -0.57},
-    {6.61, 1.51, -0.57},
-    {9.93, 1.51, -0.57},
-    {13.39, 1.51, -0.57},
-    {16.51, 1.51, -0.57}
+    {-16.60, 2.52, -0.57},
+    {-13.29, 2.52, -0.57},
+    {-9.98, 2.52, -0.57},
+    {-6.65, 2.52, -0.57},
+    {-3.33, 2.52, -0.57},
+    {-0.02, 2.52, -0.57},
+    {3.30, 2.52, -0.57},
+    {6.61, 2.52, -0.57},
+    {9.93, 2.52, -0.57},
+    {13.39, 2.52, -0.57},
+    {16.51, 2.52, -0.57}
 }
 
 redMarkerPositions = { -- These are the positions on the board for the red markers used to indicate the red wire locations.
-    {-16.31, 1.51, -1.84},
-    {-12.97, 1.51, -1.84},
-    {-9.65, 1.51, -1.84},
-    {-6.38, 1.51, -1.85},
-    {-3.07, 1.51, -1.87},
-    {0.28, 1.51, -1.85},
-    {3.59, 1.51, -1.85},
-    {6.91, 1.51, -1.89},
-    {10.23, 1.51, -1.88},
-    {13.65, 1.51, -1.88},
-    {16.84, 1.51, -1.87}
+    {-16.31, 2.52, -1.84},
+    {-12.97, 2.52, -1.84},
+    {-9.65, 2.52, -1.84},
+    {-6.38, 2.52, -1.85},
+    {-3.07, 2.52, -1.87},
+    {0.28, 2.52, -1.85},
+    {3.59, 2.52, -1.85},
+    {6.91, 2.52, -1.89},
+    {10.23, 2.52, -1.88},
+    {13.65, 2.52, -1.88},
+    {16.84, 2.52, -1.87}
 }
 
 characterPositions = { -- These are the positions on the table for the character cards.
@@ -547,14 +543,6 @@ DEBUG_PLAYER_COLORS = {"Blue", "Green", "White", "Red", "Purple"} -- This is use
 --- UTILITIES ---
 -----------------
 
--- Takes an object from a deck and prepares it with standard properties
-function takeAndPrepareWire(deck, position, rotation)
-    local wire = deck.takeObject({position=position, rotation=rotation, smooth=false})
-    wire.locked = false
-    wire.addTag("Destroy")
-    return wire
-end
-
 -- Moves the detonator dial and announces the movement
 function moveDial(newDialNum, playerColor, direction)
     colors = {
@@ -585,47 +573,31 @@ function setupSpareEquipment(equipment, position, rotation)
     equipment.removeTag("Spare")
 end
 
--- Clones and prepares a deck with standard properties
-function cloneAndPrepareDeck(deckTags, position, rotation, shouldShuffle)
-    local deck = getObjectsWithAllTags(deckTags)[1]
-    local copy = deck.clone({position=position, rotation=rotation, smooth=false})
-    copy.locked = false
-    copy.addTag("Destroy")
-    if shouldShuffle then
-        copy.shuffle()
-    end
-    return copy
-end
-
 -- Clones token bags and positions them on the board
-function cloneAndPositionTokenBags(tokenTag, position)
-    local tokensBag = getObjectsWithTag(tokenTag)[1]
-    local clone = tokensBag.clone({position=position, rotation={0.00, 180.00, 0.00}})
-    clone.setPosition(position)
-    clone.addTag("Destroy")
-    return clone
+function cloneAndPositionTokenBags(tokenTags, position, keep)
+    local tokensBag = searchGlobalBag(tokenTags, keep)[1]
+    tokensBag.setPositionSmooth(position)
+    tokensBag.setRotation({0.00, 180.00, 0.00})
+    tokensBag.locked = true -- Lock the bag to prevent accidental movement
+    return tokensBag
 end
 
-function cloneAndPositionTokens(tokenTag, position, tokenCount)
+function cloneAndPositionTokens(tokenTags, position, tokenCount)
     local takenTable = {}
     for i = 1, tokenCount do
-        local tokensBag = getObjectsWithTag(tokenTag)[1]
-        local taken = tokensBag.takeObject({position={position[1], position[2] + (0.2 * (i - 1)), position[3]}, rotation={0.00, 180.00, 0.00}})
+        local tokensBag = searchGlobalBag(tokenTags)[1]
+        local taken = generateWithStandardProps(tokensBag, {position[1], position[2] + (0.2 * (i - 1)), position[3]}, {0.00, 180.00, 0.00}, false, true, false)
         table.insert(takenTable, taken)
     end
     return takenTable
 end
 
 -- Determines if equipment should be excluded based on mission and pack rules
-function shouldExcludeEquipment(clone, missionNum, yellowNum)
-    local desc = clone.getDescription()
-    local equipmentName = clone.getName()
-    
-    -- Check new configuration structure first
-    if shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowNum) then
+function shouldExcludeEquipment(equipment, missionNum, yellowNum)
+    -- Check configuration structure
+    if shouldExcludeEquipmentByConfig(equipment.name, equipment.description, missionNum, yellowNum) then
         return true
     end
-    
     return false
 end
 
@@ -638,31 +610,53 @@ end
 
 -- Places validation tokens in numbered positions with standard rotation
 function placeValidationTokens(startNum, endNum)
-    local bag = getObjectsWithTag("Validation")[1]
+    local bag = searchGlobalBag({"Destroy", "Scripted", "Validation"})[1]
     for i = startNum, endNum do
-        bag.takeObject({position=numberTokenPositions[i], rotation={0.00, 180.00, 0.00}})
+        generateWithStandardProps(bag, numberTokenPositions[i], {0.00, 180.00, 0.00}, false, true, false)
     end
 end
 
--- Positions cards smoothly and optionally sets rotations
-function positionCards(cards, positions, rotations)
-    for i = 1, #cards do
-        cards[i].setPositionSmooth(positions[i])
-        if rotations and rotations[i] then
-            cards[i].setRotation(rotations[i])
-        end
+function generateWireWithStandardProps(wire, position, rotation, shouldLock, smooth, flipped)
+    local blueWireBag = searchGlobalBag({"Blue", "Scripted", "Wires"})[1]
+    local yellowWireBag = searchGlobalBag({"Scripted", "Wires", "Yellow"})[1]
+    local redWireBag = searchGlobalBag({"Red", "Scripted", "Wires"})[1]
+    if contains(wire.tags, "Blue") then
+        genWire = generateWithStandardProps(blueWireBag, position, rotation, false, false, false, wire.guid)
+    elseif contains(wire.tags, "Yellow") then
+        genWire = generateWithStandardProps(yellowWireBag, position, rotation, false, false, false, wire.guid)
+    elseif contains(wire.tags, "Red") then
+        genWire = generateWithStandardProps(redWireBag, position, rotation, false, false, false, wire.guid)
     end
+    return genWire
 end
 
--- Clones an object with standard properties (Destroy tag, unlocked)
-function cloneWithStandardProps(object, position, rotation, shouldLock)
-    local clone = object.clone({position=position, rotation=rotation})
-    clone.addTag("Destroy")
-    if shouldLock then
-        clone.setPosition(position)
+-- Clones an object with standard properties (unlocked)
+function generateWithStandardProps(bag, position, rotation, shouldLock, smooth, flipped, iorg)
+    local g = false
+    local i = false
+    if shouldLock == nil then
+        shouldLock = false -- Default to not locked
     end
-    clone.locked = shouldLock or false
-    return clone
+    if smooth == nil then
+        smooth = true -- Default to smooth movement
+    end
+    if flipped == nil then
+        flipped = false -- Default to not flipped
+    end
+    if type(iorg) == "string" then
+        g = true
+    elseif type(iorg) == "number" then
+        i = true
+    end
+    if g then
+        obj = bag.takeObject({position=position, rotation={rotation[1], rotation[2], rotation[3] + (flipped and 180 or 0)}, smooth=smooth, guid=iorg})
+    elseif i then
+        obj = bag.takeObject({position=position, rotation={rotation[1], rotation[2], rotation[3] + (flipped and 180 or 0)}, smooth=smooth, index=iorg})
+    else
+        obj = bag.takeObject({position=position, rotation={rotation[1], rotation[2], rotation[3] + (flipped and 180 or 0)}, smooth=smooth})
+    end
+    obj.locked = shouldLock
+    return obj
 end
 
 -- Randomly distributes info tokens to players from a virtual bag
@@ -747,9 +741,9 @@ local equipmentConfigs = {
         pack = 0,
         bannedMissions = {}
     },
-    ["Post-it"] = {
+    ["Post-It"] = {
         description = "4",
-        pack = 3,
+        pack = 0,
         bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
     },
     ["Super Detector"] = {
@@ -780,12 +774,7 @@ local equipmentConfigs = {
     ["X or Y ray"] = {
         description = "10",
         pack = 0,
-        bannedMissions = {26, 44, 45, 47, 49, 51, 54, 59, 63, 65},
-        spareEquipmentSetup = {
-            count = 2,
-            position = {24.35, 1.50, 5.49},
-            rotation = {0.00, 180.00, 180.00}
-        }
+        bannedMissions = {26, 44, 45, 47, 49, 51, 54, 59, 63, 65}
     },
     ["Coffee Mug"] = {
         description = "11",
@@ -935,7 +924,6 @@ local audioConfigs = {
 local specialRuleConfigs = {
     nanoWires = {
         missions = {43, -2},
-        positioning = "nanoObject",
         wireCounts = {
             -- Default wire counts (used if mission-specific not defined)
             default = {5, 5, 4, 4, 3}, -- [2p, 3p, 4p, 5p players]
@@ -1000,7 +988,7 @@ local specialRuleConfigs = {
             count = 7,
             layout = "mission23" -- Uses layoutConfigs.equipmentCards.mission23
         },
-        [0] = {
+        [-9] = {
             specificEquipment = {
                 {
                     name = "Walkie-Talkies",
@@ -1360,24 +1348,19 @@ function setupCharacterCardSelection(missionNum, availableCards)
     
     local cardPositions = layout.cards
     local buttonPositions = layout.buttons
+
+    characterCardBag0 = searchGlobalBag({"Character", "Pack0"})[1]
+    characterCardBag3 = searchGlobalBag({"Character", "Pack3"})[1]
     
     -- Clone and position character cards
     for i, card in ipairs(availableCards) do
         local sourceCards
         if card.pack == 0 then
-            sourceCards = getObjectsWithAllTags({"Character", "Pack0"})
-            shuffleInPlace(sourceCards)
-            -- Handle Captain - Double Detector special case
-            if sourceCards[1].getName() == "Captain - Double Detector" then
-                cloneWithStandardProps(sourceCards[2], cardPositions[i], {0.00, 90.00, 0.00}, true)
-            else
-                cloneWithStandardProps(sourceCards[1], cardPositions[i], {0.00, 90.00, 0.00}, true)
-            end
+            generateWithStandardProps(characterCardBag0, cardPositions[i], {0.00, 90.00, 0.00}, true, false, false)
         else
-            sourceCards = getObjectsWithAllTags({"Character", "Pack" .. card.pack})
-            for _, sourceCard in ipairs(sourceCards) do
-                if sourceCard.getName() == card.name then
-                    cloneWithStandardProps(sourceCard, cardPositions[i], {0.00, 90.00, 0.00}, true)
+            for _, characterCard in ipairs(characterCardBag3.getObjects()) do
+                if characterCard.name == card.name then
+                    generateWithStandardProps(characterCardBag3, cardPositions[i], {0.00, 90.00, 0.00}, true, false, false, characterCard.index)
                     break
                 end
             end
@@ -1788,7 +1771,7 @@ missionConfigs = {
         name = "Double and/or Nothing",
         wires = {12, 0, 0, 12, 2, 2, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        shouldExcludeInfoTokens = true
+        excludeInfoTokens = true
     },
     [59] = {
         name = "Nano to the Rescue",
@@ -2017,6 +2000,34 @@ function setDynamicRuleCardRotations(missionNum, config)
     setRuleCardRotations(cardARotation, cardBRotation, cardCRotation)
 end
 
+bagPosition = {0, 50, 0}
+
+function searchGlobalBag(tags, keep)
+    allBagsBags = getObjectsWithTag("All")
+    for _, bag in ipairs(allBagsBags) do
+        bag.destruct()
+    end
+    globalBag = getObjectsWithTag("AllInfinite")[1]
+    allBagsBag = globalBag.takeObject({position = bagPosition, smooth = false})
+    allBagsBag.locked = true
+    local returnObjects = {}
+    for _, object in ipairs(allBagsBag.getObjects()) do
+        if table.concat(object.tags) == table.concat(tags) then
+            obj = allBagsBag.takeObject({position = bagPosition, smooth = false, guid = object.guid})
+            obj.locked = true
+            table.insert(returnObjects, obj)
+        end
+    end
+    if not keep then
+        Wait.frames(function()
+            for _, obj in ipairs(returnObjects) do
+                obj.destruct()
+            end
+        end, 20)
+    end
+    return returnObjects
+end
+
 -----------------------
 --- SETUP FUNCTIONS ---
 -----------------------
@@ -2088,7 +2099,7 @@ function startMission()
     
     doubleHandColors = {}
     sortPlayerColors(playerNum)
-    moveMissionCard(missionNum)
+    spawnMissionCard(missionNum)
     adjustDial(missionNum, playerNum)
 
     -- Set rule card rotations dynamically based on mission features
@@ -2097,6 +2108,9 @@ function startMission()
     -- From mission 31 onwards or custom missions with extra character cards, you can choose which character cards you would like
     local config = getMissionConfig(missionNum)
     local needsCharacterSelection = hasCharacterSelection(missionNum, config)
+
+    -- Get all objects out of bag
+
     
     if needsCharacterSelection then
         printToAll("----------------------------")
@@ -2110,10 +2124,14 @@ function startMission()
         -- Get available character cards for this mission
         local availableCards = getAvailableCharacterCards(missionNum)
         
+        createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
+        
         -- Setup character card selection interface
         setupCharacterCardSelection(missionNum, availableCards)
-        
-        createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
+        allBagsBags = getObjectsWithTag("All")
+        for _, bag in ipairs(allBagsBags) do
+            bag.destruct()
+        end
     else
         -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
         for i = 1, playerNum - 1 do
@@ -2231,6 +2249,10 @@ function finishSetupAfterCharSel()
     end
     moveTokens(missionNum)
     prepareWiresAndMarkers(missionNum)
+    allBagsBags = getObjectsWithTag("All")
+    for _, bag in ipairs(allBagsBags) do
+        bag.destruct()
+    end
 end
 
 function sortPlayerColors(playerNum)
@@ -2303,28 +2325,25 @@ function sortCharacters(missionNum)
         ret = playerColors
     end
     
-    flipped = 0
+    flipped = false
     -- Check for captain flipped rule
     if characterSpecial and characterSpecial.captainFlipped then
-        flipped = 180
+        flipped = true
     end
     
-    captainCard = getObjectsWithTag("Captain")[1].clone({position={-130.02, 2.17, 0.00}, smooth=false})
-    captainCard.locked = false
-    captainCard.setPositionSmooth(characterPositions[shuffledPlayers[1]])
-    captainCard.setRotation({
-        characterRotations[shuffledPlayers[1]][1],
-        characterRotations[shuffledPlayers[1]][2],
-        characterRotations[shuffledPlayers[1]][3] + flipped
-    })
-    
+    captainCardBag = searchGlobalBag({"Captain", "Character", "Pack0"})[1]
+    captainCard = generateWithStandardProps(captainCardBag, characterPositions[shuffledPlayers[1]], characterRotations[shuffledPlayers[1]], false, true, flipped)
+
     -- Check for captain destroyed rule
     if characterSpecial and characterSpecial.captainDestroyed then
         captainCard.destruct()
     end
-    
-    captainCard.addTag("Destroy")
-    otherCards = {}
+
+    local characterSpecial = getCharacterSpecial(missionNum)
+    if characterSpecial and characterSpecial.otherCardsDestroyed then
+        return ret
+    end
+
     doubleDetectorCount = 0
     doubleDetectorTotal = 0
     for _, selection in ipairs(characterCardSelection) do
@@ -2332,38 +2351,31 @@ function sortCharacters(missionNum)
             doubleDetectorTotal = doubleDetectorTotal + 1
         end
     end
-    characterCardObjs = getObjectsWithTag("Character")
-    for num, card in ipairs(characterCardObjs) do
-        if card.hasTag("Destroy") == false and card.hasTag("Captain") == false then
-            for _, selection in ipairs(characterCardSelection) do
-                if card.getName() == selection then
-                    if doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector" then
-                        clone = cloneWithStandardProps(card, {-82.13, 2.14, -6.47}, nil, false)
-                        table.insert(otherCards, clone)
-                        if selection == "Double Detector" then
-                            doubleDetectorCount = doubleDetectorCount + 1
-                        end
-                        break
+    
+    count = 1
+    characterCardsBag0 = searchGlobalBag({"Character", "Pack0"})[1]
+    characterCardsBag3 = searchGlobalBag({"Character", "Pack3"})[1]
+    characterCards = characterCardsBag0.getObjects()
+    for _, card in ipairs(characterCardsBag3.getObjects()) do
+        table.insert(characterCards, card)
+    end
+    shuffleInPlace(characterCards)
+    for num, card in ipairs(characterCards) do
+        for _, selection in ipairs(characterCardSelection) do
+            if card.name == selection then
+                if doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector" then
+                    bag = characterCardsBag0
+                    if contains(card.tags, "Pack3") then
+                        bag = characterCardsBag3
                     end
+                    c = generateWithStandardProps(bag, characterPositions[shuffledPlayers[count + 1]], characterRotations[shuffledPlayers[count + 1]], false, true, flipped, card.guid)
+                    count = count + 1
+                    if selection == "Double Detector" then
+                        doubleDetectorCount = doubleDetectorCount + 1
+                    end
+                    break
                 end
             end
-        end
-    end
-    shuffleInPlace(otherCards)
-    -- Prepare positions and rotations for character cards
-    local cardPositions = {}
-    local cardRotations = {}
-    for i = 1, #otherCards do
-        cardPositions[i] = characterPositions[shuffledPlayers[i + 1]]
-        cardRotations[i] = {characterRotations[shuffledPlayers[i + 1]][1], characterRotations[shuffledPlayers[i + 1]][2], characterRotations[shuffledPlayers[i + 1]][3] + flipped}
-    end
-    positionCards(otherCards, cardPositions, cardRotations)
-    
-    -- Check for other cards destroyed rule
-    local characterSpecial = getCharacterSpecial(missionNum)
-    if characterSpecial and characterSpecial.otherCardsDestroyed then
-        for i = 1, #otherCards do
-            otherCards[i].destruct()
         end
     end
     return ret
@@ -2409,7 +2421,7 @@ function prepareWiresAndMarkers(missionNum)
     
     -- Red wires setup (before sorting and positioning)
     if config.redWires then
-        handleRedWires(config.redWires)
+        handleSpecialRedWires(config.redWires)
     end
     
     dealWiresToHands(missionNum, piles)
@@ -2487,22 +2499,8 @@ function handleMissionSpecialConfig(missionNum, config)
     -- Warning tokens
     if config.warningToken then
         if type(config.warningToken) == "number" then
-            local bag = getObjectsWithTag("Warning")[1]
-            local clone = bag.takeObject({position=numberTokenPositions[config.warningToken], rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-        else
-            -- Handle numberCard warning token (mission 23)
-            local numberCards = getObjectsWithTag("Numbers")[1]
-            local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-            cardsToDeal.locked = false
-            cardsToDeal.shuffle()
-            local number = cardsToDeal.takeObject({position=config.numberCard.position, rotation=config.numberCard.rotation})
-            number.locked = false
-            number.addTag("Destroy")
-            local bag = getObjectsWithTag("Warning")[1]
-            local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-            cardsToDeal.destruct()
+            local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
+            generateWithStandardProps(warningBag, numberTokenPositions[config.warningToken], {0.00, 180.00, 0.00}, false, true, false)
         end
     end
     
@@ -2551,17 +2549,13 @@ function handleMissionSpecialConfig(missionNum, config)
     
     -- Bunker card and standee
     if config.bunkerCard then
-        local bunkerCard = getObjectsWithTag("Bunker")[1]
-        local card = bunkerCard.clone({position={-37.83, 1.50, 0.00}})
-        card.addTag("Destroy")
-        card.locked = false
+        local bunkerCardBag = searchGlobalBag({"Bunker"})[1]
+        generateWithStandardProps(bunkerCardBag, {-37.83, 1.50, 0.00}, {0.00, 180.00, 0.00}, false, true, false)
     end
     
     if config.standee then
-        local standee = getObjectsWithTag("Standee")[1]
-        local clone = standee.clone({position={-39.73, 3.12, -3.28}})
-        clone.addTag("Destroy")
-        clone.locked = false
+        local standeeBag = searchGlobalBag({"Standee"})[1]
+        generateWithStandardProps(standeeBag, {-39.73, 3.12, -3.28}, {0.00, 90.00, 0.00}, false, true, false)
     end
 end
 
@@ -2574,26 +2568,19 @@ function handleSequenceNumbers(sequenceSide) -- 0 being side A and 1 being side 
         sequenceRotation = {0.00, 270.00, 180.00}
     end
     numberCardPositions = layoutConfigs.numberCards.sequence3
-    numberCards = getObjectsWithTag("Numbers")[1]
-    cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
+    numberCardBag = searchGlobalBag({"Numbers"})[1]
+    numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
     for i = 1, 3 do
-        number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
+        generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
         if i ~= 1 then
-            bag = getObjectsWithTag("Warning")[1]
-            token = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-            token.locked = false
+            warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
+            generateWithStandardProps(warningBag, numberTokenPositions[tonumber(numberCards[i].name)], {0.00, 180.00, 0.00})
         end
     end
-    cardsToDeal.destruct()
 
-    sourceSequenceCard = getObjectsWithTag("Sequence")[1]
-    sequenceCard = sourceSequenceCard.clone({position={-44.19, 1.50, -6.22}, rotation=sequenceRotation})
-    sequenceCard.locked = false
-    sequenceCard.addTag("Destroy")
+    sequenceCardBag = searchGlobalBag({"Sequence"})[1]
+    generateWithStandardProps(sequenceCardBag, {-44.19, 1.50, -6.22}, sequenceRotation, false, true, false)
 end
 
 -- Sets up nano components with specified position and direction
@@ -2614,44 +2601,37 @@ function handleNano(startPos, direction) -- 0 is left and 1 is right, wires are 
     if direction == 1 then
         nanoRotation = {0.00, 180.00, 0.00}
     end
-    nano = getObjectsWithTag("Nano")[1]
-    clone = nano.clone({position = actualPosition, rotation = nanoRotation})
-    clone.locked = false
-    clone.addTag("Destroy")
+    nanoBag = searchGlobalBag({"Nano"})[1]
+    generateWithStandardProps(nanoBag, {actualPosition[1], actualPosition[2] + 0.5, actualPosition[3]}, nanoRotation, false, true, false)
 end
 
 -- Handles red wire special setups
-function handleRedWires(redWiresConfig)
+function handleSpecialRedWires(redWiresConfig)
+    local redWireBag = searchGlobalBag({"Red", "Scripted", "Wires"})[1]
+    local redWires = redWireBag.getObjects()
+    shuffleInPlace(redWires)
     if redWiresConfig == 3 then
         -- Mission 13: Deal 3 red wires to piles (positioning happens in dealWiresToHands)
-        local redCopy = cloneAndPrepareDeck({"Wires", "Red"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
         local redsRevealed = {}
         
         -- Add one red wire to each of the first 3 players
         for i = 1, 3 do
             if piles[i] then
-                local wire = redCopy.takeObject({position={-92.12, 2.38, -1.60}, rotation={0.00, 0.00, 180.00}, smooth=false})
-                wire.locked = false
-                wire.addTag("Destroy")
-                table.insert(piles[i], wire)
-                table.insert(redsRevealed, wire)
+                table.insert(piles[i], redWires[i])
+                table.insert(redsRevealed, redWires[i])
             else
                 printToAll("Error: No pile found for player " .. i .. " in red wires setup", {r=1, g=0, b=0})
             end
         end
         
-        redCopy.destruct()
         setupMarkers(redsRevealed, 3, 3, "Red")
         for _, pile in ipairs(piles) do
-            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
         end
     elseif redWiresConfig == "all" then
         -- Mission 54: Deal all red wires
-        local wires = cloneAndPrepareDeck({"Wires", "Red"}, {-16.78, 1.59, -14.52}, {0.00, 90.00, 180.00}, true)
-        for i = 1, wires.getQuantity() do
-            local wire = wires.takeObject({position={-16.78, 1.59, -14.52}, rotation={0.00, 90.00, 180.00}})
-            wire.locked = false
-            wire.addTag("Destroy")
+        for i = 1, #redWires do
+            generateWithStandardProps(redWireBag, {-16.78, 1.59, -14.52}, {0.00, 90.00, 180.00}, false, true, false, redWires[i].guid)
         end
     end
 end
@@ -2672,141 +2652,93 @@ function handleSingleNumberCard(cardConfig)
             return
         end
     end
-    
-    local numberCards = getObjectsWithTag("Numbers")[1]
-    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
-    local number = cardsToDeal.takeObject({position=actualPosition, rotation=actualRotation})
-    number.locked = false
-    number.addTag("Destroy")
-    cardsToDeal.destruct()
+
+    local numberCards = searchGlobalBag({"Numbers"})[1]
+    generateWithStandardProps(numberCards, actualPosition, actualRotation, false, true, false)
 end
 
 -- Handles player-based number card distribution
 function handleEquipmentNumberCards()
     local numberCardPositions = layoutConfigs.numberCards.equipmentBased
-    local numberCards = getObjectsWithTag("Numbers")[1]
-    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
     for i = 1, playerNum do
-        local number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 180.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
+        generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
     end
-    cardsToDeal.destruct()
 end
 
 -- Handles shuffling all number cards
 function handleShuffleNumbers()
-    local numberCards = getObjectsWithTag("Numbers")[1]
-    local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
-    for i = 1, cardsToDeal.getQuantity() do
-        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        card.locked = false
-        card.addTag("Destroy")
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
+
+    for i = 1, #numberCards do
+        generateWithStandardProps(numberCardBag, {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00}, false, true, false, numberCards[i].guid)
     end
 end
 
 -- Handles 12-number grid layout
 function handleGridNumbers()
     local cardPositions = layoutConfigs.numberCards.grid3x4
-    local numberCards = {}
-    local sourceDeck = getObjectsWithTag("Numbers")[1]
-    local numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-    numberCardDeck.locked = false
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, 12 do
-        local card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-        card.locked = false
-        card.addTag("Destroy")
-        table.insert(numberCards, card)
-    end
-    table.sort(numberCards, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-    for i = 1, 12 do
-        numberCards[i].setPositionSmooth(cardPositions[i])
-        numberCards[i].setRotation({0.00, 180.00, 0.00})
+        generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
     end
 end
 
 -- Handles 5 number cards setup
 function handleNumberCards5(missionNum)
     local numberCardPositions = layoutConfigs.numberCards.vertical5
-    local numberCards = getObjectsWithTag("Numbers")[1]
-    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
     
     if missionNum == 36 then
         -- Mission 36: 5 cards with warning tokens
         for i = 1, 5 do
-            local number = cardsToDeal.takeObject({position=numberCardPositions[i], rotation={0.00, 90.00, 0.00}})
-            number.locked = false
-            number.addTag("Destroy")
-            local bag = getObjectsWithTag("Warning")[1]
-            local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
+            local number = generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
+            local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
+            generateWithStandardProps(warningBag, numberTokenPositions[tonumber(number.getName())], {0.00, 180.00, 0.00}, false, true, false)
         end
     elseif missionNum == 62 then
-        -- Mission 62: Player-based number distribution
-        local numbers = {}
+        -- Mission 62: Player-based number distribution1
+        table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
         for i = 1, playerNum do
-            local number = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
-            number.locked = false
-            table.insert(numbers, number)
-        end
-        table.sort(numbers, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
-        for i = 1, playerNum do
-            numbers[i].setPosition(numberCardPositions[i])
-            numbers[i].setRotation({0.00, 90.00, 0.00})
-            numbers[i].addTag("Destroy")
+            generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
         end
     end
-    cardsToDeal.destruct()
 end
 
 -- Handles special number card configurations
 function handleNumberCardSpecial(specialType)
     if specialType == "faceUpAndShuffle" then
         -- Mission 15: One card face-up, rest shuffled face-down
-        local numberCards = getObjectsWithTag("Numbers")[1]
-        local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
-        
-        -- Take one card and place it face-up
-        local number = cardsToDeal.takeObject({position={-24.35, 1.50, -4.60}, rotation={0.00, 180.00, 0.00}})
-        number.locked = false
-        number.addTag("Destroy")
-        
-        -- Shuffle and place all remaining cards face-down
-        for i = 1, cardsToDeal.getQuantity() do
-            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
+        local numberCardBag = searchGlobalBag({"Numbers"})[1]
+        local numberCards = numberCardBag.getObjects()
+        shuffleInPlace(numberCards)
+
+        for i = 1, #numberCards do
+            generateWithStandardProps(numberCardBag, {-24.35, 1.56, i == 1 and -4.60 or 4.60}, {0.00, 180.00, i == 1 and 0.00 or 180.00}, false, true, false, numberCards[i].guid)
         end
     end
 end
 
 -- Handles number card with warning token (Mission 23)
 function handleNumberCardWithWarning(cardConfig)
-    local numberCards = getObjectsWithTag("Numbers")[1]
-    local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
     
     -- Place one number card
-    local number = cardsToDeal.takeObject({position=cardConfig.position, rotation=cardConfig.rotation})
-    number.locked = false
-    number.addTag("Destroy")
+    local number = generateWithStandardProps(numberCardBag, cardConfig.position, cardConfig.rotation, false, true, false, numberCards[1].guid)
     
     -- Place warning token based on the number card
-    local bag = getObjectsWithTag("Warning")[1]
-    local clone = bag.takeObject({position=numberTokenPositions[tonumber(number.getName())], rotation={0.00, 180.00, 0.00}})
-    clone.locked = false
-    
-    cardsToDeal.destruct()
+    local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
+    generateWithStandardProps(warningBag, numberTokenPositions[tonumber(number.getName())], {0.00, 180.00, 0.00}, false, true, false)
 end
 
 -- Filters constraint cards to only include specified letter range
@@ -2816,25 +2748,24 @@ end
 --   position: Position to place the filtered deck {x, y, z}
 --   rotation: Rotation for the filtered deck {x, y, z}
 -- Returns: Table of filtered constraint cards
-function filterConstraintCardsByRange(startLetter, endLetter, position, rotation)
-    local constraintCards = getObjectsWithTag("Constraint")[1]
-    local constraintDeck = constraintCards.clone({position = position or {-62.10, 2.20, -24.63}, rotation = rotation or {0.00, 180.00, 180.00}})
-    constraintDeck.locked = false
-    
+function filterConstraintCardsByRange(constraintCards, startLetter, endLetter, position, rotation)
     local cardsToDeal = {}
     local startByte = string.byte(startLetter)
     local endByte = string.byte(endLetter)
     
-    for i = 1, constraintDeck.getQuantity() do
-        local card = constraintDeck.takeObject({position = position or {-82.10, 2.20, -24.63}, rotation = rotation or {0.00, 180.00, 180.00}})
-        local cardName = card.getName()
+    for i = 1, #constraintCards do
+        local cardName = constraintCards[i].name
         local cardByte = string.byte(cardName)
         
         if cardByte >= startByte and cardByte <= endByte then
-            table.insert(cardsToDeal, card)
-            card.addTag("Destroy")
-        else
-            card.destruct()
+            table.insert(cardsToDeal, constraintCards[i])
+        end
+    end
+
+    if position and rotation then
+        for i = 1, #cardsToDeal do
+            local constraintCardBag = searchGlobalBag({"Constraint"})[1]
+            generateWithStandardProps(constraintCardBag, position, rotation, false, true, false, cardsToDeal[i].guid)
         end
     end
     
@@ -2847,25 +2778,22 @@ function handleConstraintCards(constraintType, missionNum)
         -- Mission 31: Complex constraint validation logic
         local cardsAreGood = false
         while not cardsAreGood do
-            local cardsToDeal = filterConstraintCardsByRange("A", "E")
             cardsAreGood = true
-            
-            shuffleInPlace(cardsToDeal)
+            local constraintBag = searchGlobalBag({"Constraint"})[1]
+            local constraintCards = constraintBag.getObjects()
+            shuffleInPlace(constraintCards)
+            local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
             local constraintCardPositions = layoutConfigs.constraintCards.mission31Layout
-            for i = 1, #cardsToDeal do
-                cardsToDeal[i].setPosition(constraintCardPositions[i])
-                cardsToDeal[i].setRotation({0.00, 90.00, 0.00})
-            end
             if playerNum < 3 then
                 local count = 0
-                for i = 1, 5 do
+                for i = 1, #cardsToDeal do
                     if cardsToDeal[i].getName() == "A" or cardsToDeal[i].getName() == "B" then
                         count = count + 1
                     end
                 end
                 if count == 2 then cardsAreGood = false end
                 count = 0
-                for i = 1, 5 do
+                for i = 1, #cardsToDeal do
                     if cardsToDeal[i].getName() == "C" or cardsToDeal[i].getName() == "D" then
                         count = count + 1
                     end
@@ -2876,37 +2804,30 @@ function handleConstraintCards(constraintType, missionNum)
                 for _, card in ipairs(cardsToDeal) do
                     card.destruct()
                 end
+            else
+                for i = 1, #cardsToDeal do
+                    generateWithStandardProps(constraintBag, constraintCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, cardsToDeal[i].guid)
+                end
             end
         end
     elseif constraintType == "handDistribution" then
         -- Mission 34: Distribute constraint cards to player hands
-        local cardsToDeal = filterConstraintCardsByRange("A", "E")
-        shuffleInPlace(cardsToDeal)
+        local constraintBag = searchGlobalBag({"Constraint"})[1]
+        local constraintCards = constraintBag.getObjects()
+        shuffleInPlace(constraintCards)
+        local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
         for num, card in ipairs(cardsToDeal) do
-            if num > playerNum then
-                card.destruct()
-            else
-                card.setPosition(playerHandPositions[playerColors[num]])
-                card.setRotation(characterRotations[playerColors[num]])
+            if num <= playerNum then
+                generateWithStandardProps(constraintBag, playerHandPositions[playerColors[num]], characterRotations[playerColors[num]], false, true, false, card.guid)
             end
         end
     elseif constraintType == "complexDistribution" then
         -- Mission 61: Complex constraint distribution logic
-        local cardsToDeal = filterConstraintCardsByRange("A", "E", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
+        local constraintBag = searchGlobalBag({"Constraint"})[1]
+        local constraintCards = constraintBag.getObjects()
+        shuffleInPlace(constraintCards)
+        local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
         
-        -- Apply player count filtering for Mission 61
-        if playerNum < 5 and #cardsToDeal > 4 then
-            -- Remove excess cards if less than 5 players
-            for i = 5, #cardsToDeal do
-                cardsToDeal[i].destruct()
-            end
-            -- Trim the table
-            for i = #cardsToDeal, 5, -1 do
-                table.remove(cardsToDeal, i)
-            end
-        end
-        
-        shuffleInPlace(cardsToDeal)
         local j = 0
         for i = 1, #cardsToDeal do
             j = j + 1
@@ -2917,86 +2838,109 @@ function handleConstraintCards(constraintType, missionNum)
             end
             if i == 1 and playerNum < 4 then
                 if playerNum == 2 then
-                    cardsToDeal[j].setPosition({
-                        characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 25,
-                        characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-                    })
-                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                    generateWithStandardProps(constraintBag,
+                        {characterPositions[playerColors[i]][1],
+                        characterPositions[playerColors[i]][2] + 5,
+                        characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
+                        {0.00, characterRotations[playerColors[i]][2], 0.00},
+                        false,
+                        true,
+                        false,
+                        cardsToDeal[j].guid
+                    )
                     j = j + 1
-                    cardsToDeal[j].setPosition({
-                        characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                    generateWithStandardProps(constraintBag,
+                        {characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                         characterPositions[playerColors[i]][2],
-                        characterPositions[playerColors[i]][3]
-                    })
-                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                        characterPositions[playerColors[i]][3]},
+                        {0.00, characterRotations[playerColors[i]][2], 0.00},
+                        false,
+                        true,
+                        false,
+                        cardsToDeal[j].guid
+                    )
                     j = j + 1
-                    cardsToDeal[j].setPosition({
-                        characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
+                    generateWithStandardProps(constraintBag,
+                        {characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
                         characterPositions[playerColors[i]][2],
-                        characterPositions[playerColors[i]][3]
-                    })
-                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                        characterPositions[playerColors[i]][3]},
+                        {0.00, characterRotations[playerColors[i]][2], 0.00},
+                        false,
+                        true,
+                        false,
+                        cardsToDeal[j].guid
+                    )
                 elseif playerNum == 3 then
-                    cardsToDeal[j].setPosition({
-                        characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 25,
-                        characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-                    })
-                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                    generateWithStandardProps(constraintBag,
+                        {characterPositions[playerColors[i]][1],
+                        characterPositions[playerColors[i]][2] + 5,
+                        characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
+                        {0.00, characterRotations[playerColors[i]][2], 0.00},
+                        false,
+                        true,
+                        false,
+                        cardsToDeal[j].guid
+                    )
                     j = j + 1
-                    cardsToDeal[j].setPosition({
-                        characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
+                    generateWithStandardProps(constraintBag,
+                        {characterPositions[playerColors[i]][1] + (-7 * isBlueGreen),
                         characterPositions[playerColors[i]][2],
-                        characterPositions[playerColors[i]][3]
-                    })
-                    cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                        characterPositions[playerColors[i]][3]},
+                        {0.00, characterRotations[playerColors[i]][2], 0.00},
+                        false,
+                        true,
+                        false,
+                        cardsToDeal[j].guid
+                    )
                 end
             else
-                cardsToDeal[j].setPosition({
-                    characterPositions[playerColors[i]][1],
-                    characterPositions[playerColors[i]][2] + 25,
-                    characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-                })
-                cardsToDeal[j].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+                generateWithStandardProps(constraintBag,
+                    {characterPositions[playerColors[i]][1],
+                    characterPositions[playerColors[i]][2] + 5,
+                    characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
+                    {0.00, characterRotations[playerColors[i]][2], 0.00},
+                    false,
+                    true,
+                    false,
+                    cardsToDeal[j].guid
+                )
             end
         end
-        filterConstraintCardsByRange("F", "L", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
+        filterConstraintCardsByRange(constraintCards, "F", "L", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
     elseif constraintType == "special-8" then
-        local cardsToDeal = filterConstraintCardsByRange("A", "Z", {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00})
-        
-        shuffleInPlace(cardsToDeal)
+        local constraintBag = searchGlobalBag({"Constraint"})[1]
+        local constraintCards = constraintBag.getObjects()
+        shuffleInPlace(constraintCards)
+        local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "Z")
         for i = 1, playerNum do
             local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
             end
-            cardsToDeal[i].setPosition({
-                characterPositions[playerColors[i]][1],
-                characterPositions[playerColors[i]][2] + 25,
-                characterPositions[playerColors[i]][3] - (3 * isBlueGreen)
-            })
-            cardsToDeal[i].setRotation({0.00, characterRotations[playerColors[i]][2], 0.00})
+            generateWithStandardProps(constraintBag,
+                {characterPositions[playerColors[i]][1],
+                characterPositions[playerColors[i]][2] + 2,
+                characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
+                {0.00, characterRotations[playerColors[i]][2], 0.00},
+                false,
+                true,
+                false,
+                cardsToDeal[i].guid
+            )
         end
-        cardsToDeal[playerNum + 1].setPositionSmooth({-24.35, 1.50, -4.60})
-        cardsToDeal[playerNum + 1].setRotationSmooth({0.00, 180.00, 0.00})
-        for i = playerNum + 2, #cardsToDeal do
-            cardsToDeal[i].setPositionSmooth({-24.35, 1.56, 4.60})
-            cardsToDeal[i].setRotationSmooth({0.00, 180.00, 180.00})
+        for i = playerNum + 1, #cardsToDeal do
+            generateWithStandardProps(constraintBag, {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00}, false, true, false, cardsToDeal[i].guid)
         end
     end
 end
 
 -- Handles simple constraint card shuffling
 function handleShuffleConstraints()
-    local constraintCards = getObjectsWithTag("Constraint")[1]
-    local cardsToDeal = constraintCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
-    for i = 1, cardsToDeal.getQuantity() do
-        local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        card.locked = false
-        card.addTag("Destroy")
+    local constraintBag = searchGlobalBag({"Constraint"})[1]
+    local constraintCards = constraintBag.getObjects()
+    shuffleInPlace(constraintCards)
+    for i = 1, #cardsToDeal do
+        generateWithStandardProps(constraintBag, {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00}, false, true, false, cardsToDeal[i].guid)
     end
 end
 
@@ -3004,19 +2948,13 @@ end
 function handleConstraintCardSpecial(specialType)
     if specialType == "faceUpAndShuffle" then
         -- Mission 32: One card face-up, rest shuffled face-down
-        local cardsToDeal = filterConstraintCardsByRange("A", "L")
-        shuffleInPlace(cardsToDeal)
+        local constraintBag = searchGlobalBag({"Constraint"})[1]
+        local constraintCards = constraintBag.getObjects()
+        shuffleInPlace(constraintCards)
+        local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "L")
         
-        -- Take one card and place it face-up
-        cardsToDeal[1].setPositionSmooth({-24.35, 1.50, -4.60})
-        cardsToDeal[1].setRotationSmooth({0.00, 180.00, 0.00})
-        cardsToDeal[1].addTag("Destroy")
-        
-        -- Shuffle and place all remaining cards face-down
-        for i = 2, #cardsToDeal do
-            cardsToDeal[i].setPositionSmooth({-24.35, 1.56, 4.60})
-            cardsToDeal[i].setRotationSmooth({0.00, 180.00, 180.00})
-            cardsToDeal[i].addTag("Destroy")
+        for i = 1, #cardsToDeal do
+            generateWithStandardProps(constraintBag, {-24.35, 1.56, i == 1 and -4.60 or 4.60}, {0.00, 180.00, i == 1 and 0.00 or 180.00}, false, true, false, cardsToDeal[i].guid)
         end
     end
 end
@@ -3024,11 +2962,12 @@ end
 -- Handles 5 constraint cards setup
 function handleConstraintCards5()
     local constraintPositions = layoutConfigs.constraintCards.mission66Layout
-    local cardsToDeal = filterConstraintCardsByRange("A", "E")
-    shuffleInPlace(cardsToDeal)
+    local constraintCardBag = searchGlobalBag({"Constraint"})[1]
+    local constraintCards = constraintCardBag.getObjects()
+    shuffleInPlace(constraintCards)
+    local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
     for num, card in ipairs(cardsToDeal) do
-        card.setPosition(constraintPositions[num])
-        card.setRotation({0.00, 180.00, 0.00})
+        generateWithStandardProps(constraintCardBag, constraintPositions[num], {0.00, 180.00, 0.00}, false, true, false, card.guid)
     end
 end
 
@@ -3039,26 +2978,26 @@ function handleGridConstraints()
         {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
         {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
     }
-    local constraintCards = filterConstraintCardsByRange("A", "L", {-62.10, 2.20, -24.63}, {0.00, 180.00, 180.00})
+    local constraintCardBag = searchGlobalBag({"Constraint"})[1]
+    local constraintCards = constraintCardBag.getObjects()
     shuffleInPlace(constraintCards)
-    for i = 1, #constraintCards do
-        constraintCards[i].setPositionSmooth({cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]})
-        constraintCards[i].setRotation({0.00, 180.00, 0.00})
-        constraintCards[i].setScale({2.00, 1.00, 2.00})
-        constraintCards[i].addTag("Destroy")
+    local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "L")
+    for i = 1, #cardsToDeal do
+        obj = generateWithStandardProps(constraintCardBag,
+            {cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]},
+            {0.00, 180.00, 0.00}, false, true, false, cardsToDeal[i].guid)
+        obj.setScale({2.00, 1.00, 2.00})
     end
 end
 
 -- Handles various oxygen token configurations
 function handleOxygenTokens(tokenType)
-    local oxygenTokenBag = getObjectsWithTag("OxygenTokens")[1]
+    local oxygenTokenBag = searchGlobalBag({"OxygenTokens"})[1]
     
     if tokenType == "perPlayer2" then
         -- Mission 44: 2 tokens per player
         for i = 1, playerNum * 2 do
-            local card = oxygenTokenBag.takeObject({position={-16.65, 1.57, -14.39}, rotation={0.00, 180.00, 0.00}})
-            card.locked = false
-            card.addTag("Destroy")
+            generateWithStandardProps(oxygenTokenBag, {-16.65, 1.57 + (i * 0.2), -14.39}, {0.00, 180.00, 0.00}, false, true, false)
         end
     elseif tokenType == "playerBased" then
         -- Mission 49: Variable tokens based on player count
@@ -3072,11 +3011,11 @@ function handleOxygenTokens(tokenType)
             elseif playerNum == 4 then tokenCount = 5
             elseif playerNum == 5 then tokenCount = 4 end
             for j = 1, tokenCount do
-                local token = oxygenTokenBag.takeObject({position={
+                generateWithStandardProps(oxygenTokenBag, {
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
+                    characterPositions[playerColors[i]][2] + (i * 0.2),
                     characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
+                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false)
             end
         end
     elseif tokenType == "playerBasedSpecial" then
@@ -3091,15 +3030,15 @@ function handleOxygenTokens(tokenType)
                 isBlueGreen = -1
             end
             for j = 1, tokenCount do
-                local token = oxygenTokenBag.takeObject({position={
+                generateWithStandardProps(oxygenTokenBag, {
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
+                    characterPositions[playerColors[i]][2] + (i * 0.2),
                     characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
+                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false)
             end
         end
         for i = 1, 32 - (tokenCount * playerNum) do
-            local token = oxygenTokenBag.takeObject({position={-24.35, 3.00, 0.00}, rotation={0.00, 180.00, 0.00}})
+            generateWithStandardProps(oxygenTokenBag, {-24.35, 3.00 + (i * 0.2), 0.00}, {0.00, 180.00, 0.00})
         end
     elseif tokenType == "scalingToLeader" then
         -- Mission 63: Scaling tokens to leader
@@ -3112,11 +3051,11 @@ function handleOxygenTokens(tokenType)
             isBlueGreen = -1
         end
         for i = 1, tokenCount do
-            local token = oxygenTokenBag.takeObject({position={
+            generateWithStandardProps(oxygenTokenBag, {
                 characterPositions[playerColors[1]][1] + (7 * isBlueGreen),
-                characterPositions[playerColors[1]][2],
+                characterPositions[playerColors[1]][2] + (i * 0.2),
                 characterPositions[playerColors[1]][3]
-            }, rotation=characterRotations[playerColors[1]]})
+            }, {0.00, characterRotations[playerColors[1]][2], 0.00}, false, true, false)
         end
     end
 end
@@ -3125,41 +3064,33 @@ end
 function handleChallengeCards(missionNum)
     local layout = getPositionLayout("challengeCards", playerNum, missionNum)
     local challengePositions = layout or layoutConfigs.challengeCards.standard
-    
-    local challengeCards = getObjectsWithTag("Challenge")[1]
-    local cardsToDeal = challengeCards.clone({position={-82.10, 2.20, -24.63}})
-    cardsToDeal.locked = false
-    cardsToDeal.shuffle()
+
+    local challengeCardBag = searchGlobalBag({"Challenge"})[1]
+    local challengeCards = challengeCardBag.getObjects()
+    shuffleInPlace(challengeCards)
     local challenges = {}
     for i = 1, playerNum do
-        local challenge = cardsToDeal.takeObject({position={-82.10, 2.20, -24.63}})
-        challenge.locked = false
-        challenge.addTag("Destroy")
-        table.insert(challenges, challenge)
+        table.insert(challenges, challengeCards[i])
     end
-    table.sort(challenges, function(a, b) return tonumber(a.getName()) < tonumber(b.getName()) end)
+    table.sort(challenges, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, playerNum do
-        challenges[i].setPosition(challengePositions[i])
-        challenges[i].setRotation({0.00, 180.00, 0.00})
-        if challenges[i].getName() == "8" then
-            local numberCards = getObjectsWithTag("Numbers")[1]
-            local numbersToDeal = numberCards.clone({position={-92.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-            numbersToDeal.locked = false
-            numbersToDeal.shuffle()
-            local card = numbersToDeal.takeObject({
-                position={challengePositions[i][1] + 3.89, challengePositions[i][2] + 0.02, challengePositions[i][3] - 5.04}, 
-                rotation={0.27, 105.00, 0.00}
-            })
-            card.addTag("Destroy")
-            card = numbersToDeal.takeObject({
-                position={challengePositions[i][1] + 3.84, challengePositions[i][2] + 0.02, challengePositions[i][3] + 5.04}, 
-                rotation={0.15, 75.00, 0.17}
-            })
-            card.addTag("Destroy")
-            numbersToDeal.destruct()
+        c = generateWithStandardProps(challengeCardBag, challengePositions[i], {0.00, 180.00, 0.00}, false, true, false, challenges[i].guid)
+        if c.getName() == "8" then
+            local numberCardBag = searchGlobalBag({"Numbers"})[1]
+            local numberCards = numberCardBag.getObjects()
+            shuffleInPlace(numberCards)
+            generateWithStandardProps(numberCardBag, {
+                challengePositions[i][1] + 3.89,
+                challengePositions[i][2] + 0.02,
+                challengePositions[i][3] - 5.04
+            }, {0.27, 105.00, 0.00}, false, true, false, numberCards[1].guid)
+            generateWithStandardProps(numberCardBag, {
+                challengePositions[i][1] + 3.89,
+                challengePositions[i][2] + 0.02,
+                challengePositions[i][3] + 5.04
+            }, {0.15, 75.00, 0.17}, false, true, false, numberCards[2].guid)
         end
     end
-    cardsToDeal.destruct()
 end
 
 -- Handles nano setup with number 7 detection
@@ -3169,25 +3100,16 @@ function handleNanoOnSeven()
         {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
         {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
     }
-    local numberCards = {}
-    local sourceDeck = getObjectsWithTag("Numbers")[1]
-    local numberCardDeck = sourceDeck.clone({position={-62.10, 2.20, -24.63}})
-    numberCardDeck.locked = false
-    numberCardDeck.shuffle()
+    local numberCardBag = searchGlobalBag({"Numbers"})[1]
+    local numberCards = numberCardBag.getObjects()
+    table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, 12 do
-        local card = numberCardDeck.takeObject({position={-82.10, 2.20, -24.63}})
-        card.locked = false
-        card.addTag("Destroy")
-        table.insert(numberCards, card)
-    end
-    for i = 1, 12 do
-        if numberCards[i].getName() == "7" then
+        local card = generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
+        if card.getName() == "7" then
             local direction = 1
             if i == 12 then direction = 0 end
             handleNano(cardPositions[i], direction)
         end
-        numberCards[i].setPositionSmooth(cardPositions[i])
-        numberCards[i].setRotation({0.00, 180.00, 0.00})
     end
 end
 
@@ -3195,18 +3117,10 @@ end
 function handleCustomDistribution(distributionType)
     if distributionType == "mission29" then
         -- Mission 29: Custom number card distribution
-        local numberCards = getObjectsWithTag("Numbers")[1]
-        local cardsToDeal = numberCards.clone({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.addTag("Destroy")
-        cardsToDeal.shuffle()
-        local cardsTable = {}
-        for i = 1, cardsToDeal.getQuantity() do
-            local card = cardsToDeal.takeObject({position={-24.35, 1.56, 4.60}, rotation={0.00, 180.00, 180.00}})
-            card.locked = false
-            card.addTag("Destroy")
-            table.insert(cardsTable, card)
-        end
+        local numberCardBag = searchGlobalBag({"Numbers"})[1]
+        local numberCards = numberCardBag.getObjects()
+        shuffleInPlace(numberCards)
+        local ix = 1
         for i = 1, playerNum do
             local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
@@ -3215,22 +3129,21 @@ function handleCustomDistribution(distributionType)
             local cardCount = 2
             if i == playerNum then cardCount = 3 end
             for j = 1, cardCount do
-                cardsTable[1].setPositionSmooth({
-                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen), 
-                    characterPositions[playerColors[i]][2], 
+                generateWithStandardProps(numberCardBag, {
+                    characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                    characterPositions[playerColors[i]][2],
                     characterPositions[playerColors[i]][3]
-                })
-                cardsTable[1].setRotation({0.00, characterRotations[playerColors[i]][2], 180.00})
-                table.remove(cardsTable, 1)
+                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, true, numberCards[ix].guid)
+                ix = ix + 1
             end
         end
     elseif distributionType == "mission65" then
         -- Mission 65: Custom number card distribution
-        local numberCards = getObjectsWithTag("Numbers")[1]
-        local cardsToDeal = numberCards.clone({position={-82.10, 2.20, -24.63}, rotation={0.00, 180.00, 180.00}})
-        cardsToDeal.locked = false
-        cardsToDeal.shuffle()
+        local numberCardBag = searchGlobalBag({"Numbers"})[1]
+        local numberCards = numberCardBag.getObjects()
+        shuffleInPlace(numberCards)
         local isBlueGreen = 1
+        local ix = 1
         for i = 1, playerNum do
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
@@ -3239,143 +3152,32 @@ function handleCustomDistribution(distributionType)
             if playerNum == 3 then cardCount = 4
             elseif playerNum == 5 and i > 2 then cardCount = 2 end
             for j = 1, cardCount do
-                local card = cardsToDeal.takeObject({position={
+                generateWithStandardProps(numberCardBag, {
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2],
+                    characterPositions[playerColors[i]][2] + (j * 0.2),
                     characterPositions[playerColors[i]][3]
-                }, rotation={0.00, characterRotations[playerColors[i]][2], 0.00}})
-                card.locked = false
-                card.addTag("Destroy")
+                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, true, numberCards[ix].guid)
+                ix = ix + 1
             end
         end
     end
 end
 
--- Handles sequence card setup
+-- Handles sequence card setup for mission 36
 function handleSequenceCard()
-    local sourceSequenceCard = getObjectsWithTag("Sequence")[1]
-    local sequenceRotation = {0.00, 180.00, 0.00}
-    local sequenceCard = sourceSequenceCard.clone({position=playerHandPositions[playerColors[1]], rotation=sequenceRotation})
-    sequenceCard.locked = false
-    sequenceCard.addTag("Destroy")
+    local sequenceCardBag = searchGlobalBag({"Sequence"})[1]
+    generateWithStandardProps(sequenceCardBag, playerHandPositions[playerColors[1]], {0.00, 180.00, 0.00}, false, true, false)
 end
 
 -- blueHighest is the highest value of a blue wire, and in terms of the card, yellowNum of yellowTotal and redNum of redTotal
 function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
     sortEquipment(missionNum, yellowNum)
-
-    mainCopy = cloneAndPrepareDeck({"Wires", "Blue"}, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00}, true)
-    handCount = playerNum == 5 and 5 or 4
-    
-    -- Get mission-specific nano wire counts
-    local nanoWireCounts = {5, 5, 4, 4, 3} -- Default counts
-    local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
-    if nanoConfig and nanoConfig.wireCounts then
-        -- Try to get mission-specific counts first
-        if nanoConfig.wireCounts[missionNum] then
-            nanoWireCounts = nanoConfig.wireCounts[missionNum]
-        elseif nanoConfig.wireCounts.default then
-            -- Fall back to default if no mission-specific counts
-            nanoWireCounts = nanoConfig.wireCounts.default
-        end
-    end
-    
-    for i = 1, handCount do
-        table.insert(piles, {})
-    end
-    sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
-    destroyed = 0
-    nanoCounter = 0
-    for i = 1, mainCopy.getQuantity() do
-        pileIx = ((i + handCount - destroyed - 1 - nanoCounter) % handCount) + 1
-        wire = takeAndPrepareWire(mainCopy, {-82.12 + pileIx, 2.38, -1.60}, {0.00, 0.00, 180.00})
-        if tonumber(wire.getDescription()) > blueHighest * 10 then
-            wire.destruct()
-            destroyed = destroyed + 1
-        else
-            wire.addTag("Destroy")
-            local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
-            if i <= nanoWireCounts[playerNum] and nanoConfig then
-                nano = getObjectsWithAllTags({"Nano", "Destroy"})[1]
-                wire.setPosition({-23.00, 1.52, -1.03})
-                wire.setRotation({359.54, 180.20, 172.48})
-                nanoCounter = nanoCounter + 1
-            else
-                table.insert(piles[pileIx], wire)
-            end
-        end
-    end
-    
-    -- Handle wire hand count limitation before sorting piles
-    local config = getMissionConfig(missionNum)
-    local wireHandCount = config and config.wireHandCount
-    local excessWires = {}  -- Store wires that exceed the hand count limit
-    
-    if wireHandCount then
-        for num, pile in ipairs(piles) do
-            if #pile > wireHandCount then
-                -- Move excess wires to the excess pile
-                for j = wireHandCount + 1, #pile do
-                    table.insert(excessWires, pile[j])
-                end
-                -- Remove excess wires from the pile
-                for j = #pile, wireHandCount + 1, -1 do
-                    table.remove(pile, j)
-                end
-            end
-        end
-    end
-    
-    for num, pile in ipairs(piles) do
-        local sortingRule = getSortingOverride(missionNum)
-        
-        if sortingRule == "specialLastWire" then
-            -- Missions 20, 35, 56: Special last wire handling
-            counter = 0
-            wire = table.remove(pile)
-            -- Mission 35: Only multiples of 10 can be the last wire
-            while missionNum == 35 and tonumber(wire.getDescription()) % 10 ~= 0 do
-                table.insert(pile, wire)
-                counter = counter + 1
-                wire = table.remove(pile, #pile - counter)
-            end
-            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(pile, wire)
-        elseif sortingRule and sortingRule.player and sortingRule.player == num and sortingRule.rule == "lastWireOnTop" then
-            -- Mission 38: Special case for single wire - last wire stays on top
-            wire = table.remove(pile)
-            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(pile, wire)
-        elseif sortingRule == "lastTwoWiresOnTop" then
-            -- Mission 64: Last two wires stay on top after sorting
-            wire1 = table.remove(pile)
-            wire2 = table.remove(pile)
-            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            table.insert(pile, wire1)
-            table.insert(pile, wire2)
-        elseif sortingRule == "shuffleCaptain" then
-            -- Custom mission -1: Special captain shuffling
-            if num ~= 1 then
-                table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-            end
-        else
-            -- Standard sorting
-            table.sort(pile, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-        end
-    end
-    
-    -- Place excess wires in a pile beside the board if wireHandCount is configured
-    if wireHandCount and #excessWires > 0 then
-        for i, wire in ipairs(excessWires) do
-            wire.setPosition({-23.00, 1.52 + (i * 0.1), -1.03})  -- Stack the wires slightly above each other
-            wire.setRotation({0.00, 180.00, 180.00})  -- Face down
-        end
-    end
+    sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
 end
 
 -- Sets up markers for revealed wires based on mission parameters
 function setupMarkers(revealedWires, num, total, color)
-    local marker = getObjectsWithAllTags({"Marker", color})[1]
+    local markerBag = searchGlobalBag({"Marker", color})[1]
     local markerRotation = {}
     if num == total then
         markerRotation = {0.00, 180.00, 0.00}
@@ -3384,13 +3186,15 @@ function setupMarkers(revealedWires, num, total, color)
     end
     local markerPositions = color == "Yellow" and yellowMarkerPositions or redMarkerPositions
     for _, wire in ipairs(revealedWires) do
-        local clone = cloneWithStandardProps(marker, markerPositions[math.floor(tonumber(wire.getDescription())/10)], markerRotation, false)
+        generateWithStandardProps(markerBag, markerPositions[math.floor(tonumber(wire.description)/10)], markerRotation, false, true, false)
     end
 end
 
 -- Handles special yellow wire distributions that place wires directly in player hands
 function handleSpecialYellowWires(yellowConfig, piles)
-    local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
+    local yellowWireBag = searchGlobalBag({"Scripted", "Wires", "Yellow"})[1]
+    local yellowWires = yellowWireBag.getObjects()
+    shuffleInPlace(yellowWires)
     local yellowsRevealed = {}
     
     if yellowConfig.type == "playerBased" then
@@ -3408,16 +3212,9 @@ function handleSpecialYellowWires(yellowConfig, piles)
         for i = 1, wireCount do
             local pileIndex = startIndex + i - 1
             if pileIndex <= #piles then
-                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                -- Position the wire - use existing pile position if available, otherwise temporary position
-                if #piles[pileIndex] > 0 then
-                    wire.setPosition(piles[pileIndex][1].getPosition())
-                else
-                    wire.setPosition({-92.12, 2.38, -1.60})
-                end
-                table.insert(piles[pileIndex], wire)
-                table.sort(piles[pileIndex], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-                table.insert(yellowsRevealed, wire)
+                table.insert(piles[pileIndex], yellowWires[i])
+                table.sort(piles[pileIndex], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+                table.insert(yellowsRevealed, yellowWires[i])
             end
         end
         
@@ -3428,17 +3225,9 @@ function handleSpecialYellowWires(yellowConfig, piles)
         
         for i = 1, wireCount do
             if playerIndex <= #piles then
-                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                -- Position the wire - use existing pile position if available, otherwise temporary position
-                if #piles[playerIndex] > 0 then
-                    wire.setPosition(piles[playerIndex][1].getPosition())
-                else
-                    wire.setPosition({-92.12, 2.38, -1.60})
-                end
-                table.insert(piles[playerIndex], wire)
-                table.sort(piles[playerIndex], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-                table.insert(yellowsRevealed, wire)
-                
+                table.insert(piles[playerIndex], yellowWires[i])
+                table.sort(piles[playerIndex], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+                table.insert(yellowsRevealed, yellowWires[i])
                 playerIndex = playerIndex + 1
                 
                 -- Skip double hand players in 3-player games
@@ -3457,157 +3246,220 @@ function handleSpecialYellowWires(yellowConfig, piles)
         
         for i = 1, playerNum do
             for j = 1, wiresPerPlayer do
-                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                -- Position the wire - use existing pile position if available, otherwise temporary position
-                if #piles[i] > 0 then
-                    wire.setPosition(piles[i][1].getPosition())
-                else
-                    wire.setPosition({-92.12, 2.38, -1.60})
-                end
-                table.insert(piles[i], wire)
-                table.sort(piles[i], function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
-                table.insert(yellowsRevealed, wire)
+                table.insert(piles[i], yellowWires[(i * wiresPerPlayer - wiresPerPlayer) + j])
+                table.sort(piles[i], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+                table.insert(yellowsRevealed, yellowWires[(i * wiresPerPlayer - wiresPerPlayer) + j])
             end
         end
     end
     
-    yellowCopy.destruct()
     local yellowNum = #yellowsRevealed
     setupMarkers(yellowsRevealed, yellowNum, yellowNum, "Yellow")
 end
 
+allWires = {}
+
 -- Sorts and reveals wires based on mission parameters and wire counts
-function sortAllWires(mainCopy, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
+function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
+    handCount = playerNum == 5 and 5 or 4
+
+    for i = 1, handCount do
+        table.insert(piles, {})
+    end
+
     -- Check for special yellow wire distribution
     local config = getMissionConfig(missionNum)
     if config and config.yellowWires then
         handleSpecialYellowWires(config.yellowWires, piles)
     end
-    
-    -- Sort yellow wires (standard method)
-    if yellowNum > 0 then
-        local yellowCopy = cloneAndPrepareDeck({"Wires", "Yellow"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        local count = 0
-        local yellowsRevealed = {}
-        
-        local function shouldDestructYellowWire(wire)
-            local desc = tonumber(wire.getDescription())
-            if desc > yellowHighest * 10 then
-                return true
-            end
-            -- Special case for mission 46 with yellow wires
-            if missionNum == 46 then
-                local wireDesc = wire.getDescription()
-                return wireDesc ~= "051" and wireDesc ~= "061" and wireDesc ~= "071" and wireDesc ~= "081"
-            end
-            return false
+
+    -- Get mission-specific nano wire counts
+    local nanoWireCounts
+    local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
+    if nanoConfig and nanoConfig.wireCounts then
+        -- Try to get mission-specific counts first
+        if nanoConfig.wireCounts[missionNum] then
+            nanoWireCounts = nanoConfig.wireCounts[missionNum]
+        elseif nanoConfig.wireCounts.default then
+            -- Fall back to default if no mission-specific counts
+            nanoWireCounts = nanoConfig.wireCounts.default
         end
-        
-        if yellowNum == yellowTotal then
-            while count ~= yellowNum do
-                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                if shouldDestructYellowWire(wire) then
-                    wire.destruct()
-                else
-                    wire.putObject(mainCopy)
-                    table.insert(yellowsRevealed, wire)
-                    count = count + 1
-                end
-            end
-        else
-            local tempPile = yellowCopy.takeObject({position={-92.12, 2.38, -11.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
-            tempPile.addTag("Destroy")
-            while tonumber(tempPile.getDescription()) > yellowHighest * 10 do
-                tempPile.destruct()
-                tempPile = yellowCopy.takeObject({position={-92.12, 2.38, -11.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
-                tempPile.addTag("Destroy")
-            end
-            table.insert(yellowsRevealed, tempPile)
-            while count ~= yellowTotal - 1 do
-                local wire = takeAndPrepareWire(yellowCopy, {-92.12, 2.38, -11.60}, {0.00, 0.00, 0.00})
-                if tonumber(wire.getDescription()) > yellowHighest * 10 then
-                    wire.destruct()
-                else
-                    table.insert(yellowsRevealed, wire)
-                    tempPile = wire.putObject(tempPile)
-                    count = count + 1
-                end
-            end
-            tempPile.shuffle()
-            count = 0
-            while count ~= yellowNum do
-                local wire = takeAndPrepareWire(tempPile, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                if shouldDestructYellowWire(wire) then
-                    wire.destruct()
-                else
-                    wire.putObject(mainCopy)
-                    count = count + 1
-                end
-            end
-            tempPile.destruct()
-        end
-        yellowCopy.destruct()
-        mainCopy.shuffle()
-        setupMarkers(yellowsRevealed, yellowNum, yellowTotal, "Yellow")
     end
     
-    -- Sort red wires
-    if redNum > 0 then
-        local redCopy = cloneAndPrepareDeck({"Wires", "Red"}, {-92.12, 2.38, -6.60}, {0.00, 0.00, 0.00}, true)
-        local count = 0
-        local redsRevealed = {}
-        
-        if redNum == redTotal then
-            while count ~= redNum do
-                local wire = takeAndPrepareWire(redCopy, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                if tonumber(wire.getDescription()) > redHighest * 10 then
-                    wire.destruct()
-                else
-                    wire.putObject(mainCopy)
-                    table.insert(redsRevealed, wire)
-                    count = count + 1
-                end
-            end
-        else
-            local tempPile = redCopy.takeObject({position={-92.12, 2.38, -11.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
-            tempPile.locked = false
-            while tonumber(tempPile.getDescription()) > redHighest * 10 do
-                tempPile.destruct()
-                tempPile = redCopy.takeObject({position={-92.12, 2.38, -11.60}, rotation={0.00, 0.00, 0.00}, smooth=false})
-                tempPile.locked = false
-                tempPile.addTag("Destroy")
-            end
-            table.insert(redsRevealed, tempPile)
-            while count ~= redTotal - 1 do
-                local wire = takeAndPrepareWire(redCopy, {-92.12, 2.38, -11.60}, {0.00, 0.00, 0.00})
-                if tonumber(wire.getDescription()) > redHighest * 10 then
-                    wire.destruct()
-                else
-                    table.insert(redsRevealed, wire)
-                    tempPile = wire.putObject(tempPile)
-                    count = count + 1
-                end
-            end
-            tempPile.shuffle()
-            count = 0
-            while count ~= redNum do
-                local wire = takeAndPrepareWire(tempPile, {-92.12, 2.38, -1.60}, {0.00, 0.00, 0.00})
-                if tonumber(wire.getDescription()) > redHighest * 10 then
-                    wire.destruct()
-                else
-                    wire.putObject(mainCopy)
-                    count = count + 1
-                end
-            end
-            tempPile.destruct()
+    -- Sort blue wires
+    local blueWireBag = searchGlobalBag({"Blue", "Scripted", "Wires"})[1]
+    local blueWires = {}
+    for _, wire in ipairs(blueWireBag.getObjects()) do
+        if tonumber(wire.description) <= blueHighest * 10 then
+            table.insert(blueWires, wire)
         end
-        redCopy.destruct()
-        mainCopy.shuffle()
+    end
+
+    -- Sort yellow wires
+    local yellowWires = {}
+    if yellowNum > 0 then
+        local yellowWireBag = searchGlobalBag({"Scripted", "Wires", "Yellow"})[1]
+        local allYellowWires = {}
+        for _, wire in ipairs(yellowWireBag.getObjects()) do
+            if missionNum == 46 then
+                local wireDesc = wire.description
+                if wireDesc == "051" or wireDesc == "061" or wireDesc == "071" or wireDesc == "081" then
+                    table.insert(allYellowWires, wire)
+                end
+            elseif tonumber(wire.description) <= yellowHighest * 10 then
+                table.insert(allYellowWires, wire)
+            end
+        end
+        shuffleInPlace(allYellowWires)
+        yellowsRevealed = {}
+        for i = 1, yellowTotal do
+            table.insert(yellowsRevealed, allYellowWires[i])
+        end
+        for i = 1, yellowNum do
+            table.insert(yellowWires, yellowsRevealed[i])
+        end
+        setupMarkers(yellowsRevealed, yellowNum, yellowTotal, "Yellow")
+    end
+
+    -- Sort red wires
+    local redWires = {}
+    if redNum > 0 then
+        local redWireBag = searchGlobalBag({"Red", "Scripted", "Wires"})[1]
+        local allRedWires = {}
+        local redsRevealed = {}
+        for _, wire in ipairs(redWireBag.getObjects()) do
+            if tonumber(wire.description) <= redHighest * 10 then
+                table.insert(allRedWires, wire)
+            end
+        end
+        shuffleInPlace(allRedWires)
+        redsRevealed = {}
+        for i = 1, redTotal do
+            table.insert(redsRevealed, allRedWires[i])
+        end
+        for i = 1, redNum do
+            table.insert(redWires, redsRevealed[i])
+        end
         setupMarkers(redsRevealed, redNum, redTotal, "Red")
+    end
+
+    allWires = {}
+    for _, wire in ipairs(blueWires) do
+        table.insert(allWires, wire)
+    end
+    for _, wire in ipairs(yellowWires) do
+        table.insert(allWires, wire)
+    end
+    for _, wire in ipairs(redWires) do
+        table.insert(allWires, wire)
+    end
+    shuffleInPlace(allWires)
+    
+    for i, wire in ipairs(allWires) do
+        pileIx = ((i + handCount - 1) % handCount) + 1
+        table.insert(piles[pileIx], wire)
     end
 end
 
 function dealWiresToHands(missionNum, piles)
+    -- Handle wire hand count limitation before sorting piles
+    local config = getMissionConfig(missionNum)
+    local wireHandCount = config and config.wireHandCount
+    local nanoConfig = getSpecialRuleConfig(missionNum, "nanoWires")
+    local excessWires = {}  -- Store wires that exceed the hand count limit
+    
+    if wireHandCount then
+        for num, pile in ipairs(piles) do
+            if #pile > wireHandCount then
+                -- Move excess wires to the excess pile
+                for j = wireHandCount + 1, #pile do
+                    table.insert(excessWires, pile[j])
+                end
+                -- Remove excess wires from the pile
+                for j = #pile, wireHandCount + 1, -1 do
+                    table.remove(pile, j)
+                end
+            end
+        end
+    end
+
+    local nanoWireCounts
+    if nanoConfig then
+        if nanoConfig.wireCounts then
+            -- Try to get mission-specific counts first
+            if nanoConfig.wireCounts[missionNum] then
+                nanoWireCounts = nanoConfig.wireCounts[missionNum]
+            elseif nanoConfig.wireCounts.default then
+                -- Fall back to default if no mission-specific counts
+                nanoWireCounts = nanoConfig.wireCounts.default
+            end
+        end
+        wireCountRemaining = nanoWireCounts[playerNum]
+        for i = 1, nanoWireCounts[playerNum] do
+            -- Find pile with highest count, with ties broken by choosing the latest in the table
+            pileIx = 1
+            local maxCount = #piles[1]
+            for j = 2, #piles do
+                if #piles[j] >= maxCount then
+                    maxCount = #piles[j]
+                    pileIx = j
+                end
+            end
+            table.insert(excessWires, piles[pileIx][#piles[pileIx]])
+            table.remove(piles[pileIx], #piles[pileIx])
+        end
+    end
+    
+    for num, pile in ipairs(piles) do
+        local sortingRule = getSortingOverride(missionNum)
+        
+        if sortingRule == "specialLastWire" then
+            -- Missions 20, 35, 56: Special last wire handling
+            counter = 0
+            wire = table.remove(pile)
+            -- Mission 35: Only multiples of 10 can be the last wire
+            while missionNum == 35 and tonumber(wire.description) % 10 ~= 0 do
+                table.insert(pile, wire)
+                counter = counter + 1
+                wire = table.remove(pile, #pile - counter)
+            end
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+            table.insert(pile, wire)
+        elseif sortingRule and sortingRule.player and sortingRule.player == num and sortingRule.rule == "lastWireOnTop" then
+            -- Mission 38: Special case for single wire - last wire stays on top
+            wire = table.remove(pile)
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+            table.insert(pile, wire)
+        elseif sortingRule == "allPlayersLastWireOuter" then
+            -- Mission 56: All players have single wire - last wire stays on top
+            wire = table.remove(pile)
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+            table.insert(pile, wire)
+        elseif sortingRule == "lastTwoWiresOnTop" then
+            -- Mission 64: Last two wires stay on top after sorting
+            wire1 = table.remove(pile)
+            wire2 = table.remove(pile)
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+            table.insert(pile, wire1)
+            table.insert(pile, wire2)
+        elseif sortingRule == "shuffleCaptain" then
+            -- Custom mission -1: Special captain shuffling
+            if num ~= 1 then
+                table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+            end
+        else
+            -- Standard sorting
+            table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+        end
+    end
+    
+    -- Place excess wires in a pile beside the board if wireHandCount is configured
+    if #excessWires > 0 then
+        for i, wire in ipairs(excessWires) do
+            generateWireWithStandardProps(wire, {-24.35, 1.56 + (i * 0.1), 4.60}, {0.00, 180.00, 180.00})
+        end
+    end
+
     noMoreDouble = false
     handsDoubled = 0
     for i = 1, playerNum do
@@ -3619,6 +3471,7 @@ function dealWiresToHands(missionNum, piles)
             local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
             local sortingRule = getSortingOverride(missionNum)
             
+            local genWire
             if outerWireRule then
                 -- Check if this player should have outer wire positioning
                 local shouldUseOuter = false
@@ -3630,35 +3483,34 @@ function dealWiresToHands(missionNum, piles)
                 
                 if shouldUseOuter then
                     if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
-                        piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
-                        piles[i + handsDoubled][j].addTag("Outer")
+                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[1], wireRotations[playerColors[i]])
+                        genWire.addTag("Outer")
                     elseif outerWireRule.wirePosition == "lastTwo" then
                         if j == #piles[i + handsDoubled] then
-                            piles[i + handsDoubled][j].setPosition(outerWirePositions0[1])
-                            piles[i + handsDoubled][j].addTag("Outer")
+                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[1], wireRotations[playerColors[i]])
+                            genWire.addTag("Outer")
                         elseif j == #piles[i + handsDoubled] - 1 then
-                            piles[i + handsDoubled][j].setPosition(outerWirePositions0[2])
-                            piles[i + handsDoubled][j].addTag("Outer")
+                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[2], wireRotations[playerColors[i]])
+                            genWire.addTag("Outer")
                         else
-                            piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
                         end
                     else
-                        piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
                     end
                 else
-                    piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                    genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
                 end
             else
-                piles[i + handsDoubled][j].setPosition(wirePositions0[j])
+                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
             end
-            
-            piles[i + handsDoubled][j].setRotation(wireRotations[playerColors[i]])
-            piles[i + handsDoubled][j].flip()
-            
+
+            genWire.flip()
+
             -- Handle X token placement for special last wire missions
             if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
-                xTokenBag = getObjectsWithTag("XTokens")[1]
-                clone = xTokenBag.takeObject({position=tokenPositions0[j], rotation=tokenHandRotations[playerColors[i]]})
+                xTokenBag = searchGlobalBag({"XTokens"})[1]
+                generateWithStandardProps(xTokenBag, tokenPositions0[j], tokenHandRotations[playerColors[i]], false, true, false)
             end
         end
         if (playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
@@ -3684,37 +3536,33 @@ function dealWiresToHands(missionNum, piles)
                     
                     if shouldUseOuter then
                         if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
-                            piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
-                            piles[i + handsDoubled][j].addTag("Outer")
+                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[1], wireRotations[playerColors[i]])
+                            genWire.addTag("Outer")
                         elseif outerWireRule.wirePosition == "lastTwo" then
                             if j == #piles[i + handsDoubled] then
-                                piles[i + handsDoubled][j].setPosition(outerWirePositions1[1])
-                                piles[i + handsDoubled][j].addTag("Outer")
+                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[1], wireRotations[playerColors[i]])
+                                genWire.addTag("Outer")
                             elseif j == #piles[i + handsDoubled] - 1 then
-                                piles[i + handsDoubled][j].setPosition(outerWirePositions1[2])
-                                piles[i + handsDoubled][j].addTag("Outer")
+                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[2], wireRotations[playerColors[i]])
+                                genWire.addTag("Outer")
                             else
-                                piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
                             end
                         else
-                            piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
                         end
                     else
-                        piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
                     end
                 else
-                    piles[i + handsDoubled][j].setPosition(wirePositions1[j])
+                    genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
                 end
-                
-                piles[i + handsDoubled][j].setRotation(wireRotations[playerColors[i]])
-                piles[i + handsDoubled][j].flip()
+                genWire.flip()
                 
                 -- Handle X token placement for special last wire missions
                 if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
-                    xToken = getObjectsWithTag("XToken")[1]
-                    clone = xToken.clone({position=tokenPositions1[j], rotation=tokenHandRotations[playerColors[i]]})
-                    clone.locked = false
-                    clone.addTag("Destroy")
+                    xTokenBag = searchGlobalBag({"XTokens"})[1]
+                    generateWithStandardProps(xTokenBag, tokenPositions1[j], tokenHandRotations[playerColors[i]], false, true, false)
                 end
             end
             if playerNum == 3 then
@@ -3737,7 +3585,17 @@ function sortEquipment(missionNum, yellowNum)
         return 
     end
     
-    equipmentCards = getObjectsWithTag("Equipment")
+    equipmentCardBag0 = searchGlobalBag({"Equipment", "Pack0"})[1]
+    equipmentCardBag1 = searchGlobalBag({"Equipment", "Pack1"})[1]
+    equipmentCardBag5 = searchGlobalBag({"Equipment", "Pack5"})[1]
+    equipmentCards = equipmentCardBag0.getObjects()
+    for _, card in ipairs(equipmentCardBag1.getObjects()) do
+        table.insert(equipmentCards, card)
+    end
+    for _, card in ipairs(equipmentCardBag5.getObjects()) do
+        table.insert(equipmentCards, card)
+    end
+    shuffleInPlace(equipmentCards)
     local equipmentSpecial = getEquipmentSpecial(missionNum)
     
     -- Set default values
@@ -3758,18 +3616,19 @@ function sortEquipment(missionNum, yellowNum)
             for _, equipmentConfig in ipairs(equipmentSpecial.specificEquipment) do
                 local targetCard = nil
                 for _, card in ipairs(equipmentCards) do
-                    if card.getName() == equipmentConfig.name then
+                    if card.name == equipmentConfig.name then
                         targetCard = card
                         break
                     end
                 end
                 if targetCard then
-                    local copy = targetCard.clone({
-                        position = equipmentConfig.position,
-                        rotation = equipmentConfig.rotation or equipRot
-                    })
-                    copy.locked = false
-                    copy.addTag("Destroy")
+                    if equipmentConfigs[targetCard.name].pack == 0 then
+                        generateWithStandardProps(equipmentCardBag0, equipmentConfig.position, equipmentConfig.rotation or equipRot, false, true, false, targetCard.guid)
+                    elseif equipmentConfigs[targetCard.name].pack == 1 then
+                        generateWithStandardProps(equipmentCardBag1, equipmentConfig.position, equipmentConfig.rotation or equipRot, false, true, false, targetCard.guid)
+                    elseif equipmentConfigs[targetCard.name].pack == 5 then
+                        generateWithStandardProps(equipmentCardBag5, equipmentConfig.position, equipmentConfig.rotation or equipRot, false, true, false, targetCard.guid)
+                    end
                 end
             end
             
@@ -3799,28 +3658,34 @@ function sortEquipment(missionNum, yellowNum)
     end
     
     -- Continue with standard equipment distribution logic
-    for _, card in ipairs(equipmentCards) do
-        clone = card.clone({position={-139.11, 2.14, -22.37}, rotation={0.00, 180.00, 0.00}, smooth=false})
-        clone.locked = false
-        if shouldExcludeEquipment(clone, missionNum, yellowNum) then
-            clone.destruct()
+    equipmentCardBag0 = searchGlobalBag({"Equipment", "Pack0"})[1]
+    equipmentCardBag1 = searchGlobalBag({"Equipment", "Pack1"})[1]
+    equipmentCardBag5 = searchGlobalBag({"Equipment", "Pack5"})[1]
+    equipmentCards = equipmentCardBag0.getObjects()
+    spareEquipment = {}
+    for _, card in ipairs(equipmentCardBag1.getObjects()) do
+        table.insert(equipmentCards, card)
+    end
+    for _, card in ipairs(equipmentCardBag5.getObjects()) do
+        table.insert(equipmentCards, card)
+    end
+    shuffleInPlace(equipmentCards)
+    local equipmentSpecial = getEquipmentSpecial(missionNum)
+    local equipmentToDeal = {}
+    local destroyed = 0
+    for num, card in ipairs(equipmentCards) do
+        if not shouldExcludeEquipment(card, missionNum, yellowNum) then
+            if num - destroyed <= equipNum then
+                table.insert(equipmentToDeal, card)
+            else
+                -- Store spare equipment for later use
+                table.insert(spareEquipment, card)
+            end
         else
-            clone.addTag("Destroy")
+            destroyed = destroyed + 1
         end
     end
-    equipmentToDeal = {}
-    unsortedEquipment = getObjectsWithAllTags({"Equipment", "Destroy"})
-    shuffleInPlace(unsortedEquipment)
-    for i = 1, #unsortedEquipment do
-        if i > equipNum then
-            unsortedEquipment[i].addTag("Spare")
-        else
-            unsortedEquipment[i].setPosition({-121.70, 2.14, -16.00})
-            table.insert(equipmentToDeal, unsortedEquipment[i])
-        end
-    end
-    spareEquipment = getObjectsWithAllTags({"Equipment", "Spare"})
-    
+
     -- Apply sorting unless Mission 15 or equipment special configuration specifies no sorting
     local shouldSort = #equipmentToDeal > 1
     if equipmentSpecial then
@@ -3833,22 +3698,30 @@ function sortEquipment(missionNum, yellowNum)
     end
     
     if shouldSort then
-        table.sort(equipmentToDeal, function(a, b) return tonumber(a.getDescription()) < tonumber(b.getDescription()) end)
+        table.sort(equipmentToDeal, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
     end
     
     for i = 1, equipNum do
         if equipmentToDeal[i] and equipPos[i] then
-            if equipmentToDeal[i].getDescription() == "0" then
-                setupSpareEquipment(spareEquipment[1], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
-                setupSpareEquipment(spareEquipment[2], {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00})
+            if equipmentToDeal[i].description == "0" then
+                for j = 1, 2 do
+                    if equipmentConfigs[spareEquipment[j].name].pack == 0 then
+                        generateWithStandardProps(equipmentCardBag0, {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00}, false, true, false, spareEquipment[j].guid)
+                    elseif equipmentConfigs[spareEquipment[j].name].pack == 1 then
+                        generateWithStandardProps(equipmentCardBag1, {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00}, false, true, false, spareEquipment[j].guid)
+                    elseif equipmentConfigs[spareEquipment[j].name].pack == 5 then
+                        generateWithStandardProps(equipmentCardBag5, {24.35, 1.50, 5.49}, {0.00, 180.00, 180.00}, false, true, false, spareEquipment[j].guid)
+                    end
+                end
             end
-            equipmentToDeal[i].setPositionSmooth({equipPos[i][1], equipPos[i][2], equipPos[i][3] + (equipmentSpecial and equipmentSpecial.available and 1.44 or 0.00)})
-            equipmentToDeal[i].setRotation(equipRot)
+            if equipmentConfigs[equipmentToDeal[i].name].pack == 0 then
+                generateWithStandardProps(equipmentCardBag0, equipPos[i], equipRot, false, true, false, equipmentToDeal[i].guid)
+            elseif equipmentConfigs[equipmentToDeal[i].name].pack == 1 then
+                generateWithStandardProps(equipmentCardBag1, equipPos[i], equipRot, false, true, false, equipmentToDeal[i].guid)
+            elseif equipmentConfigs[equipmentToDeal[i].name].pack == 5 then
+                generateWithStandardProps(equipmentCardBag5, equipPos[i], equipRot, false, true, false, equipmentToDeal[i].guid)
+            end
         end
-    end
-    toDestroy = getObjectsWithAllTags({"Equipment", "Spare"})
-    for _, card in ipairs(toDestroy) do
-        card.destruct()
     end
 end
 
@@ -3876,9 +3749,9 @@ function moveTokens(missionNum)
         local specialTokens = config.specialTokens
         for _, tokenConfig in ipairs(specialTokens.tokens) do
             if specialTokens.count == 0 then
-                cloneAndPositionTokenBags(tokenConfig.name, tokenConfig.position)
+                cloneAndPositionTokenBags({"Destroy", tokenConfig.name}, tokenConfig.position, true)
             else
-                cloneAndPositionTokens(tokenConfig.name, tokenConfig.position, specialTokens.count)
+                cloneAndPositionTokens({"Destroy", tokenConfig.name}, tokenConfig.position, specialTokens.count)
             end
         end
     end
@@ -3886,49 +3759,43 @@ function moveTokens(missionNum)
     -- Handle regular info tokens unless excluded by config
     local shouldExcludeInfoTokens = config and config.excludeInfoTokens
     if not shouldExcludeInfoTokens then
-        local infoTokens = getObjectsWithTag("InfoTokens")
+        local infoTokens = table.shallow_copy(searchGlobalBag({"InfoTokens"}))
         if infoTokens and #infoTokens > 0 then
             table.sort(infoTokens,
             function(a, b)
                 local ret
                 if b.getName() == "Yellow Tokens" and a.getName() ~= "Yellow Tokens" then
                     ret = true
-                elseif a.getName() == "Yellow Tokens"and b.getName() ~= "Yellow Tokens" then
+                elseif a.getName() == "Yellow Tokens" and b.getName() ~= "Yellow Tokens" then
                     ret = false
                 else
                     ret = tonumber(string.sub(a.getName(), 1, 2)) < tonumber(string.sub(b.getName(), 1, 2))
                 end
                 return ret
             end)
-            table.insert(infoTokens, getObjectsWithTag("x1Tokens")[1])
+
+            if config.wires[3] == 0 and config.yellowWires == nil then
+                table.remove(infoTokens, 13)
+            end
 
             -- Determine token limit based on mission type and configuration
-            local tokenLimit = 13 -- Default limit for regular missions < 55
             local needsExtendedTokens = false
 
             -- Check if this mission needs extended info tokens (Pack 5 content)
             if missionNum >= 55 then -- Regular Pack 5 missions
                 needsExtendedTokens = true
             elseif config and config.includePack5Equipment then -- Custom missions with Pack 5 equipment
+                table.insert(infoTokens, searchGlobalBag({"Destroy", "x1Tokens"})[1])
                 needsExtendedTokens = true
-            end
-            
-            if config.wires[3] == 0 and config.yellowWires == nil then
-                table.remove(infoTokens, 13) -- Remove Yellow Tokens if no yellow wires are present
-                tokenLimit = 12 -- Adjust limit if Yellow Tokens are not needed
             end
             
             -- Place info tokens based on mission requirements
             for tokenNumber, tokenBag in ipairs(infoTokens) do
                 local shouldPlaceToken = false
-
-                if missionNum == 58 or missionNum == -5 then
-                    -- Only place tokens beyond position 13
-                    shouldPlaceToken = (tokenNumber > tokenLimit)
-                elseif needsExtendedTokens then
+                if needsExtendedTokens then
                     -- Pack 5 missions or custom missions with Pack 5: Place all tokens
                     shouldPlaceToken = true
-                    if tokenLimit > 12 then
+                    if #infoTokens > 13 then
                         infoTokenPositions = {
                             {-10.65, 1.81, -5.20},
                             {-9.13, 1.81, -5.20},
@@ -3948,18 +3815,22 @@ function moveTokens(missionNum)
                     end
                 else
                     -- Regular missions: Place tokens up to position 13
-                    shouldPlaceToken = (tokenNumber <= tokenLimit)
+                    shouldPlaceToken = (tokenNumber <= 13)
                 end
                 if shouldPlaceToken then
                     -- Ensure we have a valid position for this token
                     if infoTokenPositions[tokenNumber] then
                         -- Execute it twice as there are two tokens of each type by default
-                        tokenBag.takeObject({position=infoTokenPositions[tokenNumber]})
-                        tokenBag.takeObject({position={infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}})
+                        generateWithStandardProps(tokenBag, infoTokenPositions[tokenNumber], {0, 180, 0}, false, true, false)
+                        generateWithStandardProps(tokenBag, {infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}, {0, 180, 0}, false, true, false)
                     end
                 end
             end
         end
+    elseif missionNum >= 55 or (config and config.includePack5Equipment) then
+        local tokenBag = searchGlobalBag({"Destroy", "x1Tokens"})[1]
+        generateWithStandardProps(tokenBag, {-6.85, 1.81, -10.10}, {0, 180, 0}, false, true, false)
+        generateWithStandardProps(tokenBag, {-6.85, 2.01, -10.10}, {0, 180, 0}, false, true, false)
     end
     
     -- Handle equals/not equals tokens based on configuration
@@ -3969,35 +3840,25 @@ function moveTokens(missionNum)
     )
     
     if not shouldExcludeEquals then
-        local notEquals = getObjectsWithTag("NotEquals")
-        if notEquals and #notEquals > 0 then
-            local clone = notEquals[1].clone({position={-9.86, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-            clone.addTag("Destroy")
+        local notEqualsBag = searchGlobalBag({"NotEquals"})[1]
+        if notEqualsBag then
+            generateWithStandardProps(notEqualsBag, {-9.86, 1.61, -10.10}, {0.00, 180.00, 0.00}, false, true, false)
         end
-        
-        local equals = getObjectsWithTag("Equals")
-        if equals and #equals > 0 then
-            local clone = equals[1].clone({position={-3.81, 1.61, -10.10}, rotation={0.00, 180.00, 0.00}})
-            clone.locked = false
-            clone.addTag("Destroy")
+
+        local equalsBag = searchGlobalBag({"Equals"})[1]
+        if equalsBag then
+            generateWithStandardProps(equalsBag, {-3.81, 1.61, -10.10}, {0.00, 180.00, 0.00}, false, true, false)
         end
     end
 end
 
-function moveMissionCard(missionNum)
+function spawnMissionCard(missionNum)
     local config = getMissionConfig(missionNum) -- Ensure mission config is loaded
     
     local folderName = "Missions"
     if missionNum < 1 then
         folderName = "Custom Missions"
     end
-
-    -- Create mission card object once
-    local missionCard = getObjectsWithTag("Mission")[1].clone({position = missionPosition, rotation = missionRotation})
-    missionCard.locked = false
-    missionCard.addTag("Destroy")
-    missionCard.setName(missionNum)
 
     -- Determine URLs based on mission type and config
     local params
@@ -4023,7 +3884,70 @@ function moveMissionCard(missionNum)
             }
         end
     end
+    missionCard = spawnObjectJSON({json = [[{
+        "GUID": "b7f94a",
+        "Name": "CardCustom",
+        "Transform": {
+            "posX": -16.77,
+            "posY": 1.52,
+            "posZ": -10.55,
+            "rotX": 0.00,
+            "rotY": 180.00,
+            "rotZ": 180.00,
+            "scaleX": 3.36110425,
+            "scaleY": 1.0,
+            "scaleZ": 3.39677835
+        },
+        "Nickname": "",
+        "Description": "",
+        "GMNotes": "",
+        "AltLookAngle": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "ColorDiffuse": {
+            "r": 0.713235259,
+            "g": 0.713235259,
+            "b": 0.713235259
+        },
+        "Tags": [
+            "Mission",
+            "Destroy"
+        ],
+        "LayoutGroupSortIndex": 0,
+        "Value": 0,
+        "Locked": false,
+        "Grid": true,
+        "Snap": true,
+        "IgnoreFoW": false,
+        "MeasureMovement": false,
+        "DragSelectable": true,
+        "Autoraise": true,
+        "Sticky": true,
+        "Tooltip": true,
+        "GridProjection": false,
+        "HideWhenFaceDown": true,
+        "Hands": true,
+        "CardID": 162700,
+        "SidewaysCard": false,
+        "CustomDeck": {
+            "1627": {
+            "FaceURL": "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Front.png",
+            "BackURL": "https://files.timwi.de/Tabletop Simulator/Bomb Busters/Missions/Mission 1 Back.png",
+            "NumWidth": 1,
+            "NumHeight": 1,
+            "BackIsHidden": true,
+            "UniqueBack": false,
+            "Type": 0
+            }
+        },
+        "LuaScript": "",
+        "LuaScriptState": "",
+        "XmlUI": ""
+    }]]})
     
+    missionCard.setName(missionNum)
     missionCard.setCustomObject(params)
     missionCard.reload()
 end
@@ -4064,21 +3988,25 @@ function moveDialAntiClockwise(self, playerColor)
 end
 
 function setupTokenBags()
-    local randomBag = getObjectsWithTag("Random")[1].clone({position={1.48, 1.32, -6.23}, rotation={0.00, 0.00, 0.00}})
+    local randomBag = searchGlobalBag({"Destroy", "Random"}, true)[1]
     randomBag.setPosition({1.48, 1.32, -6.23})
-    randomBag.addTag("Destroy")
+    randomBag.setRotation({0.00, 0.00, 0.00})
+    randomBag.locked = true
 
-    local validationBag = getObjectsWithTag("Validation")[1].clone({position={4.87, 1.49, -6.27}, rotation={0.00, 0.00, 0.00}})
+    local validationBag = searchGlobalBag({"Destroy", "Scripted", "Validation"}, true)[1]
     validationBag.setPosition({4.87, 1.49, -6.27})
-    validationBag.addTag("Destroy")
+    validationBag.setRotation({0.00, 0.00, 0.00})
+    validationBag.locked = true
 
-    local attentionBag = getObjectsWithTag("Attention")[1].clone({position={4.82, 1.49, -9.26}, rotation={0.00, 0.00, 0.00}})
+    local attentionBag = searchGlobalBag({"Attention", "Destroy", "Scripted"}, true)[1]
     attentionBag.setPosition({4.82, 1.49, -9.26})
-    attentionBag.addTag("Destroy")
+    attentionBag.setRotation({0.00, 0.00, 0.00})
+    attentionBag.locked = true
 
-    local warningBag = getObjectsWithTag("Warning")[1].clone({position={1.46, 1.49, -9.26}, rotation={0.00, 0.00, 0.00}})
+    local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"}, true)[1]
     warningBag.setPosition({1.46, 1.49, -9.26})
-    warningBag.addTag("Destroy")
+    warningBag.setRotation({0.00, 0.00, 0.00})
+    warningBag.locked = true
 end
 
 ------------------------
