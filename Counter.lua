@@ -1777,7 +1777,6 @@ missionConfigs = {
         name = "Nano to the Rescue",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
@@ -2827,11 +2826,15 @@ function handleConstraintCards(constraintType, missionNum)
         local constraintCards = constraintBag.getObjects()
         shuffleInPlace(constraintCards)
         local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
+        local numberOfCards = playerNum
+        if playerNum < 4 then
+            numberOfCards = 4
+        end
         
         local j = 0
-        for i = 1, #cardsToDeal do
+        for i = 1, numberOfCards do
             j = j + 1
-            if j > #cardsToDeal then break end
+            if j > numberOfCards then break end
             local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
@@ -2840,7 +2843,7 @@ function handleConstraintCards(constraintType, missionNum)
                 if playerNum == 2 then
                     generateWithStandardProps(constraintBag,
                         {characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 5,
+                        characterPositions[playerColors[i]][2] + 0.2,
                         characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                         {0.00, characterRotations[playerColors[i]][2], 0.00},
                         false,
@@ -2873,7 +2876,7 @@ function handleConstraintCards(constraintType, missionNum)
                 elseif playerNum == 3 then
                     generateWithStandardProps(constraintBag,
                         {characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 5,
+                        characterPositions[playerColors[i]][2] + 0.2,
                         characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                         {0.00, characterRotations[playerColors[i]][2], 0.00},
                         false,
@@ -2896,7 +2899,7 @@ function handleConstraintCards(constraintType, missionNum)
             else
                 generateWithStandardProps(constraintBag,
                     {characterPositions[playerColors[i]][1],
-                    characterPositions[playerColors[i]][2] + 5,
+                    characterPositions[playerColors[i]][2] + 0.2,
                     characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                     {0.00, characterRotations[playerColors[i]][2], 0.00},
                     false,
@@ -3013,7 +3016,7 @@ function handleOxygenTokens(tokenType)
             for j = 1, tokenCount do
                 generateWithStandardProps(oxygenTokenBag, {
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2] + (i * 0.2),
+                    characterPositions[playerColors[i]][2] + (j * 0.2),
                     characterPositions[playerColors[i]][3]
                 }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false)
             end
@@ -3102,7 +3105,7 @@ function handleNanoOnSeven()
     }
     local numberCardBag = searchGlobalBag({"Numbers"})[1]
     local numberCards = numberCardBag.getObjects()
-    table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+    shuffleInPlace(numberCards)
     for i = 1, 12 do
         local card = generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
         if card.getName() == "7" then
@@ -3782,9 +3785,7 @@ function moveTokens(missionNum)
             local needsExtendedTokens = false
 
             -- Check if this mission needs extended info tokens (Pack 5 content)
-            if missionNum >= 55 then -- Regular Pack 5 missions
-                needsExtendedTokens = true
-            elseif config and config.includePack5Equipment then -- Custom missions with Pack 5 equipment
+            if missionNum >= 55 or (config and config.includePack5Equipment) then -- Regular Pack 5 missions
                 table.insert(infoTokens, searchGlobalBag({"Destroy", "x1Tokens"})[1])
                 needsExtendedTokens = true
             end
