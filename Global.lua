@@ -71,7 +71,7 @@ function onLoad()
                 end
             end
         end)
-    end, 20)
+    end, 40)
     
     Wait.frames(function()
         allBagsBag = getObjectsWithTag("All")[1]
@@ -80,13 +80,13 @@ function onLoad()
             bag.locked = false
             allBagsBag.putObject(bag)
         end
-    end, 40)
+    end, 80)
 
     Wait.frames(function()
         allBagsBag = getObjectsWithTag("All")[1]
         infiniteBag = getObjectsWithTag("AllInfinite")[1]
         infiniteBag.putObject(allBagsBag)
-    end, 60)
+    end, 120)
 
     -- For the wire zones, set the Lua script to the one fetched from the web.
     WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/WireZones.lua", function(e)
