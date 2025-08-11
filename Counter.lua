@@ -501,6 +501,21 @@ playerNum = 0 -- This is used in various functions to keep track of the number o
 
 playerColors = {} -- This is used in various functions to keep track of the player colours in the game.
 
+-- Global cleanup list for objects that need to be cleaned up after mission setup
+pendingCleanup = {}
+
+-- Cache for frequently accessed objects to avoid repeated getObjectsWithTag calls
+objectCache = {
+    globalBag = nil,
+    allBagsBag = nil,
+    dial = nil,
+    ruleCards = {},
+    lastCacheTime = 0
+}
+
+-- Cache duration in seconds
+CACHE_DURATION = 30
+
 captainColor = "" -- This is used to determine the captain's colour in the game. This is set when the Start Mission button is pressed.
 
 -- Initializes the counter object with Start Mission button
@@ -603,9 +618,16 @@ end
 
 -- Sets rule card rotations for all three rule cards (A, B, C)
 function setRuleCardRotations(rotationA, rotationB, rotationC)
-    getObjectsWithTag("RuleA")[1].setRotation(rotationA)
-    getObjectsWithTag("RuleB")[1].setRotation(rotationB)
-    getObjectsWithTag("RuleC")[1].setRotation(rotationC)
+    -- Use cached rule cards if available
+    if not objectCache.ruleCards.A then
+        objectCache.ruleCards.A = getObjectsWithTag("RuleA")[1]
+        objectCache.ruleCards.B = getObjectsWithTag("RuleB")[1]
+        objectCache.ruleCards.C = getObjectsWithTag("RuleC")[1]
+    end
+    
+    if objectCache.ruleCards.A then objectCache.ruleCards.A.setRotation(rotationA) end
+    if objectCache.ruleCards.B then objectCache.ruleCards.B.setRotation(rotationB) end
+    if objectCache.ruleCards.C then objectCache.ruleCards.C.setRotation(rotationC) end
 end
 
 -- Places validation tokens in numbered positions with standard rotation
@@ -1777,6 +1799,7 @@ missionConfigs = {
         name = "Nano to the Rescue",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
+        gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
@@ -1999,31 +2022,117 @@ function setDynamicRuleCardRotations(missionNum, config)
     setRuleCardRotations(cardARotation, cardBRotation, cardCRotation)
 end
 
-bagPosition = {0, 50, 0}
+bagPosition = {0, -10, 0}
 
-function searchGlobalBag(tags, keep)
-    allBagsBags = getObjectsWithTag("All")
-    for _, bag in ipairs(allBagsBags) do
-        bag.destruct()
-    end
-    globalBag = getObjectsWithTag("AllInfinite")[1]
-    allBagsBag = globalBag.takeObject({position = bagPosition, smooth = false})
-    allBagsBag.locked = true
-    local returnObjects = {}
-    for _, object in ipairs(allBagsBag.getObjects()) do
-        if table.concat(object.tags) == table.concat(tags) then
-            obj = allBagsBag.takeObject({position = bagPosition, smooth = false, guid = object.guid})
-            obj.locked = true
-            table.insert(returnObjects, obj)
+-- Clean up all objects in the pending cleanup list
+function cleanupPendingObjects()
+    for _, obj in ipairs(pendingCleanup) do
+        if obj and obj.destruct then
+            obj.destruct()
         end
     end
-    if not keep then
-        Wait.frames(function()
-            for _, obj in ipairs(returnObjects) do
-                obj.destruct()
-            end
-        end, 100)
+    pendingCleanup = {}  -- Clear the list
+end
+
+-- Efficient tag comparison function
+function tagsMatch(objectTags, targetTags)
+    if #objectTags ~= #targetTags then
+        return false
     end
+    
+    -- Create a lookup table for target tags for O(1) lookup
+    local targetLookup = {}
+    for _, tag in ipairs(targetTags) do
+        targetLookup[tag] = true
+    end
+    
+    -- Check if all object tags are in target tags
+    for _, tag in ipairs(objectTags) do
+        if not targetLookup[tag] then
+            return false
+        end
+    end
+    
+    return true
+end
+
+-- Get cached object or fetch and cache it
+function getCachedObject(cacheKey, tagName)
+    local currentTime = os.time()
+    
+    -- Check if cache is still valid and object exists
+    if objectCache[cacheKey] and 
+       objectCache.lastCacheTime + CACHE_DURATION > currentTime and
+       objectCache[cacheKey].isDestroyed and not objectCache[cacheKey].isDestroyed() then
+        return objectCache[cacheKey]
+    end
+    
+    -- Fetch and cache the object
+    local objects = getObjectsWithTag(tagName)
+    if objects and #objects > 0 then
+        objectCache[cacheKey] = objects[1]
+        objectCache.lastCacheTime = currentTime
+        return objectCache[cacheKey]
+    end
+    
+    return nil
+end
+
+function searchGlobalBag(tags, keep)
+    -- Use cached global bag if available
+    local globalBag = getCachedObject("globalBag", "AllInfinite")
+    if not globalBag then
+        return {}
+    end
+    
+    -- Clean up any existing "All" bags only once
+    if not objectCache.allBagsCleaned then
+        local allBagsBags = getObjectsWithTag("All")
+        for _, bag in ipairs(allBagsBags) do
+            bag.destruct()
+        end
+        objectCache.allBagsCleaned = true
+    end
+    
+    -- Get the main bag
+    local allBagsBag = globalBag.takeObject({position = bagPosition, smooth = false})
+    allBagsBag.locked = true
+    
+    local returnObjects = {}
+    local allObjects = allBagsBag.getObjects()
+    
+    -- Pre-process target tags for faster comparison
+    local targetTagSet = {}
+    for _, tag in ipairs(tags) do
+        targetTagSet[tag] = true
+    end
+    local targetTagCount = #tags
+    
+    -- Find matching objects efficiently
+    for _, object in ipairs(allObjects) do
+        if #object.tags == targetTagCount then
+            local matchCount = 0
+            for _, tag in ipairs(object.tags) do
+                if targetTagSet[tag] then
+                    matchCount = matchCount + 1
+                end
+            end
+            
+            if matchCount == targetTagCount then
+                local obj = allBagsBag.takeObject({position = bagPosition, smooth = false, guid = object.guid})
+                obj.locked = true
+                table.insert(returnObjects, obj)
+            end
+        end
+    end
+    
+    if not keep then
+        -- Add objects to pending cleanup list
+        for _, obj in ipairs(returnObjects) do
+            table.insert(pendingCleanup, obj)
+        end
+    end
+    
     return returnObjects
 end
 
@@ -2131,6 +2240,8 @@ function startMission()
         for _, bag in ipairs(allBagsBags) do
             bag.destruct()
         end
+        -- Clean up all objects that were marked for cleanup during setup
+        cleanupPendingObjects()
     else
         -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
         for i = 1, playerNum - 1 do
@@ -2208,17 +2319,10 @@ end
 function finishSetupAfterCharSel()
     if #characterCardSelection ~= playerNum - 1 then
         printToAll("----------------------------")
-        printToAll("You have not selected enough characters. You need " .. playerNum .. " selected.", {r=1,g=0,b=0})
-        if #characterCardSelection == 0 then
-            printToAll("Character Selection List is currently empty.")
-        else
-            printToAll("Current selection:")
-            printToAll("1: Captain - Double Detector")
-            for num, card in ipairs(characterCardSelection) do
-                printToAll(num + 1 .. ": " .. card)
-            end
+        printToAll("You have not selected enough characters. Filling with Double Detectors.")
+        for i = #characterCardSelection + 1, playerNum - 1 do
+            table.insert(characterCardSelection, "Double Detector")
         end
-        return
     end
     for _, object in ipairs(getObjectsWithAllTags({"Character", "Destroy"})) do
         object.destruct()
@@ -2248,6 +2352,17 @@ function finishSetupAfterCharSel()
     end
     moveTokens(missionNum)
     prepareWiresAndMarkers(missionNum)
+
+    -- Clear object cache and clean up all objects that were marked for cleanup during setup
+    objectCache = {
+        globalBag = nil,
+        allBagsBag = nil,
+        dial = nil,
+        ruleCards = {},
+        lastCacheTime = 0,
+        allBagsCleaned = false
+    }
+    cleanupPendingObjects()
     allBagsBags = getObjectsWithTag("All")
     for _, bag in ipairs(allBagsBags) do
         bag.destruct()
@@ -2323,7 +2438,7 @@ function sortCharacters(missionNum)
     elseif missionNum == 65 then -- Keep existing mission 65 logic for compatibility
         ret = playerColors
     end
-    
+
     flipped = false
     -- Check for captain flipped rule
     if characterSpecial and characterSpecial.captainFlipped then
@@ -2826,15 +2941,11 @@ function handleConstraintCards(constraintType, missionNum)
         local constraintCards = constraintBag.getObjects()
         shuffleInPlace(constraintCards)
         local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
-        local numberOfCards = playerNum
-        if playerNum < 4 then
-            numberOfCards = 4
-        end
         
         local j = 0
-        for i = 1, numberOfCards do
+        for i = 1, #cardsToDeal do
             j = j + 1
-            if j > numberOfCards then break end
+            if j > #cardsToDeal then break end
             local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
@@ -2843,7 +2954,7 @@ function handleConstraintCards(constraintType, missionNum)
                 if playerNum == 2 then
                     generateWithStandardProps(constraintBag,
                         {characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 0.2,
+                        characterPositions[playerColors[i]][2] + 5,
                         characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                         {0.00, characterRotations[playerColors[i]][2], 0.00},
                         false,
@@ -2876,7 +2987,7 @@ function handleConstraintCards(constraintType, missionNum)
                 elseif playerNum == 3 then
                     generateWithStandardProps(constraintBag,
                         {characterPositions[playerColors[i]][1],
-                        characterPositions[playerColors[i]][2] + 0.2,
+                        characterPositions[playerColors[i]][2] + 5,
                         characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                         {0.00, characterRotations[playerColors[i]][2], 0.00},
                         false,
@@ -2899,7 +3010,7 @@ function handleConstraintCards(constraintType, missionNum)
             else
                 generateWithStandardProps(constraintBag,
                     {characterPositions[playerColors[i]][1],
-                    characterPositions[playerColors[i]][2] + 0.2,
+                    characterPositions[playerColors[i]][2] + 5,
                     characterPositions[playerColors[i]][3] - (3 * isBlueGreen)},
                     {0.00, characterRotations[playerColors[i]][2], 0.00},
                     false,
@@ -3016,7 +3127,7 @@ function handleOxygenTokens(tokenType)
             for j = 1, tokenCount do
                 generateWithStandardProps(oxygenTokenBag, {
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
-                    characterPositions[playerColors[i]][2] + (j * 0.2),
+                    characterPositions[playerColors[i]][2] + (i * 0.2),
                     characterPositions[playerColors[i]][3]
                 }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false)
             end
@@ -3105,7 +3216,7 @@ function handleNanoOnSeven()
     }
     local numberCardBag = searchGlobalBag({"Numbers"})[1]
     local numberCards = numberCardBag.getObjects()
-    shuffleInPlace(numberCards)
+    table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, 12 do
         local card = generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
         if card.getName() == "7" then
@@ -3785,7 +3896,9 @@ function moveTokens(missionNum)
             local needsExtendedTokens = false
 
             -- Check if this mission needs extended info tokens (Pack 5 content)
-            if missionNum >= 55 or (config and config.includePack5Equipment) then -- Regular Pack 5 missions
+            if missionNum >= 55 then -- Regular Pack 5 missions
+                needsExtendedTokens = true
+            elseif config and config.includePack5Equipment then -- Custom missions with Pack 5 equipment
                 table.insert(infoTokens, searchGlobalBag({"Destroy", "x1Tokens"})[1])
                 needsExtendedTokens = true
             end

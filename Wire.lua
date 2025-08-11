@@ -15,7 +15,9 @@ infoTokenPositions = {
 }
 
 function onDrop(playerColor)
-    missionCard = getObjectsWithAllTags({"Mission", "Destroy"})[1]
+    mc = getObjectsWithAllTags({"Mission", "Destroy"})
+    if not mc then return end
+    missionCard = mc[1]
     if missionCard then
         missionNum = tonumber(missionCard.getName())
         if missionNum > 54 then
