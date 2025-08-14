@@ -2375,10 +2375,11 @@ function sortCharacters(missionNum)
         table.insert(characterCards, card)
     end
     shuffleInPlace(characterCards)
+    shuffleInPlace(characterCardSelection)
     for num, card in ipairs(characterCards) do
         for _, selection in ipairs(characterCardSelection) do
             if card.name == selection then
-                if doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector" then
+                if (doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector") and shuffledPlayers[count + 1] then
                     bag = characterCardsBag0
                     if contains(card.tags, "Pack3") then
                         bag = characterCardsBag3
