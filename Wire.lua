@@ -45,7 +45,9 @@ function onDrop(playerColor)
                 and math.abs(self.getPosition()[1] - otherObj.getPosition()[1]) < 0.2
                 and math.abs(self.getPosition()[3] - otherObj.getPosition()[3]) < 0.2 then
                     if otherObj.hasTag("InfoTokens") then
-                        otherObj.setPosition({infoTokenPositions[tonumber(otherObj.getName())][1], infoTokenPositions[tonumber(otherObj.getName())][2] + 1, infoTokenPositions[tonumber(otherObj.getName())][3]})
+                        local name = otherObj.getName()
+                        local lastChar = name:sub(-1)
+                        otherObj.setPosition({infoTokenPositions[tonumber(lastChar)][1], infoTokenPositions[tonumber(lastChar)][2] + 1, infoTokenPositions[tonumber(lastChar)][3]})
                         otherObj.setRotation({0.00, 180.00, 0.00})
                         if (otherObj.getStateId() == 2) then
                             otherObj.setState(1)

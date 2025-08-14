@@ -3972,8 +3972,13 @@ function adjustDial(missionNum, position)
     dial = getObjectsWithTag("Dial")[1]
     dial.setPosition({14.78, 1.61, -8.51})
     if missionNum == 51 then
-        dial.setRotationSmooth({0.00, 0.00, 0.00})
-        currentDialNum = 6
+        if playerNum == 5 then
+            dial.setRotationSmooth({0.00, 0.00, 0.00})
+            currentDialNum = 6
+        else
+            currentDialNum = position + 1
+            dial.setRotationSmooth(dialRotations[currentDialNum])
+        end
     else
         if missionNum == 41 or missionNum == 55 or missionNum == 60 or missionNum == 62 then
             position = 1
