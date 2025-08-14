@@ -843,21 +843,20 @@ local equipmentConfigs = {
 -- Position layout configuration
 local layoutConfigs = {
     characterCards = {
+        [1] = {
+            cards = {{-44.61, 1.50, 0.00}}
+        },
         [2] = {
-            cards = {{-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}},
-            buttons = {0.58, -0.58}
+            cards = {{-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}}
         },
         [3] = {
-            cards = {{-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}},
-            buttons = {1.15, 0.00, -1.15}
+            cards = {{-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}}
         },
         [4] = {
-            cards = {{-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}},
-            buttons = {1.73, 0.58, -0.58, -1.73}
+            cards = {{-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}}
         },
         [5] = {
-            cards = {{-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}},
-            buttons = {2.30, 1.15, 0.00, -1.15, -2.30}
+            cards = {{-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}}
         }
     },
     equipmentCards = {
@@ -1281,12 +1280,6 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
     return false
 end
 
--- Generate character card wrapper functions dynamically using configuration
-for cardName, config in pairs(characterCardConfigs) do
-    _G["addToCharList" .. config.suffix] = function() addToCharList(cardName) end
-    _G["removeFromCharList" .. config.suffix] = function() removeFromCharList(cardName) end
-end
-
 -- Determines which character cards are available for a given mission
 function getAvailableCharacterCards(missionNum)
     local available = {}
@@ -1294,29 +1287,12 @@ function getAvailableCharacterCards(missionNum)
     -- Check if this is a custom mission with specific character cards
     local config = getMissionConfig(missionNum)
     if config and config.characterCards and #config.characterCards > 0 then
-        -- Custom mission with specific character cards - include Double Detector + specified cards
-        
-        -- Always include Double Detector first
-        for configName, cardConfig in pairs(characterCardConfigs) do
-            if (configName:lower() == "double detector") then
-                table.insert(available, {
-                    name = cardConfig.name or configName,
-                    suffix = cardConfig.suffix,
-                    pack = cardConfig.pack,
-                    position = cardConfig.position,
-                    specialRules = cardConfig.specialRules or {}
-                })
-                break
-            end
-        end
-        
-        -- Add the specified character cards
+        -- Add the specified character cards, skipping Double Detector
         for _, cardName in ipairs(config.characterCards) do
-            -- Skip if it's already Double Detector to avoid duplicates
             if cardName:lower() ~= "double detector" and cardName:lower() ~= "doubledetector" then
-                -- Find the card configuration
                 for configName, cardConfig in pairs(characterCardConfigs) do
-                    if configName:lower() == cardName:lower() or (cardConfig.name and cardConfig.name:lower() == cardName:lower()) then
+                    if (configName:lower() == cardName:lower() or (cardConfig.name and cardConfig.name:lower() == cardName:lower()))
+                        and configName:lower() ~= "double detector" and (not cardConfig.name or cardConfig.name:lower() ~= "double detector") then
                         table.insert(available, {
                             name = cardConfig.name or configName,
                             suffix = cardConfig.suffix,
@@ -1330,7 +1306,7 @@ function getAvailableCharacterCards(missionNum)
             end
         end
     else
-        -- Regular mission or custom mission without specific cards - use all available
+        -- Regular mission or custom mission without specific cards - use all available except Double Detector
         for cardName, cardConfig in pairs(characterCardConfigs) do
             local isBanned = false
             if cardConfig.bannedMissions then
@@ -1341,7 +1317,7 @@ function getAvailableCharacterCards(missionNum)
                     end
                 end
             end
-            if not isBanned then
+            if not isBanned and cardName:lower() ~= "double detector" and (not cardConfig.name or cardConfig.name:lower() ~= "double detector") then
                 table.insert(available, {
                     name = cardConfig.name or cardName,
                     suffix = cardConfig.suffix,
@@ -1369,28 +1345,17 @@ function setupCharacterCardSelection(missionNum, availableCards)
     end
     
     local cardPositions = layout.cards
-    local buttonPositions = layout.buttons
 
-    characterCardBag0 = searchGlobalBag({"Character", "Pack0"})[1]
     characterCardBag3 = searchGlobalBag({"Character", "Pack3"})[1]
     
     -- Clone and position character cards
     for i, card in ipairs(availableCards) do
-        local sourceCards
-        if card.pack == 0 then
-            generateWithStandardProps(characterCardBag0, cardPositions[i], {0.00, 90.00, 0.00}, true, false, false)
-        else
-            for _, characterCard in ipairs(characterCardBag3.getObjects()) do
-                if characterCard.name == card.name then
-                    generateWithStandardProps(characterCardBag3, cardPositions[i], {0.00, 90.00, 0.00}, true, false, false, characterCard.index)
-                    break
-                end
+        for _, characterCard in ipairs(characterCardBag3.getObjects()) do
+            if characterCard.name == card.name then
+                generateWithStandardProps(characterCardBag3, cardPositions[i], {0.00, 90.00, 0.00}, false, false, false, characterCard.index)
+                break
             end
         end
-        
-        -- Create Add and Remove buttons for this card
-        createStandardButton("addToCharList" .. card.suffix, "Add", {buttonPositions[i], addZPosition}, addWidth, fontSize)
-        createStandardButton("removeFromCharList" .. card.suffix, "Remove", {buttonPositions[i], removeZPosition}, removeWidth, fontSize)
     end
 end
 
@@ -2221,8 +2186,7 @@ function startMission()
 
     
     if needsCharacterSelection then
-        printToAll("----------------------------")
-        printToAll("Please select which character cards you would like to use for this mission.")
+        printToAll("Flip over character cards to choose which ones to include in the mission. The remaining selection will be filled by Double Detectors.")
         fontSize = 250
         addWidth = 600
         removeWidth = 1000
@@ -2232,7 +2196,7 @@ function startMission()
         -- Get available character cards for this mission
         local availableCards = getAvailableCharacterCards(missionNum)
         
-        createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -3.2}, 1700, fontSize)
+        createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -2.2}, 1700, fontSize)
         
         -- Setup character card selection interface
         setupCharacterCardSelection(missionNum, availableCards)
@@ -2251,81 +2215,18 @@ function startMission()
     end
 end
 
--- Adds a character card to the mission selection list
-function addToCharList(selection)
-    printToAll("----------------------------")
-    if #characterCardSelection == playerNum - 1 then
-        printToAll("Character Selection List is now full. Please remove a card first to add a new one.", {r=1,g=0,b=0})
-        printToAll("Current selection:")
-        printToAll("1: Captain - Double Detector")
-        for num, card in ipairs(characterCardSelection) do
-            printToAll(num + 1 .. ": " .. card)
-        end
-        return
-    elseif selection ~= "Double Detector" then
-        for _, card in ipairs(characterCardSelection) do
-            if card == selection then
-                printToAll("You can only have one of this character card.", {r=1,g=0,b=0})
-                printToAll("Current selection:")
-                printToAll("1: Captain - Double Detector")
-                for num, card in ipairs(characterCardSelection) do
-                    printToAll(num + 1 .. ": " .. card)
-                end
-                return
-            end
-        end
-    end
-    table.insert(characterCardSelection, selection)
-    printToAll(selection .. " has been added to the selection.")
-    printToAll("Current selection:")
-    printToAll("1: Captain - Double Detector")
-    for num, card in ipairs(characterCardSelection) do
-        printToAll(num + 1 .. ": " .. card)
-    end
-end
-
-function removeFromCharList(selection)
-    printToAll("----------------------------")
-    if #characterCardSelection == 0 then
-        printToAll(selection .. " was not found in the selection.", {r=1,g=0,b=0})
-        printToAll("Current selection:")
-        printToAll("1: Captain - Double Detector")
-        for num, card in ipairs(characterCardSelection) do
-            printToAll(num + 1 .. ": " .. card)
-        end
-        return
-    else
-        for num, card in ipairs(characterCardSelection) do
-            if card == selection then
-                table.remove(characterCardSelection, num)
-                printToAll(selection .. " has been removed from the selection.")
-                printToAll("Current selection:")
-                printToAll("1: Captain - Double Detector")
-                for num, card in ipairs(characterCardSelection) do
-                    printToAll(num + 1 .. ": " .. card)
-                end
-                return
-            end
-        end
-    end
-    printToAll(selection .. " was not found in the selection.", {r=1,g=0,b=0})
-    printToAll("Current selection:")
-    printToAll("1: Captain - Double Detector")
-    for num, card in ipairs(characterCardSelection) do
-        printToAll(num + 1 .. ": " .. card)
-    end
-end
-
 function finishSetupAfterCharSel()
+    characterCardObjs = getObjectsWithAllTags({"Character", "Destroy"})
+    for _, obj in ipairs(characterCardObjs) do
+        if -1 < obj.getRotation()[3] and obj.getRotation()[3] < 1 then
+            table.insert(characterCardSelection, obj.getName())
+        end
+        obj.destruct()
+    end
     if #characterCardSelection ~= playerNum - 1 then
-        printToAll("----------------------------")
-        printToAll("You have not selected enough characters. Filling with Double Detectors.")
         for i = #characterCardSelection + 1, playerNum - 1 do
             table.insert(characterCardSelection, "Double Detector")
         end
-    end
-    for _, object in ipairs(getObjectsWithAllTags({"Character", "Destroy"})) do
-        object.destruct()
     end
     missionNum = tonumber(getObjectsWithAllTags({"Mission", "Destroy"})[1].getName())
     buttons = self.getButtons()
