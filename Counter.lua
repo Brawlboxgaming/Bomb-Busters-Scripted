@@ -738,26 +738,26 @@ local characterCardConfigs = {
         suffix = "WT",
         pack = 3,
         position = 2,
-        bannedMissions = {35},
+        bannedMissions = {35, 58},
         minPlayers = 2
     },
     ["Triple Detector"] = {
         suffix = "TD",
         pack = 3,
         position = 3,
-        bannedMissions = {}
+        bannedMissions = {58}
     },
     ["General Radar"] = {
         suffix = "GR",
         pack = 3,
         position = 4,
-        bannedMissions = {}
+        bannedMissions = {58}
     },
     ["X or Y ray"] = {
         suffix = "XYR",
         pack = 3,
         position = 5,
-        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
+        bannedMissions = {44, 45, 47, 49, 51, 54, 58, 59, 63, 65}
     }
 }
 
