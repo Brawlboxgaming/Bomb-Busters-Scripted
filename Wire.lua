@@ -20,7 +20,7 @@ function onDrop(playerColor)
     missionCard = mc[1]
     if missionCard then
         missionNum = tonumber(missionCard.getName())
-        if missionNum > 54 then
+        if missionNum > 54 or getObjectsWithTag("14") then
             infoTokenPositions = {
                 {-10.65, 1.81, -5.20},
                 {-9.13, 1.81, -5.20},
@@ -44,27 +44,19 @@ function onDrop(playerColor)
                 and otherObj.hasTag("Destroy")
                 and math.abs(self.getPosition()[1] - otherObj.getPosition()[1]) < 0.2
                 and math.abs(self.getPosition()[3] - otherObj.getPosition()[3]) < 0.2 then
-                    if otherObj.hasTag("InfoTokens") then
-                        local name = otherObj.getName()
-                        local lastChar = name:sub(-1)
-                        otherObj.setPosition({infoTokenPositions[tonumber(lastChar)][1], infoTokenPositions[tonumber(lastChar)][2] + 1, infoTokenPositions[tonumber(lastChar)][3]})
+                    if otherObj.hasTag("Return") then
+                        tags = otherObj.getTags()
+                        position = tags[#tags]
+                        otherObj.setPosition({infoTokenPositions[position][1], infoTokenPositions[position][2] + 1, infoTokenPositions[position][3]})
                         otherObj.setRotation({0.00, 180.00, 0.00})
                         if (otherObj.getStateId() == 2) then
                             otherObj.setState(1)
                         end
-                    elseif otherObj.hasTag("x1Tokens")
-                    or otherObj.hasTag("x2Tokens")
-                    or otherObj.hasTag("x3Tokens")
-                    or otherObj.hasTag("XToken") then
+                    elseif otherObj.hasTag("Place") then
                         objPos = self.getPosition()
                         otherObj.setPosition({objPos[1], objPos[2] + 0.5, objPos[3]})
-                    elseif otherObj.hasTag("EvenTokens")
-                    or otherObj.hasTag("OddTokens") then
+                    else
                         otherObj.destruct()
-                    elseif otherObj.hasTag("GreaterTokens") then
-                        otherObj.setPosition({-7.61, 2.81, -10.10})
-                    elseif otherObj.hasTag("LessTokens") then
-                        otherObj.setPosition({-6.09, 2.81, -10.10})
                     end
                 end
             end

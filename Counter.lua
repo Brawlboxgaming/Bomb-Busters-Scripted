@@ -589,19 +589,34 @@ function setupSpareEquipment(equipment, position, rotation)
 end
 
 -- Clones token bags and positions them on the board
-function cloneAndPositionTokenBags(tokenTags, position, keep)
+function cloneAndPositionTokenBags(tokenTags, position, keep, tokenType, number)
     local tokensBag = searchGlobalBag(tokenTags, keep)[1]
     tokensBag.setPositionSmooth(position)
     tokensBag.setRotation({0.00, 180.00, 0.00})
     tokensBag.locked = true -- Lock the bag to prevent accidental movement
+    if tokenType then
+        token = tokensBag.takeObject()
+        tokensBag.reset()
+        token.addTag(tokenType)
+        if number then
+            token.addTag(number)
+        end
+        tokensBag.putObject(token)
+    end
     return tokensBag
 end
 
-function cloneAndPositionTokens(tokenTags, position, tokenCount)
+function cloneAndPositionTokens(tokenTags, position, tokenCount, tokenType, number)
     local takenTable = {}
     for i = 1, tokenCount do
         local tokensBag = searchGlobalBag(tokenTags)[1]
         local taken = generateWithStandardProps(tokensBag, {position[1], position[2] + (0.2 * (i - 1)), position[3]}, {0.00, 180.00, 0.00}, false, true, false)
+        if tokenType then
+            taken.addTag(tokenType)
+            if number then
+                taken.addTag(number)
+            end
+        end
         table.insert(takenTable, taken)
     end
     return takenTable
@@ -1522,9 +1537,9 @@ missionConfigs = {
         specialTokens = {
             type = "multiplier",
             tokens = {
-                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
-                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
-                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
+                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}, type = "Place"},
+                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}, type = "Place"},
+                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}, type = "Place"}
             },
             count = 0 -- 0 means a bag is placed instead of tokens
         }
@@ -1858,8 +1873,8 @@ customMissionConfigs = {
         specialTokens = {
             type = "comparison",
             tokens = {
-                {name = "LessTokens", position = {-7.61, 1.61, -10.10}},
-                {name = "GreaterTokens", position = {-6.09, 1.61, -10.10}}
+                {name = "LessTokens", position = {-7.61, 1.61, -10.10}, type = "Return", number = 13},
+                {name = "GreaterTokens", position = {-6.09, 1.61, -10.10}, type = "Return", number = 14}
             },
             count = 1 -- 0 means a bag is placed instead of tokens
         }
@@ -1910,10 +1925,10 @@ customMissionConfigs = {
         specialTokens = {
             type = "range",
             tokens = {
-                {name = "R1Tokens", position = {-7.61, 1.81, -5.20}},
-                {name = "R2Tokens", position = {-6.09, 1.81, -5.20}},
-                {name = "R3Tokens", position = {-7.61, 1.81, -7.65}},
-                {name = "R4Tokens", position = {-6.09, 1.81, -7.65}}
+                {name = "R1Tokens", position = {-7.61, 1.81, -5.20}, type = "Return", number = 3},
+                {name = "R2Tokens", position = {-6.09, 1.81, -5.20}, type = "Return", number = 4},
+                {name = "R3Tokens", position = {-7.61, 1.81, -7.65}, type = "Return", number = 9},
+                {name = "R4Tokens", position = {-6.09, 1.81, -7.65}, type = "Return", number = 10}
             },
             count = 2 -- 2 for each token types
         }
@@ -3765,9 +3780,9 @@ function moveTokens(missionNum)
         local specialTokens = config.specialTokens
         for _, tokenConfig in ipairs(specialTokens.tokens) do
             if specialTokens.count == 0 then
-                cloneAndPositionTokenBags({"Destroy", tokenConfig.name}, tokenConfig.position, true)
+                cloneAndPositionTokenBags({"Destroy", tokenConfig.name}, tokenConfig.position, true, tokenConfig.type, tokenConfig.number)
             else
-                cloneAndPositionTokens({"Destroy", tokenConfig.name}, tokenConfig.position, specialTokens.count)
+                cloneAndPositionTokens({"Destroy", tokenConfig.name}, tokenConfig.position, specialTokens.count, tokenConfig.type, tokenConfig.number)
             end
         end
     end
@@ -3837,16 +3852,32 @@ function moveTokens(missionNum)
                     -- Ensure we have a valid position for this token
                     if infoTokenPositions[tokenNumber] then
                         -- Execute it twice as there are two tokens of each type by default
-                        generateWithStandardProps(tokenBag, infoTokenPositions[tokenNumber], {0, 180, 0}, false, true, false)
-                        generateWithStandardProps(tokenBag, {infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}, {0, 180, 0}, false, true, false)
+                        token = generateWithStandardProps(tokenBag, infoTokenPositions[tokenNumber], {0, 180, 0}, false, false, false)
+                        token.addTag("Return")
+                        token.addTag(tokenNumber)
+                        otherToken = token.setState(2)
+                        otherToken.addTag("Return")
+                        otherToken.addTag(tokenNumber)
+                        otherToken.setState(1)
+                        token = generateWithStandardProps(tokenBag, {infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}, {0, 180, 0}, false, false, false)
+                        token.addTag("Return")
+                        token.addTag(tokenNumber)
+                        otherToken = token.setState(2)
+                        otherToken.addTag("Return")
+                        otherToken.addTag(tokenNumber)
+                        otherToken.setState(1)
                     end
                 end
             end
         end
     elseif missionNum >= 55 or (config and config.includePack5Equipment) then
         local tokenBag = searchGlobalBag({"Destroy", "x1Tokens"})[1]
-        generateWithStandardProps(tokenBag, {-6.85, 1.81, -10.10}, {0, 180, 0}, false, true, false)
-        generateWithStandardProps(tokenBag, {-6.85, 2.01, -10.10}, {0, 180, 0}, false, true, false)
+        token = generateWithStandardProps(tokenBag, {-6.85, 1.81, -10.10}, {0, 180, 0}, false, true, false)
+        token.addTag("Return")
+        token.addTag(13) -- Position between the equals and not equals tokens
+        token = generateWithStandardProps(tokenBag, {-6.85, 2.01, -10.10}, {0, 180, 0}, false, true, false)
+        token.addTag("Return")
+        token.addTag(13) -- Position between the equals and not equals tokens
     end
     
     -- Handle equals/not equals tokens based on configuration
