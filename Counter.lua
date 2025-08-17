@@ -781,7 +781,7 @@ local equipmentConfigs = {
     ["Post-It"] = {
         description = "4",
         pack = 0,
-        bannedMissions = {44, 45, 47, 49, 51, 54, 59, 63, 65}
+        bannedMissions = {44, 45, 47, 49, 51, 54, 58, 59, 63, 65}
     },
     ["Super Detector"] = {
         description = "5",
