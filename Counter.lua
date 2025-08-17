@@ -2216,6 +2216,7 @@ function startMission()
                 table.insert(characterCardSelection, "Double Detector")
             end
             finishSetupAfterCharSel()
+            return
         end
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -2.2}, 1700, fontSize)
