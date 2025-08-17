@@ -3857,19 +3857,23 @@ function moveTokens(missionNum)
                 if shouldPlaceToken then
                     -- Ensure we have a valid position for this token
                     if infoTokenPositions[tokenNumber] then
+                        tagToAdd = "Return"
+                        if tokenBag.hasTag("x1Tokens") then
+                            tagToAdd = "Place"
+                        end
                         -- Execute it twice as there are two tokens of each type by default
                         token = generateWithStandardProps(tokenBag, infoTokenPositions[tokenNumber], {0, 180, 0}, false, false, false)
-                        token.addTag("Return")
+                        token.addTag(tagToAdd)
                         token.addTag(tokenNumber)
                         otherToken = token.setState(2)
-                        otherToken.addTag("Return")
+                        otherToken.addTag(tagToAdd)
                         otherToken.addTag(tokenNumber)
                         otherToken.setState(1)
                         token = generateWithStandardProps(tokenBag, {infoTokenPositions[tokenNumber][1], infoTokenPositions[tokenNumber][2] + 0.2, infoTokenPositions[tokenNumber][3]}, {0, 180, 0}, false, false, false)
-                        token.addTag("Return")
+                        token.addTag(tagToAdd)
                         token.addTag(tokenNumber)
                         otherToken = token.setState(2)
-                        otherToken.addTag("Return")
+                        otherToken.addTag(tagToAdd)
                         otherToken.addTag(tokenNumber)
                         otherToken.setState(1)
                     end
@@ -3879,10 +3883,10 @@ function moveTokens(missionNum)
     elseif missionNum >= 55 or (config and config.includePack5Equipment) then
         local tokenBag = searchGlobalBag({"Destroy", "x1Tokens"})[1]
         token = generateWithStandardProps(tokenBag, {-6.85, 1.81, -10.10}, {0, 180, 0}, false, true, false)
-        token.addTag("Return")
+        token.addTag("Place")
         token.addTag(13) -- Position between the equals and not equals tokens
         token = generateWithStandardProps(tokenBag, {-6.85, 2.01, -10.10}, {0, 180, 0}, false, true, false)
-        token.addTag("Return")
+        token.addTag("Place")
         token.addTag(13) -- Position between the equals and not equals tokens
     end
     
