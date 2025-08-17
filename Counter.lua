@@ -1779,7 +1779,6 @@ missionConfigs = {
         name = "Nano to the Rescue",
         wires = {12, 0, 0, 12, 2, 3, 12},
         wiresAlt = {12, 0, 0, 12, 3, 3, 12},
-        gridNumbers = true,
         nanoOnSeven = true
     },
     [60] = {
@@ -3141,7 +3140,6 @@ function handleNanoOnSeven()
     }
     local numberCardBag = searchGlobalBag({"Numbers"})[1]
     local numberCards = numberCardBag.getObjects()
-    table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, 12 do
         local card = generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
         if card.getName() == "7" then
