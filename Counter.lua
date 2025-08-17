@@ -36,15 +36,15 @@ dialRotations = {
 }
 
 infoTokenPositions = { -- These are the standard positions of the info tokens. This changes slightly and is redefined later for when the mission number is greater than 54.
-    {-10.65, 1.81, -5.20},
-    {-9.13, 1.81, -5.20},
-    {-7.61, 1.81, -5.20},
+    {-10.65 - 2.07, 1.81, -5.20},
+    {-9.13 - 2.07, 1.81, -5.20},
+    {-7.61 - 2.07, 1.81, -5.20},
     {-6.09, 1.81, -5.20},
     {-4.57, 1.81, -5.20},
     {-3.04, 1.81, -5.20},
-    {-10.65, 1.81, -7.65},
-    {-9.13, 1.81, -7.65},
-    {-7.61, 1.81, -7.65},
+    {-10.65 - 2.07, 1.81, -7.65},
+    {-9.13 - 2.07, 1.81, -7.65},
+    {-7.61 - 2.07, 1.81, -7.65},
     {-6.09, 1.81, -7.65},
     {-4.57, 1.81, -7.65},
     {-3.04, 1.81, -7.65},
@@ -905,7 +905,19 @@ local layoutConfigs = {
             {7.35, 1.57, 4.43}, {14.66, 1.57, 4.30}
         }
     },
+    numberTokens = {
+        grid3x4Offset = {
+            {-46.15, 2.50, 11.65}, {-40.21, 2.50, 11.65}, {-34.26, 2.50, 11.65}, {-28.31, 2.50, 11.65},
+            {-46.15, 2.50, 3.34}, {-40.21, 2.50, 3.34}, {-34.26, 2.50, 3.34}, {-28.31, 2.50, 3.34},
+            {-46.15, 2.50, -4.98}, {-40.21, 2.50, -4.98}, {-34.26, 2.50, -4.98}, {-28.31, 2.50, -4.98}
+        }
+    },
     constraintCards = {
+        grid3x4 = {   
+            {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
+            {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
+            {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
+        },
         mission31Layout = {
             {-42.32, 1.50, -11.87}, {-42.32, 1.50, -5.94}, {-42.32, 1.50, -0.01},
             {-42.32, 1.50, 5.92}, {-42.32, 1.50, 11.85}
@@ -1766,7 +1778,7 @@ missionConfigs = {
         name = "An Impossible Mission", 
         wires = {12, 0, 0, 12, 1, 1, 12},
         wiresAlt = {12, 0, 0, 12, 2, 2, 12},
-        gridNumbers = true,
+        gridNumberTokens = true,
         gridConstraints = true
     },
     [58] = {
@@ -2532,6 +2544,8 @@ function handleMissionSpecialConfig(missionNum, config)
         handleNumberCardSpecial(config.numberCardSpecial)
     elseif config.numberCardWithWarning then
         handleNumberCardWithWarning(config.numberCardWithWarning)
+    elseif config.gridNumberTokens then
+        handleGridNumberTokens()
     end
     
     -- Warning tokens
@@ -2725,6 +2739,17 @@ function handleGridNumbers()
     table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, 12 do
         generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
+    end
+end
+
+-- Handles 12-number token grid layout (for Mission 58)
+function handleGridNumberTokens()
+    local cardPositions = layoutConfigs.numberTokens.grid3x4Offset
+    local numberTokenBag = searchGlobalBag({"NumberTokens"})[1]
+    local numberTokens = numberTokenBag.getObjects()
+    table.sort(numberTokens, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+    for i = 1, 12 do
+        generateWithStandardProps(numberTokenBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberTokens[i].guid)
     end
 end
 
