@@ -2201,13 +2201,6 @@ function startMission()
 
     
     if needsCharacterSelection then
-        printToAll("Flip over character cards to choose which ones to include in the mission. The remaining selection will be filled by Double Detectors.")
-        fontSize = 250
-        addWidth = 600
-        removeWidth = 1000
-        addZPosition = -2.2
-        removeZPosition = -2.7
-        
         -- Get available character cards for this mission
         local availableCards = getAvailableCharacterCards(missionNum)
         if #availableCards == 0 then
@@ -2218,6 +2211,13 @@ function startMission()
             finishSetupAfterCharSel()
             return
         end
+
+        printToAll("Flip over character cards to choose which ones to include in the mission. The remaining selection will be filled by Double Detectors.")
+        fontSize = 250
+        addWidth = 600
+        removeWidth = 1000
+        addZPosition = -2.2
+        removeZPosition = -2.7
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -2.2}, 1700, fontSize)
         
