@@ -3813,9 +3813,7 @@ function moveTokens(missionNum)
             local needsExtendedTokens = false
 
             -- Check if this mission needs extended info tokens (Pack 5 content)
-            if missionNum >= 55 then -- Regular Pack 5 missions
-                needsExtendedTokens = true
-            elseif config and config.includePack5Equipment then -- Custom missions with Pack 5 equipment
+            if missionNum >= 55 or (config and config.includePack5Equipment) then -- Custom missions with Pack 5 equipment
                 table.insert(infoTokens, searchGlobalBag({"Destroy", "x1Tokens"})[1])
                 needsExtendedTokens = true
             end
