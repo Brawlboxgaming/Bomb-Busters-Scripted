@@ -1436,7 +1436,10 @@ missionConfigs = {
         name = "A Sense of Priorities",
         wires = {12, 2, 2, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        sequence = 0
+        sequence = {
+            sidew = 0,
+            warningTokens = true
+        }
     },
     [10] = {
         name = "A Rough Patch",
@@ -1488,7 +1491,10 @@ missionConfigs = {
         name = "Time to Reprioritize (Is this déjà vu?)",
         wires = {12, 2, 3, 12, 1, 1, 12},
         wiresAlt = {12, 4, 4, 12, 2, 2, 12},
-        sequence = 1
+        sequence = {
+            side = 1,
+            warningTokens = true
+        }
     },
     [17] = {
         name = "Rhett Herrings",
@@ -1884,8 +1890,8 @@ customMissionConfigs = {
         specialTokens = {
             type = "comparison",
             tokens = {
-                {name = "LessTokens", position = {-7.61, 1.61, -10.10}, type = "Return", number = 13},
-                {name = "GreaterTokens", position = {-6.09, 1.61, -10.10}, type = "Return", number = 14}
+                {name = "LessTokens", position = {-7.61, 1.61, -10.10}, type = "Place"},
+                {name = "GreaterTokens", position = {-6.09, 1.61, -10.10}, type = "Place"}
             },
             count = 1 -- 0 means a bag is placed instead of tokens
         }
@@ -1896,6 +1902,7 @@ customMissionConfigs = {
         includePack1Equipment = false,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        excludeInfoTokens = true
     },
     [-6] = {
         name = "The Hydra",
@@ -1942,6 +1949,28 @@ customMissionConfigs = {
                 {name = "R4Tokens", position = {-6.09, 1.81, -7.65}, type = "Return", number = 10}
             },
             count = 2 -- 2 for each token types
+        }
+    },
+    [-11] = {
+        name = "All in a Row",
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = true,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        sequence = {
+            side = 1,
+            warningTokens = false
+        }
+    },
+    [-12] = {
+        name = "Error 404: Wires Not Found",
+        wires = {12, 0, 0, 12, 0, 0, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = true,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        halfValueWireCounts = {
+            random = true,
+            count = 2
         }
     }
 }
@@ -2614,7 +2643,8 @@ end
 -- Helper functions for mission-specific configurations
 
 -- Sets up sequence cards for missions with numbered sequences (side A or B)
-function handleSequenceNumbers(sequenceSide) -- 0 being side A and 1 being side B
+function handleSequenceNumbers(sequenceConfig) -- 0 being side A and 1 being side B
+    sequenceSide = sequenceConfig.side
     sequenceRotation = {0.00, 270.00, 0.00}
     if sequenceSide == 1 then
         sequenceRotation = {0.00, 270.00, 180.00}
@@ -2625,7 +2655,7 @@ function handleSequenceNumbers(sequenceSide) -- 0 being side A and 1 being side 
     shuffleInPlace(numberCards)
     for i = 1, 3 do
         generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
-        if i ~= 1 then
+        if i ~= 1 and sequenceConfig.warningTokens then
             warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
             generateWithStandardProps(warningBag, numberTokenPositions[tonumber(numberCards[i].name)], {0.00, 180.00, 0.00})
         end
@@ -3036,11 +3066,7 @@ end
 
 -- Handles grid constraint cards setup
 function handleGridConstraints()
-    local cardPositions = {
-        {-44.08, 1.50, 8.31},  {-38.14, 1.50, 8.31},  {-32.19, 1.50, 8.31},  {-26.24, 1.50, 8.31},
-        {-44.08, 1.50, 0.00},  {-38.14, 1.50, 0.00},  {-32.19, 1.50, 0.00},  {-26.24, 1.50, 0.00},
-        {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
-    }
+    local cardPositions = layoutConfigs.constraintCards.grid3x4
     local constraintCardBag = searchGlobalBag({"Constraint"})[1]
     local constraintCards = constraintCardBag.getObjects()
     shuffleInPlace(constraintCards)
@@ -3049,7 +3075,6 @@ function handleGridConstraints()
         obj = generateWithStandardProps(constraintCardBag,
             {cardPositions[i][1], cardPositions[i][2] + 1, cardPositions[i][3]},
             {0.00, 180.00, 0.00}, false, true, false, cardsToDeal[i].guid)
-        obj.setScale({2.00, 1.00, 2.00})
     end
 end
 
@@ -3354,6 +3379,28 @@ function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum
     for _, wire in ipairs(blueWireBag.getObjects()) do
         if tonumber(wire.description) <= blueHighest * 10 then
             table.insert(blueWires, wire)
+        end
+    end
+
+    -- Special case for mission -12
+    if config.halfValueWireCounts then
+        local number = 0
+        for i = 1, config.halfValueWireCounts.count do
+            if config.halfValueWireCounts.random then
+                number = math.random(blueHighest)
+            elseif config.halfValueWireCounts.specific then
+                number = config.halfValueWireCounts.specific[i]
+            end
+            local removed = 0
+            for i = 1, #blueWires do
+                if tonumber(blueWires[i].name) == number then
+                    table.remove(blueWires, i)
+                    removed = removed + 1
+                    if removed == 2 then
+                        break
+                    end
+                end
+            end
         end
     end
 
