@@ -46,7 +46,7 @@ function onDrop(playerColor)
                 and math.abs(self.getPosition()[3] - otherObj.getPosition()[3]) < 0.2 then
                     if otherObj.hasTag("Return") then
                         tags = otherObj.getTags()
-                        position = tags[#tags]
+                        position = tonumber(tags[#tags])
                         otherObj.setPosition({infoTokenPositions[position][1], infoTokenPositions[position][2] + 1, infoTokenPositions[position][3]})
                         otherObj.setRotation({0.00, 180.00, 0.00})
                         if (otherObj.getStateId() == 2) then
