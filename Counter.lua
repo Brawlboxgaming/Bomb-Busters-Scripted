@@ -2210,6 +2210,13 @@ function startMission()
         
         -- Get available character cards for this mission
         local availableCards = getAvailableCharacterCards(missionNum)
+        if #availableCards == 0 then
+            -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
+            for i = 1, playerNum - 1 do
+                table.insert(characterCardSelection, "Double Detector")
+            end
+            finishSetupAfterCharSel()
+        end
         
         createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -2.2}, 1700, fontSize)
         
