@@ -20,7 +20,8 @@ function onDrop(playerColor)
     missionCard = mc[1]
     if missionCard then
         missionNum = tonumber(missionCard.getName())
-        if missionNum > 54 or getObjectsWithTag("14") then
+        extraTokens = getObjectsWithTag("14")
+        if missionNum > 54 or (extraTokens and #extraTokens > 0) then
             infoTokenPositions = {
                 {-10.65, 1.81, -5.20},
                 {-9.13, 1.81, -5.20},
