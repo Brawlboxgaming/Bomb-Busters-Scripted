@@ -994,7 +994,8 @@ local specialRuleConfigs = {
         [38] = {player = 1, rule = "lastWireOnTop"},
         [56] = "allPlayersLastWireOuter",
         [64] = "lastTwoWiresOnTop",
-        [-1] = "shuffleCaptain"
+        [-1] = "shuffleCaptain",
+        [-13] = "shuffleAll"
     },
     playerTeams = {
         [65] = {team = "Jokers", reason = "sharedVisibility"}
@@ -1244,6 +1245,11 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
         -- Special case: Always exclude False Bottom when yellowNum == 0, regardless of pack settings
         if equipmentName == "False Bottom" and yellowNum == 0 and missionConfig.yellowWires == nil then
             return true -- Exclude False Bottom when no yellow wires
+        end
+
+        if missionConfig.wires[1] < tonumber(config.description) then
+            log(config.description)
+            return true
         end
         
         if not shouldInclude then
@@ -1972,7 +1978,15 @@ customMissionConfigs = {
             random = true,
             count = 2
         }
-    }
+    },
+    [-13] = {
+        name = "Butter Fingers",
+        wires = {6, 0, 0, 6, 0, 0, 6},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        validationTokens = {7, 12}
+    },
 }
 
 ------------------------
@@ -3556,6 +3570,9 @@ function dealWiresToHands(missionNum, piles)
             if num ~= 1 then
                 table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             end
+        elseif sortingRule == "shuffleAll" then
+            -- Custom mission -13: Shuffle all wires
+            -- Do nothing - don't sort any wires
         else
             -- Standard sorting
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
