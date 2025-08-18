@@ -1004,7 +1004,8 @@ local specialRuleConfigs = {
         [27] = {captainFlipped = true, otherCardsDestroyed = true},
         [28] = {captainDestroyed = true},
         [34] = {captainSelection = "reshuffle", captainFlipped = true, constraintDistribution = "hands"},
-        [-3] = {captainSelection = "reshuffle", captainFlipped = true}
+        [-3] = {captainSelection = "reshuffle", captainFlipped = true},
+        [-13] = {captainFlipped = true, otherCardsDestroyed = true}
     },
     equipmentSpecial = {
         -- Equipment special rules for missions requiring custom equipment handling
@@ -1046,7 +1047,17 @@ local specialRuleConfigs = {
                 }
             },
             earlyReturn = true -- Only place specified equipment and return
-        }
+        },
+        [-13] = {
+            specificEquipment = {
+                {
+                    name = "X or Y ray",
+                    position = {0.04, 1.52, 6.83},
+                    rotation = {0.00, 180.00, 0.00}
+                }
+            },
+            earlyReturn = true -- Only place specified equipment and return
+        },
     }
 }
 
@@ -1984,7 +1995,6 @@ customMissionConfigs = {
         wires = {6, 0, 0, 6, 0, 0, 6},
         includePack1Equipment = true,
         includePack5Equipment = false,
-        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
         validationTokens = {7, 12}
     },
 }
