@@ -1259,7 +1259,6 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
         end
 
         if missionConfig.wires[1] < tonumber(config.description) then
-            log(config.description)
             return true
         end
         
@@ -2276,7 +2275,10 @@ function startMission()
             return
         end
 
-        printToAll("Flip over character cards to choose which ones to include in the mission. The remaining selection will be filled by Double Detectors.")
+        printToAll([[-----------------------------------------
+Flip over character cards to choose which ones to exclude from the mission.
+If there are more cards included than there are players, they will be chosen at random.
+The remaining cards will be filled by Double Detectors.]])
         fontSize = 250
         addWidth = 600
         removeWidth = 1000
