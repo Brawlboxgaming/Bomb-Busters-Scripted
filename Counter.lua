@@ -811,7 +811,7 @@ local equipmentConfigs = {
     ["X or Y ray"] = {
         description = "10",
         pack = 0,
-        bannedMissions = {26, 44, 45, 47, 49, 51, 54, 59, 63, 65}
+        bannedMissions = {26, 44, 45, 47, 49, 51, 54, 59, 63, 65, -14}
     },
     ["Coffee Mug"] = {
         description = "11",
@@ -1996,6 +1996,14 @@ customMissionConfigs = {
         includePack5Equipment = false,
         validationTokens = {7, 12}
     },
+    [-14] = {
+        name = "Risky Business",
+        wires = {12, 0, 0, 12, 0, 0, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar"},
+        redWires = "all"
+    }
 }
 
 ------------------------
