@@ -939,35 +939,6 @@ local layoutConfigs = {
     }
 }
 
--- Audio/Music configuration
-local audioConfigs = {
-    [19] = {
-        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-19.mp3",
-        title = "Mission 19",
-        autoPlay = true
-    },
-    [30] = {
-        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-30.mp3", 
-        title = "Mission 30",
-        autoPlay = true
-    },
-    [42] = {
-        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-42.mp3",
-        title = "Mission 42",
-        autoPlay = true
-    },
-    [54] = {
-        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-54.mp3",
-        title = "Mission 54",
-        autoPlay = true
-    },
-    [66] = {
-        url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-66.mp3",
-        title = "Mission 66",
-        autoPlay = true
-    }
-}
-
 -- Special rules configuration
 local specialRuleConfigs = {
     nanoWires = {
@@ -2003,6 +1974,21 @@ customMissionConfigs = {
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar"},
         redWires = "all"
+    },
+    [-15] = {
+        name = "Technical Terror",
+        wires = {12, 0, 0, 12, 2, 3, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "X or Y ray"},
+        yellowWires = {
+            type = "missionCardBack",
+            count = "playerNum"
+        },
+        music = {
+            url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-Minus15.mp3",
+            title = "Mission -15"
+        }
     }
 }
 
@@ -3321,7 +3307,7 @@ function handleSpecialYellowWires(yellowConfig, piles)
     if yellowConfig.type == "playerBased" then
         -- Mission 41: playerNum wires (4 if playerNum is 5), starting from specific index
         local wireCount = yellowConfig.count == "playerNum" and playerNum or yellowConfig.count
-        if wireCount == "playerNum" and playerNum == 5 then
+        if playerNum == 5 then
             wireCount = 4
         end
         
@@ -3372,6 +3358,13 @@ function handleSpecialYellowWires(yellowConfig, piles)
                 table.insert(yellowsRevealed, yellowWires[(i * wiresPerPlayer - wiresPerPlayer) + j])
             end
         end
+
+    elseif yellowConfig.type == "missionCardBack" then
+        local wireCount = yellowConfig.count == "playerNum" and playerNum or yellowConfig.count
+        for i = 1, wireCount do
+            generateWithStandardProps(yellowWireBag, {-16.78, 1.59, -14.52}, {0.00, 90.00, 180.00}, false, true, false, yellowWires[i].guid)
+        end
+        return -- Don't setup markers for this mission
     end
     
     local yellowNum = #yellowsRevealed
