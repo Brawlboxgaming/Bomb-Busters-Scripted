@@ -1977,11 +1977,11 @@ customMissionConfigs = {
     },
     [-15] = {
         name = "Technical Terror",
-        wires = {12, 0, 0, 12, 2, 3, 12},
+        wires = {12, 2, 3, 12, 0, 0, 12},
         includePack1Equipment = true,
         includePack5Equipment = false,
         characterCards = {"Walkie-Talkies", "Triple Detector", "X or Y ray"},
-        yellowWires = {
+        redWires = {
             type = "missionCardBack",
             count = "playerNum"
         },
@@ -2729,6 +2729,11 @@ function handleSpecialRedWires(redWiresConfig)
         setupMarkers(redsRevealed, 3, 3, "Red")
         for _, pile in ipairs(piles) do
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+        end
+    elseif redWiresConfig.type and redWiresConfig.type == "missionCardBack" then
+        local count = redWiresConfig.count == "playerNum" and playerNum or redWiresConfig.count
+        for i = 1, count do
+            generateWithStandardProps(redWireBag, {-16.78, 1.59, -14.52}, {0.00, 90.00, 180.00}, false, true, false, redWires[i].guid)
         end
     elseif redWiresConfig == "all" then
         -- Mission 54: Deal all red wires
