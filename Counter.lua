@@ -1229,7 +1229,7 @@ function shouldExcludeEquipmentByConfig(equipmentName, desc, missionNum, yellowN
             return true -- Exclude False Bottom when no yellow wires
         end
 
-        if missionConfig.wires[1] < tonumber(config.description) then
+        if missionConfig.wires[1] < tonumber(config.description:sub(-2)) then
             return true
         end
         
