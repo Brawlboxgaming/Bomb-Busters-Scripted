@@ -3215,6 +3215,7 @@ function handleNanoOnSeven()
     }
     local numberCardBag = searchGlobalBag({"Numbers"})[1]
     local numberCards = numberCardBag.getObjects()
+    shuffleInPlace(numberCards)
     for i = 1, 12 do
         local card = generateWithStandardProps(numberCardBag, cardPositions[i], {0.00, 180.00, 0.00}, false, true, false, numberCards[i].guid)
         if card.getName() == "7" then
