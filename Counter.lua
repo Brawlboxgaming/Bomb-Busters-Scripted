@@ -3250,6 +3250,10 @@ function handleCustomDistribution(distributionType)
                 ix = ix + 1
             end
         end
+        while ix < #numberCards + 1 do
+            generateWithStandardProps(numberCardBag, {-24.35, 1.56, 4.60}, {0.00, 180.00, 180.00}, false, true, false, numberCards[ix].guid)
+            ix = ix + 1
+        end
     elseif distributionType == "mission65" then
         -- Mission 65: Custom number card distribution
         local numberCardBag = searchGlobalBag({"Numbers"})[1]
