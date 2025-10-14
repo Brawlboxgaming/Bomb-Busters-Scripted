@@ -1650,9 +1650,9 @@ missionConfigs = {
         specialTokens = {
             type = "multiplier",
             tokens = {
-                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}},
-                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}},
-                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}}
+                {name = "x1Tokens", position = {-9.58, 1.49, -7.65}, type = "Place"},
+                {name = "x2Tokens", position = {-6.88, 1.49, -5.20}, type = "Place"},
+                {name = "x3Tokens", position = {-4.19, 1.49, -7.65}, type = "Place"}
             },
             count = 0 -- 0 means a bag is placed instead of tokens
         }
