@@ -3585,9 +3585,11 @@ function dealWiresToHands(missionNum, piles)
             -- Mission 64: Last two wires stay on top after sorting
             wire1 = table.remove(pile)
             wire2 = table.remove(pile)
+            outerWires = {wire1, wire2}
+            table.sort(outerWires, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
-            table.insert(pile, wire1)
-            table.insert(pile, wire2)
+            table.insert(pile, outerWires[1])
+            table.insert(pile, outerWires[2])
         elseif sortingRule == "shuffleCaptain" then
             -- Custom mission -1: Special captain shuffling
             if num ~= 1 then
