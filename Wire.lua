@@ -56,9 +56,7 @@ function onDrop(playerColor)
                     elseif otherObj.hasTag("Place") then
                         objPos = self.getPosition()
                         otherObj.setPosition({objPos[1], objPos[2] + 0.5, objPos[3]})
-                    elseif not otherObj.hasTag("Wire")
-                    and not otherObj.hasTag("Return")
-                    and not otherObj.hasTag("Place") then
+                    elseif not otherObj.hasTag("Wire") then
                         otherObj.destruct()
                     end
                 end
