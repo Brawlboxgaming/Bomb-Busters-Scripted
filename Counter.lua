@@ -2356,6 +2356,7 @@ function finishSetupAfterCharSel()
     while playerColors[1] ~= captainColor do
         wrap(playerColors, 1)
     end
+    spawnColouredWireTokens(missionNum)
     moveTokens(missionNum)
     prepareWiresAndMarkers(missionNum)
 
@@ -4140,6 +4141,55 @@ function spawnMissionCard(missionNum)
     missionCard.setName(missionNum)
     missionCard.setCustomObject(params)
     missionCard.reload()
+end
+
+function spawnColouredWireTokens(missionNum)
+    local missionCard = getObjectsWithAllTags({"Mission", "Destroy"})[1]
+    local missionConfig = getMissionConfig(missionNum)
+    local wireCounts = missionConfig.wiresAlt and missionConfig.altCount and missionConfig.altCount >= playerNum or missionConfig.wires
+    local yellowCount = wireCounts[2]
+    local redCount = wireCounts[5]
+    if missionConfig.yellowWires then
+        if missionNum == 41 then
+            yellowCount = playerNum == 5 and 4 or playerNum
+        elseif missionConfig.yellowWires.type and missionConfig.yellowWires.type == "perPlayer" then
+            yellowCount = playerNum * missionConfig.yellowWires.count
+        elseif missionConfig.yellowWires.count == "playerNum" then
+            yellowCount = playerNum
+        elseif missionConfig.yellowWires.count > 0 then
+            yellowCount = missionConfig.yellowWires.count
+        end
+    end
+    if missionConfig.redWires then
+        if missionConfig.redWires.count == "playerNum" then
+            redCount = playerNum
+        elseif missionConfig.redWires == "all" then
+            redCount = 11
+        elseif missionConfig.redWires.count > 0 then
+            redCount = missionConfig.redWires.count
+        end
+    end
+
+    if missionConfig and yellowCount > 0 then
+        local yellowWireTokenBag = searchGlobalBag({"WireNumberToken", "Yellow"})[1]
+        local tokens = yellowWireTokenBag.getObjects()
+        table.sort(tokens, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+        generateWithStandardProps(yellowWireTokenBag, {
+            missionCard.getPosition()[1] - 2.85,
+            missionCard.getPosition()[2] + 0.10,
+            missionCard.getPosition()[3] + 5.18
+        }, missionCard.getRotation(), false, true, true, tokens[yellowCount].guid)
+    end
+    if missionConfig and redCount > 0 then
+        local redWireTokenBag = searchGlobalBag({"WireNumberToken", "Red"})[1]
+        local tokens = redWireTokenBag.getObjects()
+        table.sort(tokens, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
+        generateWithStandardProps(redWireTokenBag, {
+            missionCard.getPosition()[1] + 2.85,
+            missionCard.getPosition()[2] + 0.10,
+            missionCard.getPosition()[3] + 5.18
+        }, missionCard.getRotation(), false, true, true, tokens[redCount].guid)
+    end
 end
 
 function adjustDial(missionNum, position)
