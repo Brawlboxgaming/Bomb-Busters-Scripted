@@ -1841,8 +1841,7 @@ missionConfigs = {
         name = "Hand-Me-Downs",
         wires = {12, 0, 0, 12, 3, 3, 12},
         minPlayers = 3,
-        customDistribution = "mission65",
-        teamAssignment = "Jokers"
+        customDistribution = "mission65"
     },
     [66] = {
         name = "The Final Countdown",
@@ -2412,20 +2411,6 @@ function sortPlayerColors(playerNum)
             toInsert = blueGreen[2]
         end
         table.insert(doubleHandColors, toInsert)
-    end
-    
-    -- Handle team assignment based on mission configuration
-    local config = getMissionConfig(missionNum)
-    if config and config.teamAssignment then
-        for i = 1, #players do
-            players[i].team = config.teamAssignment
-        end
-    else
-        for i = 1, #players do
-            if players[i].team != "None" then
-                players[i].team = "None"
-            end
-        end
     end
 end
 
@@ -3295,7 +3280,7 @@ function handleCustomDistribution(distributionType)
                     characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
                     characterPositions[playerColors[i]][2] + (j * 0.2),
                     characterPositions[playerColors[i]][3]
-                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, true, numberCards[ix].guid)
+                }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false, numberCards[ix].guid)
                 ix = ix + 1
             end
         end
