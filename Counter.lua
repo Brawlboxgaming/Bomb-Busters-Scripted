@@ -894,8 +894,21 @@ local layoutConfigs = {
             {-44.08, 1.50, -8.32}, {-38.14, 1.50, -8.32}, {-32.19, 1.50, -8.32}, {-26.24, 1.50, -8.32}
         },
         vertical5 = {
-            {-40.79, 1.50, -12.44}, {-40.79, 1.50, -6.22}, {-40.79, 1.50, 0.00}, 
-            {-40.79, 1.50, 6.22}, {-40.79, 1.50, 12.44}
+            [1] = {
+                {-44.61, 1.50, 0.00}
+            },
+            [2] = {
+                {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}
+            },
+            [3] = {
+                {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}
+            },
+            [4] = {
+                {-44.61, 1.50, -10.32}, {-44.61, 1.50, -3.44}, {-44.61, 1.50, 3.44}, {-44.61, 1.50, 10.32}
+            },
+            [5] = {
+                {-44.61, 1.50, -13.76}, {-44.61, 1.50, -6.88}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 6.88}, {-44.61, 1.50, 13.76}
+            }
         },
         sequence3 = {
             {-35.47, 1.50, -6.22}, {-35.46, 1.50, 0.00}, {-35.47, 1.50, 6.22}
@@ -929,12 +942,21 @@ local layoutConfigs = {
     },
     challengeCards = {
         standard = {
-            {-46.65, 1.50, 0.00}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 7.26}, 
-            {-46.65, 1.50, -14.53}, {-46.65, 1.50, 14.53}
-        },
-        mission60 = {
-            {-46.65, 1.50, -14.53}, {-46.65, 1.50, -7.26}, {-46.65, 1.50, 0.00}, 
-            {-46.65, 1.50, 7.26}, {-46.65, 1.50, 14.53}
+            [1] = {
+                {-44.61, 1.50, 0.00}
+            },
+            [2] = {
+                {-44.61, 1.50, -3.60}, {-44.61, 1.50, 3.60}
+            },
+            [3] = {
+                {-44.61, 1.50, -7.20}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 7.20}
+            },
+            [4] = {
+                {-44.61, 1.50, -10.80}, {-44.61, 1.50, -3.60}, {-44.61, 1.50, 3.60}, {-44.61, 1.50, 10.80}
+            },
+            [5] = {
+                {-44.61, 1.50, -14.40}, {-44.61, 1.50, -7.20}, {-44.61, 1.50, 0.00}, {-44.61, 1.50, 7.20}, {-44.61, 1.50, 14.40}
+            }
         }
     }
 }
@@ -2818,15 +2840,14 @@ function handleNumberCards5(missionNum)
     if missionNum == 36 then
         -- Mission 36: 5 cards with warning tokens
         for i = 1, 5 do
-            local number = generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
+            local number = generateWithStandardProps(numberCardBag, numberCardPositions[playerNum][i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
             local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
             generateWithStandardProps(warningBag, numberTokenPositions[tonumber(number.getName())], {0.00, 180.00, 0.00}, false, true, false)
         end
     elseif missionNum == 62 then
         -- Mission 62: Player-based number distribution1
-        table.sort(numberCards, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
         for i = 1, playerNum do
-            generateWithStandardProps(numberCardBag, numberCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
+            generateWithStandardProps(numberCardBag, numberCardPositions[playerNum][i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
         end
     end
 end
@@ -2947,9 +2968,9 @@ function handleConstraintCards(constraintType, missionNum)
         local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
         
         local j = 0
-        for i = 1, #cardsToDeal do
+        for i = 1, playerNum do
             j = j + 1
-            if j > #cardsToDeal then break end
+            if j > 5 then break end
             local isBlueGreen = 1
             if playerColors[i] == "Blue" or playerColors[i] == "Green" then
                 isBlueGreen = -1
@@ -3187,21 +3208,21 @@ function handleChallengeCards(missionNum)
     end
     table.sort(challenges, function(a, b) return tonumber(a.name) < tonumber(b.name) end)
     for i = 1, playerNum do
-        c = generateWithStandardProps(challengeCardBag, challengePositions[i], {0.00, 180.00, 0.00}, false, true, false, challenges[i].guid)
+        c = generateWithStandardProps(challengeCardBag, challengePositions[playerNum][i], {0.00, 180.00, 0.00}, false, true, false, challenges[i].guid)
         if c.getName() == "8" then
-            local numberCardBag = searchGlobalBag({"Numbers"})[1]
-            local numberCards = numberCardBag.getObjects()
-            shuffleInPlace(numberCards)
-            generateWithStandardProps(numberCardBag, {
-                challengePositions[i][1] + 3.89,
-                challengePositions[i][2] + 0.02,
-                challengePositions[i][3] - 5.04
-            }, {0.27, 105.00, 0.00}, false, true, false, numberCards[1].guid)
-            generateWithStandardProps(numberCardBag, {
-                challengePositions[i][1] + 3.89,
-                challengePositions[i][2] + 0.02,
-                challengePositions[i][3] + 5.04
-            }, {0.15, 75.00, 0.17}, false, true, false, numberCards[2].guid)
+            local numberTokensBag = searchGlobalBag({"NumberTokens"})[1]
+            local numberTokens = numberTokensBag.getObjects()
+            shuffleInPlace(numberTokens)
+            generateWithStandardProps(numberTokensBag, {
+                challengePositions[playerNum][i][1] + 1.65,
+                challengePositions[playerNum][i][2] + 0.11,
+                challengePositions[playerNum][i][3] - 2.4
+            }, {0.00, 90.00, 0.00}, false, true, false, numberTokens[1].guid)
+            generateWithStandardProps(numberTokensBag, {
+                challengePositions[playerNum][i][1] + 1.65,
+                challengePositions[playerNum][i][2] + 0.11,
+                challengePositions[playerNum][i][3] + 2.4
+            }, {0.00, 90.00, 0.00}, false, true, false, numberTokens[2].guid)
         end
     end
 end
