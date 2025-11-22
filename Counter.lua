@@ -2010,6 +2010,12 @@ customMissionConfigs = {
             url = "https://files.brawlbox.co.uk/Tabletop%20Simulator/Bomb%20Busters/BB-Final_Mission-Minus15.mp3",
             title = "Mission -15"
         }
+    },
+    [-16] = {
+        name = "Wires in a Wirestack",
+        wires = {12, 2, 11, 12, 2, 11, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false
     }
 }
 
