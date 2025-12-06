@@ -2016,6 +2016,15 @@ customMissionConfigs = {
         wires = {12, 2, 11, 12, 2, 11, 12},
         includePack1Equipment = true,
         includePack5Equipment = false
+    },
+    [-17] = {
+        name = "Clumsy Crew",
+        wires = {12, 0, 0, 12, 1, 1, 12},
+        includePack1Equipment = true,
+        includePack5Equipment = false,
+        characterCards = {"Walkie-Talkies", "Triple Detector", "General Radar", "X or Y ray"},
+        customDistribution = "mission-17",
+        randomInfo = true
     }
 }
 
@@ -3289,6 +3298,22 @@ function handleCustomDistribution(distributionType)
                 }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, false, numberCards[ix].guid)
                 ix = ix + 1
             end
+        end
+    elseif distributionType == "mission-17" then
+        -- Mission -17: Custom number card distribution
+        local numberCardBag = searchGlobalBag({"Numbers"})[1]
+        local numberCards = numberCardBag.getObjects()
+        shuffleInPlace(numberCards)
+        local isBlueGreen = 1
+        for i = 1, playerNum do
+            if playerColors[i] == "Blue" or playerColors[i] == "Green" then
+                isBlueGreen = -1
+            end
+            generateWithStandardProps(numberCardBag, {
+                characterPositions[playerColors[i]][1] + (7 * isBlueGreen),
+                characterPositions[playerColors[i]][2] + 0.2,
+                characterPositions[playerColors[i]][3]
+            }, {0.00, characterRotations[playerColors[i]][2], 0.00}, false, true, true, numberCards[i].guid)
         end
     end
 end
