@@ -996,7 +996,7 @@ local specialRuleConfigs = {
     characterSpecial = {
         [27] = {captainFlipped = true, otherCardsDestroyed = true},
         [28] = {captainDestroyed = true},
-        [34] = {captainSelection = "reshuffle", captainFlipped = true, constraintDistribution = "hands"},
+        [34] = {captainSelection = "reshuffle", captainFlipped = true},
         [-3] = {captainSelection = "reshuffle", captainFlipped = true},
         [-13] = {captainFlipped = true, otherCardsDestroyed = true}
     },
@@ -1633,7 +1633,7 @@ missionConfigs = {
         name = "The Weakest Link",
         wires = {12, 0, 0, 12, 1, 1, 12},
         minPlayers = 3,
-        constraintCards = "handDistribution"
+        constraintCards = "playerDistribution"
     },
     [35] = {
         name = "No Link, Single Wire",
@@ -2358,6 +2358,7 @@ function finishSetupAfterCharSel()
     -- Check if captain should be announced (for reshuffle missions)
     local characterSpecial = getCharacterSpecial(missionNum)
     if characterSpecial and characterSpecial.captainSelection == "reshuffle" then
+        local selectedColor = shuffledPlayers[math.random(playerNum)]
         local colors = {
             Blue    = {0.118, 0.53, 1},
             Green   = {0.192, 0.701, 0.168},
@@ -2365,7 +2366,7 @@ function finishSetupAfterCharSel()
             Red     = {0.856, 0.1, 0.094},
             White   = {1, 1, 1}
         }
-        printToAll("The captain of this mission is " .. captainColor .. "!", colors[captainColor])
+        printToAll("The captain of this mission is " .. selectedColor .. "!", colors[selectedColor])
     end
     while playerColors[1] ~= captainColor do
         wrap(playerColors, 1)
@@ -2950,15 +2951,28 @@ function handleConstraintCards(constraintType, missionNum)
                 end
             end
         end
-    elseif constraintType == "handDistribution" then
-        -- Mission 34: Distribute constraint cards to player hands
+    elseif constraintType == "playerDistribution" then
+        -- Mission 34: Distribute constraint cards to players
         local constraintBag = searchGlobalBag({"Constraint"})[1]
         local constraintCards = constraintBag.getObjects()
         shuffleInPlace(constraintCards)
         local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
+        local isBlueGreen = 1
         for num, card in ipairs(cardsToDeal) do
             if num <= playerNum then
-                generateWithStandardProps(constraintBag, playerHandPositions[playerColors[num]], characterRotations[playerColors[num]], false, true, false, card.guid)
+                if playerColors[num] == "Blue" or playerColors[num] == "Green" then
+                    isBlueGreen = -1
+                end
+                generateWithStandardProps(constraintBag,
+                    {characterPositions[playerColors[num]][1] + (7 * isBlueGreen),
+                    characterPositions[playerColors[num]][2],
+                    characterPositions[playerColors[num]][3]},
+                    {0.00, characterRotations[playerColors[num]][2], 0.00},
+                    false,
+                    true,
+                    false,
+                    card.guid
+                )
             end
         end
     elseif constraintType == "complexDistribution" then
