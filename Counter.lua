@@ -2741,10 +2741,14 @@ function handleSpecialRedWires(redWiresConfig)
         local redsRevealed = {}
         
         -- Add one red wire to each of the first 3 players
+        local d = 0
         for i = 1, 3 do
-            if piles[i] then
-                table.insert(piles[i], redWires[i])
+            if piles[i+d] then
+                table.insert(piles[i+d], redWires[i])
                 table.insert(redsRevealed, redWires[i])
+                if contains(doubleHandColors, playerColors[i]) and playerNum == 3 then
+                    d = 1
+                end
             else
                 printToAll("Error: No pile found for player " .. i .. " in red wires setup", {r=1, g=0, b=0})
             end
@@ -3378,12 +3382,16 @@ function handleSpecialYellowWires(yellowConfig, piles)
             startIndex = 2 -- Start from player 2 if playerNum is 5
         end
         
+        local d = 0
         for i = 1, wireCount do
-            local pileIndex = startIndex + i - 1
+            local pileIndex = startIndex + i - 1 + d
             if pileIndex <= #piles then
                 table.insert(piles[pileIndex], yellowWires[i])
                 table.sort(piles[pileIndex], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
                 table.insert(yellowsRevealed, yellowWires[i])
+                if contains(doubleHandColors, playerColors[i]) and playerNum < 4 then
+                    d = 1
+                end
             end
         end
         
@@ -4191,12 +4199,14 @@ function spawnColouredWireTokens(missionNum)
         end
     end
     if missionConfig.redWires then
-        if missionConfig.redWires.count == "playerNum" then
-            redCount = playerNum
-        elseif missionConfig.redWires == "all" then
-            redCount = 11
-        elseif missionConfig.redWires.count > 0 then
-            redCount = missionConfig.redWires.count
+        if missionConfig.redWires > 0 then
+            redCount = missionConfig.redWires
+        elseif missionConfig.redWires.count then
+            if missionConfig.redWires.count == "playerNum" then
+                redCount = playerNum
+            elseif missionConfig.redWires == "all" then
+                redCount = 11
+            end
         end
     end
 
