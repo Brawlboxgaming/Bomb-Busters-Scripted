@@ -4199,14 +4199,16 @@ function spawnColouredWireTokens(missionNum)
         end
     end
     if missionConfig.redWires then
-        if missionConfig.redWires > 0 then
+        if type(missionConfig.redWires) == "string" then
+            if missionConfig.redWires == "all" then
+                redCount = 11
+            end
+        elseif missionConfig.redWires > 0 then
             redCount = missionConfig.redWires
         elseif missionConfig.redWires.count then
             if missionConfig.redWires.count == "playerNum" then
                 redCount = playerNum
-            elseif missionConfig.redWires == "all" then
-                redCount = 11
-            end
+        end
         end
     end
 
