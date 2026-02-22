@@ -53,7 +53,7 @@ function onDrop(playerColor)
                         if (otherObj.getStateId() == 2) then
                             otherObj.setState(1)
                         end
-                    elseif otherObj.hasTag("Place") then
+                    elseif otherObj.hasTag("Place") or otherObj.hasTag("XToken") then
                         objPos = self.getPosition()
                         otherObj.setPosition({objPos[1], objPos[2] + 0.5, objPos[3]})
                     elseif not otherObj.hasTag("Wire") then
