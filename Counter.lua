@@ -2518,6 +2518,22 @@ function prepareWiresAndMarkers(missionNum)
         end
         return
     end
+
+    local pilePlayerMap = {}
+    local tempHandsDoubled = 0
+    local tempNoMoreDouble = false
+    for i = 1, playerNum do
+        pilePlayerMap[i + tempHandsDoubled] = {player = i, isPrimary = true}
+        if ((playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
+        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green")))
+        and tempNoMoreDouble == false then
+            tempHandsDoubled = tempHandsDoubled + 1
+            pilePlayerMap[i + tempHandsDoubled] = {player = i, isPrimary = false}
+            if playerNum == 3 then
+                tempNoMoreDouble = true
+            end
+        end
+    end
     
     -- Determine wire configuration based on player count
     local wires = config.wires
@@ -2539,15 +2555,15 @@ function prepareWiresAndMarkers(missionNum)
     
     -- Apply wire and equipment configuration
     if wires then
-        sortWiresAndEquipment(piles, wires[1], wires[2], wires[3], wires[4], wires[5], wires[6], wires[7])
+        sortWiresAndEquipment(piles, wires[1], wires[2], wires[3], wires[4], wires[5], wires[6], wires[7], pilePlayerMap)
     end
     
     -- Red wires setup (before sorting and positioning)
     if config.redWires then
-        handleSpecialRedWires(config.redWires)
+        handleSpecialRedWires(config.redWires, pilePlayerMap)
     end
     
-    dealWiresToHands(missionNum, piles)
+    dealWiresToHands(missionNum, piles, pilePlayerMap)
     
     -- Display special message if configured
     if config and config.specialMessage then
@@ -2732,25 +2748,28 @@ function handleNano(startPos, direction) -- 0 is left and 1 is right, wires are 
 end
 
 -- Handles red wire special setups
-function handleSpecialRedWires(redWiresConfig)
+function handleSpecialRedWires(redWiresConfig, pilePlayerMap)
     local redWireBag = searchGlobalBag({"Red", "Scripted", "Wires"})[1]
     local redWires = redWireBag.getObjects()
     shuffleInPlace(redWires)
+
     if redWiresConfig == 3 then
         -- Mission 13: Deal 3 red wires to piles (positioning happens in dealWiresToHands)
         local redsRevealed = {}
         
         -- Add one red wire to each of the first 3 players
-        local d = 0
-        for i = 1, 3 do
-            if piles[i+d] then
-                table.insert(piles[i+d], redWires[i])
-                table.insert(redsRevealed, redWires[i])
-                if contains(doubleHandColors, playerColors[i]) and playerNum == 3 then
-                    d = 1
+        local count = 0
+        for pileIx, pileInfo in pairs(pilePlayerMap) do
+            if pileInfo.isPrimary then
+                count = count + 1
+                if count <= 3 then
+                    if piles[pileIx] then
+                        table.insert(piles[pileIx], redWires[count])
+                        table.insert(redsRevealed, redWires[count])
+                    else
+                        printToAll("Error: No pile found for player " .. pileInfo.player .. " in red wires setup", {r=1, g=0, b=0})
+                    end
                 end
-            else
-                printToAll("Error: No pile found for player " .. i .. " in red wires setup", {r=1, g=0, b=0})
             end
         end
         
@@ -3343,9 +3362,9 @@ function handleSequenceCard()
 end
 
 -- blueHighest is the highest value of a blue wire, and in terms of the card, yellowNum of yellowTotal and redNum of redTotal
-function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest)
+function sortWiresAndEquipment(piles, blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, pilePlayerMap)
     sortEquipment(missionNum, yellowNum)
-    sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
+    sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles, pilePlayerMap)
 end
 
 -- Sets up markers for revealed wires based on mission parameters
@@ -3364,12 +3383,12 @@ function setupMarkers(revealedWires, num, total, color)
 end
 
 -- Handles special yellow wire distributions that place wires directly in player hands
-function handleSpecialYellowWires(yellowConfig, piles)
+function handleSpecialYellowWires(yellowConfig, piles, pilePlayerMap)
     local yellowWireBag = searchGlobalBag({"Scripted", "Wires", "Yellow"})[1]
     local yellowWires = yellowWireBag.getObjects()
     shuffleInPlace(yellowWires)
     local yellowsRevealed = {}
-    
+
     if yellowConfig.type == "playerBased" then
         -- Mission 41: playerNum wires (4 if playerNum is 5), starting from specific index
         local wireCount = yellowConfig.count == "playerNum" and playerNum or yellowConfig.count
@@ -3382,17 +3401,17 @@ function handleSpecialYellowWires(yellowConfig, piles)
             startIndex = 2 -- Start from player 2 if playerNum is 5
         end
         
-        local d = 0
-        for i = 1, wireCount do
-            local pileIndex = startIndex + i - 1 + d
-            if pileIndex <= #piles then
-                table.insert(piles[pileIndex], yellowWires[i])
-                table.sort(piles[pileIndex], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
-                table.insert(yellowsRevealed, yellowWires[i])
-                if contains(doubleHandColors, playerColors[i]) and playerNum < 4 then
-                    d = 1
-                end
+        local count = 0
+        local pileIx = 1
+        while count < wireCount and piles[pileIx] do
+            local pileInfo = pilePlayerMap[pileIx]
+            if pileInfo and pileInfo.player >= startIndex then
+                table.insert(piles[pileIx], yellowWires[count + 1])
+                table.sort(piles[pileIx], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+                table.insert(yellowsRevealed, yellowWires[count + 1])
+                count = count + 1
             end
+            pileIx = pileIx + 1
         end
         
     elseif yellowConfig.type == "sequential" then
@@ -3400,20 +3419,23 @@ function handleSpecialYellowWires(yellowConfig, piles)
         local wireCount = yellowConfig.count or 3
         local playerIndex = yellowConfig.startIndex or 1
         
-        for i = 1, wireCount do
-            if playerIndex <= #piles then
-                table.insert(piles[playerIndex], yellowWires[i])
-                table.sort(piles[playerIndex], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
-                table.insert(yellowsRevealed, yellowWires[i])
-                playerIndex = playerIndex + 1
-                
-                -- Skip double hand players in 3-player games
-                if yellowConfig.skipDoubleHands and playerNum == 3 and playerIndex <= playerNum then
-                    if (playerColors[playerIndex] == "Blue" and contains(doubleHandColors, "Blue"))
-                    or (playerColors[playerIndex] == "Green" and contains(doubleHandColors, "Green")) then
-                        playerIndex = playerIndex + 1
-                    end
+        local count = 0
+        local pileIx = 1
+        while count < wireCount and piles[pileIx] do
+            local pileInfo = pilePlayerMap[pileIx]
+            if pileInfo and pileInfo.player >= playerIndex then
+                if yellowConfig.skipDoubleHands and playerNum == 3 and not pileInfo.isPrimary then
+                    -- Skip double hand piles if requested
+                    pileIx = pileIx + 1
+                else
+                    table.insert(piles[pileIx], yellowWires[count + 1])
+                    table.sort(piles[pileIx], function(a, b) return tonumber(a.description) < tonumber(b.description) end)
+                    table.insert(yellowsRevealed, yellowWires[count + 1])
+                    count = count + 1
+                    pileIx = pileIx + 1
                 end
+            else
+                pileIx = pileIx + 1
             end
         end
         
@@ -3444,7 +3466,7 @@ end
 allWires = {}
 
 -- Sorts and reveals wires based on mission parameters and wire counts
-function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles)
+function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum, redTotal, redHighest, piles, pilePlayerMap)
     handCount = playerNum == 5 and 5 or 4
 
     for i = 1, handCount do
@@ -3454,7 +3476,7 @@ function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum
     -- Check for special yellow wire distribution
     local config = getMissionConfig(missionNum)
     if config and config.yellowWires then
-        handleSpecialYellowWires(config.yellowWires, piles)
+        handleSpecialYellowWires(config.yellowWires, piles, pilePlayerMap)
     end
 
     -- Get mission-specific nano wire counts
@@ -3616,10 +3638,27 @@ function dealWiresToHands(missionNum, piles)
         end
     end
     
+    local pilePlayerMap = {}
+    local tempHandsDoubled = 0
+    local tempNoMoreDouble = false
+    for i = 1, playerNum do
+        pilePlayerMap[i + tempHandsDoubled] = {player = i, isPrimary = true}
+        if ((playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
+        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green")))
+        and tempNoMoreDouble == false then
+            tempHandsDoubled = tempHandsDoubled + 1
+            pilePlayerMap[i + tempHandsDoubled] = {player = i, isPrimary = false}
+            if playerNum == 3 then
+                tempNoMoreDouble = true
+            end
+        end
+    end
+
     for num, pile in ipairs(piles) do
         local sortingRule = getSortingOverride(missionNum)
+        local pileInfo = pilePlayerMap[num] or {player = num, isPrimary = true}
         
-        if sortingRule == "specialLastWire" then
+        if sortingRule == "specialLastWire" and pileInfo.isPrimary then
             -- Missions 20, 35, 56: Special last wire handling
             counter = 0
             wire = table.remove(pile)
@@ -3631,17 +3670,17 @@ function dealWiresToHands(missionNum, piles)
             end
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             table.insert(pile, wire)
-        elseif sortingRule and sortingRule.player and sortingRule.player == num and sortingRule.rule == "lastWireOnTop" then
+        elseif sortingRule and sortingRule.player and sortingRule.player == pileInfo.player and sortingRule.rule == "lastWireOnTop" and pileInfo.isPrimary then
             -- Mission 38: Special case for single wire - last wire stays on top
             wire = table.remove(pile)
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             table.insert(pile, wire)
-        elseif sortingRule == "allPlayersLastWireOuter" then
+        elseif sortingRule == "allPlayersLastWireOuter" and pileInfo.isPrimary then
             -- Mission 56: All players have single wire - last wire stays on top
             wire = table.remove(pile)
             table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             table.insert(pile, wire)
-        elseif sortingRule == "lastTwoWiresOnTop" then
+        elseif sortingRule == "lastTwoWiresOnTop" and pileInfo.isPrimary then
             -- Mission 64: Last two wires stay on top after sorting
             wire1 = table.remove(pile)
             wire2 = table.remove(pile)
@@ -3652,7 +3691,7 @@ function dealWiresToHands(missionNum, piles)
             table.insert(pile, outerWires[2])
         elseif sortingRule == "shuffleCaptain" then
             -- Custom mission -1: Special captain shuffling
-            if num ~= 1 then
+            if pileInfo.player ~= 1 then
                 table.sort(pile, function(a, b) return tonumber(a.description) < tonumber(b.description) end)
             end
         elseif sortingRule == "shuffleAll" then
@@ -3671,19 +3710,28 @@ function dealWiresToHands(missionNum, piles)
         end
     end
 
-    noMoreDouble = false
-    handsDoubled = 0
-    for i = 1, playerNum do
-        wirePositions0 = wireHandPositions0[playerColors[i]]
-        outerWirePositions0 = wireOuterPositions0[playerColors[i]]
-        tokenPositions0 = tokenHandPositions0[playerColors[i]]
+    for pileIx, pile in ipairs(piles) do
+        local pileInfo = pilePlayerMap[pileIx] or {player = pileIx, isPrimary = true}
+        local i = pileInfo.player
+        local isPrimary = pileInfo.isPrimary
         
-        for j = 1, #piles[i + handsDoubled] do
+        local currentWirePositions, currentOuterPositions, currentTokenPositions
+        if isPrimary then
+            currentWirePositions = wireHandPositions0[playerColors[i]]
+            currentOuterPositions = wireOuterPositions0[playerColors[i]]
+            currentTokenPositions = tokenHandPositions0[playerColors[i]]
+        else
+            currentWirePositions = wireHandPositions1[playerColors[i]]
+            currentOuterPositions = wireOuterPositions1[playerColors[i]]
+            currentTokenPositions = tokenHandPositions1[playerColors[i]]
+        end
+        
+        for j = 1, #pile do
             local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
             local sortingRule = getSortingOverride(missionNum)
             
             local genWire
-            if outerWireRule then
+            if outerWireRule and isPrimary then
                 -- Check if this player should have outer wire positioning
                 local shouldUseOuter = false
                 if outerWireRule.players == "all" then
@@ -3693,91 +3741,35 @@ function dealWiresToHands(missionNum, piles)
                 end
                 
                 if shouldUseOuter then
-                    if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
-                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[1], wireRotations[playerColors[i]])
+                    if outerWireRule.wirePosition == "last" and j == #pile then
+                        genWire = generateWireWithStandardProps(pile[j], currentOuterPositions[1], wireRotations[playerColors[i]])
                         genWire.addTag("Outer")
                     elseif outerWireRule.wirePosition == "lastTwo" then
-                        if j == #piles[i + handsDoubled] then
-                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[1], wireRotations[playerColors[i]])
+                        if j == #pile then
+                            genWire = generateWireWithStandardProps(pile[j], currentOuterPositions[1], wireRotations[playerColors[i]])
                             genWire.addTag("Outer")
-                        elseif j == #piles[i + handsDoubled] - 1 then
-                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions0[2], wireRotations[playerColors[i]])
+                        elseif j == #pile - 1 then
+                            genWire = generateWireWithStandardProps(pile[j], currentOuterPositions[2], wireRotations[playerColors[i]])
                             genWire.addTag("Outer")
                         else
-                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
+                            genWire = generateWireWithStandardProps(pile[j], currentWirePositions[j], wireRotations[playerColors[i]])
                         end
                     else
-                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
+                        genWire = generateWireWithStandardProps(pile[j], currentWirePositions[j], wireRotations[playerColors[i]])
                     end
                 else
-                    genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
+                    genWire = generateWireWithStandardProps(pile[j], currentWirePositions[j], wireRotations[playerColors[i]])
                 end
             else
-                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions0[j], wireRotations[playerColors[i]])
+                genWire = generateWireWithStandardProps(pile[j], currentWirePositions[j], wireRotations[playerColors[i]])
             end
 
             genWire.flip()
 
             -- Handle X token placement for special last wire missions
-            if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
+            if sortingRule == "specialLastWire" and j == #pile and isPrimary then
                 xTokenBag = searchGlobalBag({"XTokens"})[1]
-                generateWithStandardProps(xTokenBag, tokenPositions0[j], tokenHandRotations[playerColors[i]], false, true, false)
-            end
-        end
-        if (playerColors[i] == "Blue" and contains(doubleHandColors, "Blue"))
-        or (playerColors[i] == "Green" and contains(doubleHandColors, "Green"))
-        and noMoreDouble == false then
-            wirePositions1 = wireHandPositions1[playerColors[i]]
-            outerWirePositions1 = wireOuterPositions1[playerColors[i]]
-            tokenPositions1 = tokenHandPositions1[playerColors[i]]
-            handsDoubled = handsDoubled + 1
-            
-            for j = 1, #piles[i + handsDoubled] do
-                local outerWireRule = getSpecialRuleConfig(missionNum, "outerWires")
-                local sortingRule = getSortingOverride(missionNum)
-                
-                if outerWireRule then
-                    -- Check if this player should have outer wire positioning
-                    local shouldUseOuter = false
-                    if outerWireRule.players == "all" then
-                        shouldUseOuter = true
-                    elseif type(outerWireRule.players) == "table" and contains(outerWireRule.players, i) then
-                        shouldUseOuter = true
-                    end
-                    
-                    if shouldUseOuter then
-                        if outerWireRule.wirePosition == "last" and j == #piles[i + handsDoubled] then
-                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[1], wireRotations[playerColors[i]])
-                            genWire.addTag("Outer")
-                        elseif outerWireRule.wirePosition == "lastTwo" then
-                            if j == #piles[i + handsDoubled] then
-                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[1], wireRotations[playerColors[i]])
-                                genWire.addTag("Outer")
-                            elseif j == #piles[i + handsDoubled] - 1 then
-                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], outerWirePositions1[2], wireRotations[playerColors[i]])
-                                genWire.addTag("Outer")
-                            else
-                                genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
-                            end
-                        else
-                            genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
-                        end
-                    else
-                        genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
-                    end
-                else
-                    genWire = generateWireWithStandardProps(piles[i + handsDoubled][j], wirePositions1[j], wireRotations[playerColors[i]])
-                end
-                genWire.flip()
-                
-                -- Handle X token placement for special last wire missions
-                if sortingRule == "specialLastWire" and j == #piles[i + handsDoubled] then
-                    xTokenBag = searchGlobalBag({"XTokens"})[1]
-                    generateWithStandardProps(xTokenBag, tokenPositions1[j], tokenHandRotations[playerColors[i]], false, true, false)
-                end
-            end
-            if playerNum == 3 then
-                noMoreDouble = true
+                generateWithStandardProps(xTokenBag, currentTokenPositions[j], tokenHandRotations[playerColors[i]], false, true, false)
             end
         end
     end
