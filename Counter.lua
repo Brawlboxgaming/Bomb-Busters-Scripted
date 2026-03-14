@@ -2993,7 +2993,7 @@ function handleConstraintCards(constraintType, missionNum)
                     {0.00, characterRotations[playerColors[num]][2], 0.00},
                     false,
                     true,
-                    false,
+                    true,
                     card.guid
                 )
             end
