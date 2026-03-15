@@ -2865,7 +2865,7 @@ function handleNumberCards5(missionNum)
     if missionNum == 36 then
         -- Mission 36: 5 cards with warning tokens
         for i = 1, 5 do
-            local number = generateWithStandardProps(numberCardBag, numberCardPositions[playerNum][i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
+            local number = generateWithStandardProps(numberCardBag, numberCardPositions[5][i], {0.00, 90.00, 0.00}, false, true, false, numberCards[i].guid)
             local warningBag = searchGlobalBag({"Destroy", "Scripted", "Warning"})[1]
             generateWithStandardProps(warningBag, numberTokenPositions[tonumber(number.getName())], {0.00, 180.00, 0.00}, false, true, false)
         end
