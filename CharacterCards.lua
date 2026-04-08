@@ -215,7 +215,7 @@ function cycle(direction, playerColor)
     end
 
     if not found or nextSelection == currentSelection then
-        printToColor("There are no other character cards available.", playerColors[cardColor], playerColors[cardColor])
+        printToColor("There are no other character cards available.", playerColor, playerColor)
         return
     end
 
