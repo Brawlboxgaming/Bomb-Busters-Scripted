@@ -74,7 +74,7 @@ function onLoad(save_state)
 
     if not cardColor or self.hasTag("Captain") then return end
 
-    -- Capture the Double Detector face URL and card back URL if not already saved
+    -- Capture the Double Detector face URL if not already saved
     if faceUrls["Double Detector"] == "" then
         local charCard = self.getCustomObject()
         if self.getName() == "" or self.getName() == "Double Detector" then
@@ -224,7 +224,6 @@ function cycle(direction, playerColor)
         face = faceUrls[cardNames[nextSelection]],
         back = "https://files.timwi.de/Tabletop%20Simulator/Bomb%20Busters/Items/Personal%20Back.png"
     })
-    self.reload()
 end
 
 function cycleCharacterCardLeft(obj, playerColor)
