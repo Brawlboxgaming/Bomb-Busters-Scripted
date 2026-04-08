@@ -2409,7 +2409,6 @@ function sortCharacters(missionNum)
         captainCard.destruct()
     end
 
-    local characterSpecial = getCharacterSpecial(missionNum)
     if characterSpecial and characterSpecial.otherCardsDestroyed then
         return ret
     end
