@@ -48,12 +48,10 @@ local playerColors = {
 
 cardColor = nil
 currentMissionNum = 0
-backUrl = "https://files.timwi.de/Tabletop%20Simulator/Bomb%20Busters/Items/Personal%20Back.png"
 
 function onSave()
     return JSON.encode({
-        ddFaceUrl = faceUrls["Double Detector"],
-        backUrl = backUrl
+        ddFaceUrl = faceUrls["Double Detector"]
     })
 end
 
@@ -63,7 +61,6 @@ function onLoad(save_state)
         local data = JSON.decode(save_state)
         if data then
             if data.ddFaceUrl then faceUrls["Double Detector"] = data.ddFaceUrl end
-            if data.backUrl then backUrl = data.backUrl end
         end
     end
 
@@ -78,7 +75,7 @@ function onLoad(save_state)
     if not cardColor or self.hasTag("Captain") then return end
 
     -- Capture the Double Detector face URL and card back URL if not already saved
-    if faceUrls["Double Detector"] == "" or backUrl == "" then
+    if faceUrls["Double Detector"] == "" then
         local charCard = self.getCustomObject()
         if self.getName() == "" or self.getName() == "Double Detector" then
             if faceUrls["Double Detector"] == "" then faceUrls["Double Detector"] = charCard.face end
@@ -225,7 +222,7 @@ function cycle(direction, playerColor)
     self.setName(cardNames[nextSelection])
     self.setCustomObject({
         face = faceUrls[cardNames[nextSelection]],
-        back = backUrl
+        back = "https://files.timwi.de/Tabletop%20Simulator/Bomb%20Busters/Items/Personal%20Back.png"
     })
     self.reload()
 end
