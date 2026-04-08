@@ -44,6 +44,24 @@ function onLoad()
             end
         end
     end)
+    -- For the character cards objects, set the Lua script to the one fetched from the web.
+    WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/CharacterCards.lua", function(e)
+        -- If there's an error during the web request, log it.
+        if e.is_error then
+            log(e.error)
+        -- If the request is successful, the text is not empty.
+        elseif e.text ~= "" then
+            allBagsBag = getObjectsWithTag("All")[1]
+            local characterCardBag = getObjectsWithAllTags({"Character"})[1]
+            local characterCards = getObjectsWithAllTags({"Character", "Destroy"})
+            for _, card in ipairs(characterCards) do
+                -- Set the fetched script to each character card object.
+                card.setLuaScript(e.text)
+                characterCardBag.putObject(card)
+            end
+            allBagsBag.putObject(characterCardBag)
+        end
+    end)
     -- For the scripting zones, set the Lua script to the one fetched from the web.
     WebRequest.get("https://raw.githubusercontent.com/Brawlboxgaming/Bomb-Busters-Scripted/refs/heads/main/SourceObjectsZone.lua", function(e)
         -- If there's an error during the web request, log it.

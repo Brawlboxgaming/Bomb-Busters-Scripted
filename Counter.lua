@@ -2080,9 +2080,9 @@ function setDynamicRuleCardRotations(missionNum, config)
         cardARotation = faceUp
     end
     
-    -- Rule Card B: Show if mission has character selection
+    -- Rule Card B: Show if mission is 31+ or has custom character cards
     local cardBRotation = faceDown
-    if hasCharacterSelection(missionNum, config) then
+    if missionNum > 30 or (config and config.characterCards and #config.characterCards > 0) then
         cardBRotation = faceUp
     end
     
@@ -2286,67 +2286,14 @@ function startMission()
     -- Set rule card rotations dynamically based on mission features
     setDynamicRuleCardRotations(missionNum, config)
 
-    -- From mission 31 onwards or custom missions with extra character cards, you can choose which character cards you would like
-    local config = getMissionConfig(missionNum)
-    local needsCharacterSelection = hasCharacterSelection(missionNum, config)
-
-    -- Get all objects out of bag
-
-    
-    if needsCharacterSelection then
-        -- Get available character cards for this mission
-        local availableCards = getAvailableCharacterCards(missionNum)
-        if #availableCards == 0 then
-            -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
-            for i = 1, playerNum - 1 do
-                table.insert(characterCardSelection, "Double Detector")
-            end
-            finishSetupAfterCharSel()
-            return
-        end
-
-        printToAll([[-----------------------------------------
-Flip over character cards to choose which ones to exclude from the mission.
-If there are more cards included than there are players, they will be chosen at random.
-The remaining cards will be filled by Double Detectors.]])
-        fontSize = 250
-        addWidth = 600
-        removeWidth = 1000
-        addZPosition = -2.2
-        removeZPosition = -2.7
-        
-        createStandardButton("finishSetupAfterCharSel", "Finish Setup", {0, -2.2}, 1700, fontSize)
-        
-        -- Setup character card selection interface
-        setupCharacterCardSelection(missionNum, availableCards)
-        allBagsBags = getObjectsWithTag("All")
-        for _, bag in ipairs(allBagsBags) do
-            bag.destruct()
-        end
-        -- Clean up all objects that were marked for cleanup during setup
-        cleanupPendingObjects()
-    else
-        -- Default to Double Detector for regular missions <= 30 or custom missions without character specification
-        for i = 1, playerNum - 1 do
-            table.insert(characterCardSelection, "Double Detector")
-        end
-        finishSetupAfterCharSel()
+    -- Setup character cards (all players get Double Detector by default)
+    for i = 1, playerNum - 1 do
+        table.insert(characterCardSelection, "Double Detector")
     end
+    finishSetupAfterCharSel()
 end
 
 function finishSetupAfterCharSel()
-    characterCardObjs = getObjectsWithAllTags({"Character", "Destroy"})
-    for _, obj in ipairs(characterCardObjs) do
-        if -1 < obj.getRotation()[3] and obj.getRotation()[3] < 1 then
-            table.insert(characterCardSelection, obj.getName())
-        end
-        obj.destruct()
-    end
-    if #characterCardSelection ~= playerNum - 1 then
-        for i = #characterCardSelection + 1, playerNum - 1 do
-            table.insert(characterCardSelection, "Double Detector")
-        end
-    end
     missionNum = tonumber(getObjectsWithAllTags({"Mission", "Destroy"})[1].getName())
     buttons = self.getButtons()
     for i = 3, #buttons - 1 do
@@ -2453,8 +2400,9 @@ function sortCharacters(missionNum)
         flipped = true
     end
     
-    captainCardBag = searchGlobalBag({"Captain", "Character", "Pack0"})[1]
+    captainCardBag = searchGlobalBag({"Captain"})[1]
     captainCard = generateWithStandardProps(captainCardBag, characterPositions[shuffledPlayers[1]], characterRotations[shuffledPlayers[1]], false, true, flipped)
+    captainCard.addTag(shuffledPlayers[1])
 
     -- Check for captain destroyed rule
     if characterSpecial and characterSpecial.captainDestroyed then
@@ -2466,39 +2414,14 @@ function sortCharacters(missionNum)
         return ret
     end
 
-    doubleDetectorCount = 0
-    doubleDetectorTotal = 0
-    for _, selection in ipairs(characterCardSelection) do
-        if selection == "Double Detector" then
-            doubleDetectorTotal = doubleDetectorTotal + 1
-        end
-    end
-    
     count = 1
-    characterCardsBag0 = searchGlobalBag({"Character", "Pack0"})[1]
-    characterCardsBag3 = searchGlobalBag({"Character", "Pack3"})[1]
-    characterCards = characterCardsBag0.getObjects()
-    for _, card in ipairs(characterCardsBag3.getObjects()) do
-        table.insert(characterCards, card)
-    end
-    shuffleInPlace(characterCards)
-    shuffleInPlace(characterCardSelection)
-    for num, card in ipairs(characterCards) do
-        for _, selection in ipairs(characterCardSelection) do
-            if card.name == selection then
-                if (doubleDetectorCount < doubleDetectorTotal or selection ~= "Double Detector") and shuffledPlayers[count + 1] then
-                    bag = characterCardsBag0
-                    if contains(card.tags, "Pack3") then
-                        bag = characterCardsBag3
-                    end
-                    c = generateWithStandardProps(bag, characterPositions[shuffledPlayers[count + 1]], characterRotations[shuffledPlayers[count + 1]], false, true, flipped, card.guid)
-                    count = count + 1
-                    if selection == "Double Detector" then
-                        doubleDetectorCount = doubleDetectorCount + 1
-                    end
-                    break
-                end
-            end
+    characterCardsBag = searchGlobalBag({"Character"})[1]
+    local doubleDetectorGuid = nil
+    for _, obj in ipairs(characterCardsBag.getObjects()) do
+        if obj.name == "Double Detector" then
+            local card = generateWithStandardProps(characterCardsBag, characterPositions[shuffledPlayers[count + 1]], characterRotations[shuffledPlayers[count + 1]], false, true, flipped, obj.guid)
+            card.addTag(shuffledPlayers[count + 1])
+            count = count + 1
         end
     end
     return ret
