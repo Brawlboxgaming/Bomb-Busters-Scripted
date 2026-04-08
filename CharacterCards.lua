@@ -48,7 +48,7 @@ local playerColors = {
 
 cardColor = nil
 currentMissionNum = 0
-backUrl = ""
+backUrl = "https://files.timwi.de/Tabletop%20Simulator/Bomb%20Busters/Items/Personal%20Back.png"
 
 function onSave()
     return JSON.encode({
@@ -82,7 +82,6 @@ function onLoad(save_state)
         local charCard = self.getCustomObject()
         if self.getName() == "" or self.getName() == "Double Detector" then
             if faceUrls["Double Detector"] == "" then faceUrls["Double Detector"] = charCard.face end
-            if backUrl == "" then backUrl = charCard.back end
             self.setName("Double Detector")
         end
     end

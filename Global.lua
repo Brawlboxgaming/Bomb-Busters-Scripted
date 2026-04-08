@@ -52,14 +52,16 @@ function onLoad()
         -- If the request is successful, the text is not empty.
         elseif e.text ~= "" then
             allBagsBag = getObjectsWithTag("All")[1]
-            local characterCardBag = getObjectsWithAllTags({"Character"})[1]
-            local characterCards = getObjectsWithAllTags({"Character", "Destroy"})
-            for _, card in ipairs(characterCards) do
-                -- Set the fetched script to each character card object.
-                card.setLuaScript(e.text)
-                characterCardBag.putObject(card)
+            if allBagsBag then
+                local characterCardBag = getObjectsWithAllTags({"Character"})[1]
+                local characterCards = getObjectsWithAllTags({"Character", "Destroy"})
+                for _, card in ipairs(characterCards) do
+                    -- Set the fetched script to each character card object.
+                    card.setLuaScript(e.text)
+                    characterCardBag.putObject(card)
+                end
+                allBagsBag.putObject(characterCardBag)
             end
-            allBagsBag.putObject(characterCardBag)
         end
     end)
     -- For the scripting zones, set the Lua script to the one fetched from the web.
