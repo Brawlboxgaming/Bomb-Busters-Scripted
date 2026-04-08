@@ -2421,6 +2421,9 @@ function sortCharacters(missionNum)
             local card = generateWithStandardProps(characterCardsBag, characterPositions[shuffledPlayers[count + 1]], characterRotations[shuffledPlayers[count + 1]], false, true, flipped, obj.guid)
             card.addTag(shuffledPlayers[count + 1])
             count = count + 1
+            if count == playerNum then
+                return ret
+            end
         end
     end
     return ret
