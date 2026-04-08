@@ -1,4 +1,4 @@
-DEBUG = true
+DEBUG = false
 DEBUG_PLAYER_COUNT = 5
 
 function onLoad()
