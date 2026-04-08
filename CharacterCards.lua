@@ -16,7 +16,7 @@ cardNames = {
 
 local cardConfigs = {
     [1] = { bannedMissions = {} }, -- Double Detector
-    [2] = { bannedMissions = {35, 58}, minPlayers = 2 }, -- Walkie-Talkies
+    [2] = { bannedMissions = {35, 58} }, -- Walkie-Talkies
     [3] = { bannedMissions = {58} }, -- Triple Detector
     [4] = { bannedMissions = {58} }, -- General Radar
     [5] = { bannedMissions = {44, 45, 47, 49, 51, 54, 58, 59, 63, 65} } -- X or Y ray
@@ -169,17 +169,6 @@ function isAllowed(selectionIndex)
             if currentMissionNum == banned then
                 return false
             end
-        end
-    end
-    
-    -- Check min players
-    if config.minPlayers then
-        local playerNum = 0
-        for _, p in ipairs(Player.getPlayers()) do
-            if p.seated then playerNum = playerNum + 1 end
-        end
-        if playerNum < config.minPlayers then
-            return false
         end
     end
     
