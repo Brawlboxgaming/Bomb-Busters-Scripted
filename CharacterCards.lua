@@ -98,7 +98,8 @@ function onLoad(save_state)
                     rotation       = { 0, 0, 0 },
                     width          = 150,
                     height         = 200,
-                    font_size      = 100
+                    font_size      = 100,
+                    color          = {0.8, 0.8, 0.8}
                 })
 
                 self.createButton({
@@ -110,7 +111,8 @@ function onLoad(save_state)
                     rotation       = { 0, 0, 0 },
                     width          = 150,
                     height         = 200,
-                    font_size      = 100
+                    font_size      = 100,
+                    color          = {0.8, 0.8, 0.8}
                 })
 
                 self.createButton({
@@ -122,7 +124,8 @@ function onLoad(save_state)
                     rotation       = { 0, 0, 0 },
                     width          = 450,
                     height         = 200,
-                    font_size      = 100
+                    font_size      = 100,
+                    color          = {0.8, 0.8, 0.8}
                 })
         end
     end
