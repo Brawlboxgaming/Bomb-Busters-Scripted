@@ -846,7 +846,7 @@ local equipmentConfigs = {
     ["Disintegrator"] = {
         description = "1010",
         pack = 5,
-        bannedMissions = {57}
+        bannedMissions = {57, 58}
     },
     ["Grappling Hook"] = {
         description = "1111",
