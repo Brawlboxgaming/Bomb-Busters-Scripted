@@ -2685,7 +2685,7 @@ function handleSpecialRedWires(redWiresConfig, pilePlayerMap)
         -- Add one red wire to each of the first 3 players
         local count = 0
         for pileIx, pileInfo in pairs(pilePlayerMap) do
-            if pileInfo.isPrimary then
+            if playerNum < 3 or pileInfo.isPrimary then
                 count = count + 1
                 if count <= 3 then
                     if piles[pileIx] then
@@ -2874,26 +2874,24 @@ function handleConstraintCards(constraintType, missionNum)
             local cardsToDeal = filterConstraintCardsByRange(constraintCards, "A", "E")
             local constraintCardPositions = layoutConfigs.constraintCards.mission31Layout
             if playerNum < 3 then
+            shuffleInPlace(cardsToDeal)
+            while #cardsToDeal > 3 do table.remove(cardsToDeal) end
                 local count = 0
                 for i = 1, #cardsToDeal do
-                    if cardsToDeal[i].getName() == "A" or cardsToDeal[i].getName() == "B" then
+                    if cardsToDeal[i].name == "A" or cardsToDeal[i].name == "B" then
                         count = count + 1
                     end
                 end
                 if count == 2 then cardsAreGood = false end
                 count = 0
                 for i = 1, #cardsToDeal do
-                    if cardsToDeal[i].getName() == "C" or cardsToDeal[i].getName() == "D" then
+                    if cardsToDeal[i].name == "C" or cardsToDeal[i].name == "D" then
                         count = count + 1
                     end
                 end
                 if count == 2 then cardsAreGood = false end
             end
-            if not cardsAreGood then
-                for _, card in ipairs(cardsToDeal) do
-                    card.destruct()
-                end
-            else
+            if cardsAreGood then
                 for i = 1, #cardsToDeal do
                     generateWithStandardProps(constraintBag, constraintCardPositions[i], {0.00, 90.00, 0.00}, false, true, false, cardsToDeal[i].guid)
                 end
@@ -3514,6 +3512,22 @@ function sortAllWires(blueHighest, yellowNum, yellowTotal, yellowHighest, redNum
     end
 end
 
+-- Resolves which wire configuration applies at the current player count
+function getWiresForMission(missionNum, config)
+    config = config or getMissionConfig(missionNum)
+    local wires = config.wires
+    if config.wiresAlt then
+        if config.altCount and contains(config.altCount, playerNum) then
+            wires = config.wiresAlt
+        elseif shouldUseDefaultAltCount(missionNum, config) and playerNum == 2 then
+            wires = config.wiresAlt
+        elseif config.threshold and playerNum >= config.threshold then
+            wires = config.wiresAlt
+        end
+    end
+    return wires
+end
+
 function dealWiresToHands(missionNum, piles)
     -- Handle wire hand count limitation before sorting piles
     local config = getMissionConfig(missionNum)
@@ -4101,7 +4115,7 @@ end
 function spawnColouredWireTokens(missionNum)
     local missionCard = getObjectsWithAllTags({"Mission", "Destroy"})[1]
     local missionConfig = getMissionConfig(missionNum)
-    local wireCounts = missionConfig.wiresAlt and missionConfig.altCount and missionConfig.altCount >= playerNum or missionConfig.wires
+    local wireCounts = getWiresForMission(missionNum, missionConfig)
     local yellowCount = wireCounts[2]
     local redCount = wireCounts[5]
     if missionConfig.yellowWires then
